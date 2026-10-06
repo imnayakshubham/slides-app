@@ -7,13 +7,11 @@ import { useShallow } from "zustand/react/shallow"
 import { Artboard } from "@/components/canvas/Artboard"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useDeckStore } from "@/store/DeckStore"
+import { selectSlideIds, useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
 export function SlideNavigator({ onClose }: { onClose: () => void }) {
-  const slideIds = useDeckStore(
-    useShallow((state) => state.deck?.slides.map((slide) => slide.id) ?? [])
-  )
+  const slideIds = useDeckStore(useShallow(selectSlideIds))
 
   return (
     <nav
@@ -67,8 +65,9 @@ function SlideThumbnail({
   const thumbnailRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    if (isCurrentSlide)
+    if (isCurrentSlide) {
       thumbnailRef.current?.scrollIntoView({ block: "nearest" })
+    }
   }, [isCurrentSlide])
 
   return (

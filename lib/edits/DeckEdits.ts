@@ -83,7 +83,9 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
           `Slide "${edit.slideId}" update is invalid: ${z.prettifyError(parsedSlide.error)}`
         )
       }
-      return succeed(mapSlide(deck, edit.slideId, () => parsedSlide.data))
+      return succeed(
+        updateSlideInDeck(deck, edit.slideId, () => parsedSlide.data)
+      )
     }
 
     case "deleteSlide": {
@@ -118,12 +120,12 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
         )
       }
 
-      const placed = placeElement(edit.element)
-      if (!placed.ok) return placed
+      const validated = fitAndValidateElement(edit.element)
+      if (!validated.ok) return validated
       return succeed(
-        mapSlide(deck, edit.slideId, (slide) => ({
+        updateSlideInDeck(deck, edit.slideId, (slide) => ({
           ...slide,
-          elements: [...slide.elements, placed.element],
+          elements: [...slide.elements, validated.element],
         }))
       )
     }
@@ -133,16 +135,21 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
       if (!location) return fail(elementNotFoundMessage(edit.elementId))
 
       const { slide, element } = location
-      const placed = placeElement({
+      // Changes from another element type fail validation below.
+      const validated = fitAndValidateElement({
         ...element,
         ...edit.changes,
         id: element.id,
         type: element.type,
       } as SlideElement)
-      if (!placed.ok) return placed
+      if (!validated.ok) return validated
       return succeed(
-        mapSlide(deck, slide.id, (currentSlide) =>
-          mapElement(currentSlide, element.id, () => placed.element)
+        updateSlideInDeck(deck, slide.id, (currentSlide) =>
+          updateElementOnSlide(
+            currentSlide,
+            element.id,
+            () => validated.element
+          )
         )
       )
     }
@@ -152,7 +159,7 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
       if (!location) return fail(elementNotFoundMessage(edit.elementId))
 
       return succeed(
-        mapSlide(deck, location.slide.id, (slide) => ({
+        updateSlideInDeck(deck, location.slide.id, (slide) => ({
           ...slide,
           elements: slide.elements.filter(
             (element) => element.id !== edit.elementId
@@ -187,14 +194,18 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
         ...element,
         ...findFreeSpot(targetSlide, requestedBox),
       }
-      const deckWithoutElement = mapSlide(deck, sourceSlide.id, (slide) => ({
-        ...slide,
-        elements: slide.elements.filter(
-          (candidate) => candidate.id !== element.id
-        ),
-      }))
+      const deckWithoutElement = updateSlideInDeck(
+        deck,
+        sourceSlide.id,
+        (slide) => ({
+          ...slide,
+          elements: slide.elements.filter(
+            (candidate) => candidate.id !== element.id
+          ),
+        })
+      )
       return succeed(
-        mapSlide(deckWithoutElement, targetSlide.id, (slide) => ({
+        updateSlideInDeck(deckWithoutElement, targetSlide.id, (slide) => ({
           ...slide,
           elements: [...slide.elements, movedElement],
         }))
@@ -217,7 +228,7 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
         back: 0,
       }
       return succeed(
-        mapSlide(deck, slide.id, (currentSlide) => ({
+        updateSlideInDeck(deck, slide.id, (currentSlide) => ({
           ...currentSlide,
           elements: moveItem(
             currentSlide.elements,
@@ -252,7 +263,7 @@ function fail(error: string): DeckEditResult {
   return { ok: false, error }
 }
 
-function placeElement(
+function fitAndValidateElement(
   element: SlideElement
 ): { ok: true; element: SlideElement } | { ok: false; error: string } {
   const parsedElement = slideElementSchema.safeParse({
@@ -292,7 +303,7 @@ function findDuplicateId(deck: Deck, newIds: string[]) {
   return newIds.find((id) => usedIds.has(id))
 }
 
-function mapSlide(
+function updateSlideInDeck(
   deck: Deck,
   slideId: string,
   update: (slide: Slide) => Slide
@@ -305,7 +316,7 @@ function mapSlide(
   }
 }
 
-function mapElement(
+function updateElementOnSlide(
   slide: Slide,
   elementId: string,
   update: (element: SlideElement) => SlideElement

@@ -8,8 +8,7 @@ import type { SlideElement } from "@/lib/schema/Deck"
 type ImageElementData = Extract<SlideElement, { type: "image" }>
 
 export function ImageElement({ element }: { element: ImageElementData }) {
-  // Remembering which src failed (not just "failed") resets the fallback
-  // when the image is replaced.
+  // Stores which src failed, so a replaced image gets a fresh try.
   const [failedSrc, setFailedSrc] = useState<string | null>(null)
 
   if (failedSrc === element.src) {
@@ -24,8 +23,7 @@ export function ImageElement({ element }: { element: ImageElementData }) {
   }
 
   return (
-    // next/image needs every remote host configured up front; slide images
-    // come from anywhere (AI-chosen URLs, uploaded data URLs).
+    // next/image needs allowed hosts listed up front; slide images can be any URL.
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={element.src}

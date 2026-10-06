@@ -3,38 +3,48 @@ import "server-only"
 import { slideLayoutSlots } from "@/lib/layouts/SlideLayouts"
 import type { Deck, SlideElement } from "@/lib/schema/Deck"
 
-const MAX_TEXT_SUMMARY_LENGTH = 120
-const MAX_HISTORY_MESSAGES = 12
+const MAX_TEXT_PREVIEW_LENGTH = 120
+const MAX_CHAT_HISTORY_MESSAGES = 12
 
 export type ChatMessage = { role: "user" | "assistant"; content: string }
 
-// Compact text the model reads instead of the full deck JSON; get_slide
-// gives full detail on demand.
 export function buildDeckContext(
   deck: Deck,
   currentSlideId: string | null,
   selectedElementIds: string[]
 ) {
+  const { colors, fontFamily } = deck.theme
   const lines = [
-    `Deck "${deck.title}", ${deck.slides.length} slides. Boxes are [x, y, w, h] on a 1920×1080 artboard.`,
-    `Theme: font ${deck.theme.fontFamily}; background ${deck.theme.colors.background}, text ${deck.theme.colors.text}, accent ${deck.theme.colors.accent}.`,
-    currentSlideId
-      ? `Current slide: ${currentSlideId}. "This slide" means this one.`
-      : "No current slide.",
-    selectedElementIds.length > 0
-      ? `Selected elements: ${selectedElementIds.join(", ")}. "This", "it" and "the selected element" mean these.`
-      : "Nothing is selected.",
-    "",
+    `Deck "${deck.title}", ${deck.slides.length} slides. Element boxes are [x, y, w, h] on a 1920x1080 artboard.`,
+    `Theme: font ${fontFamily}, background ${colors.background}, text ${colors.text}, accent ${colors.accent}.`,
   ]
 
-  deck.slides.forEach((slide, slideIndex) => {
-    const slotNames = Object.keys(slideLayoutSlots[slide.layout])
+  if (currentSlideId) {
+    lines.push(`Current slide: ${currentSlideId}. "This slide" means this one.`)
+  } else {
+    lines.push("There is no current slide.")
+  }
+
+  if (selectedElementIds.length > 0) {
     lines.push(
-      `Slide ${slideIndex + 1} id=${slide.id} layout=${slide.layout} slots=[${slotNames.join(", ")}] title="${slide.title}"`
+      `Selected elements: ${selectedElementIds.join(", ")}. "This", "it" and "the selected element" mean these.`
     )
+  } else {
+    lines.push("Nothing is selected.")
+  }
+
+  lines.push("")
+
+  deck.slides.forEach((slide, slideIndex) => {
+    const slotNames = Object.keys(slideLayoutSlots[slide.layout]).join(", ")
+    lines.push(
+      `Slide ${slideIndex + 1} id=${slide.id} layout=${slide.layout} slots=[${slotNames}] title="${slide.title}"`
+    )
+
     for (const element of slide.elements) {
+      const box = `[${element.x}, ${element.y}, ${element.w}, ${element.h}]`
       lines.push(
-        `  - ${element.id} ${element.type} [${element.x}, ${element.y}, ${element.w}, ${element.h}] ${summarizeElement(element)}`
+        `  - ${element.id} ${element.type} ${box} ${describeElementContent(element)}`
       )
     }
   })
@@ -43,35 +53,41 @@ export function buildDeckContext(
 }
 
 export function recentMessages(messages: ChatMessage[]) {
-  return messages.slice(-MAX_HISTORY_MESSAGES)
+  return messages.slice(-MAX_CHAT_HISTORY_MESSAGES)
 }
 
-function summarizeElement(element: SlideElement) {
+function describeElementContent(element: SlideElement) {
   switch (element.type) {
-    case "text":
-      return `${element.listStyle === "none" ? "" : `${element.listStyle} list `}"${truncate(element.paragraphs.join(" / "))}"`
+    case "text": {
+      const text = shortenText(element.paragraphs.join(" / "))
+      if (element.listStyle === "none") return `"${text}"`
+      return `${element.listStyle} list "${text}"`
+    }
+
     case "image":
       return `alt="${element.alt}"`
+
     case "chart": {
-      const seriesSummary = element.series
+      const categories = element.categories.join(", ")
+      const seriesValues = element.series
         .map((series) => `${series.name}=[${series.data.join(", ")}]`)
         .join("; ")
-      return `${element.chartType} chart "${element.title}" categories=[${element.categories.join(", ")}] ${seriesSummary}`
+      return `${element.chartType} chart "${element.title}" categories=[${categories}] ${seriesValues}`
     }
+
     case "table": {
+      const rowCount = element.rows.length
       const columnCount = element.rows[0].length
-      const header = element.headerRow
-        ? ` header=[${element.rows[0].join(", ")}]`
-        : ""
-      return `${element.rows.length}×${columnCount} table${header}`
+      if (!element.headerRow) return `${rowCount}x${columnCount} table`
+      return `${rowCount}x${columnCount} table, header=[${element.rows[0].join(", ")}]`
     }
+
     case "shape":
       return `${element.shape} fill=${element.fill}`
   }
 }
 
-function truncate(text: string) {
-  return text.length > MAX_TEXT_SUMMARY_LENGTH
-    ? `${text.slice(0, MAX_TEXT_SUMMARY_LENGTH)}…`
-    : text
+function shortenText(text: string) {
+  if (text.length <= MAX_TEXT_PREVIEW_LENGTH) return text
+  return `${text.slice(0, MAX_TEXT_PREVIEW_LENGTH)}...`
 }

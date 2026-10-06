@@ -1,11 +1,12 @@
 import type { StreamEvent } from "@/lib/StreamEvents"
 
-// EventSource cannot POST, so the SSE body is read from fetch directly.
-// Aborting `signal` (Stop button) rejects with an AbortError.
+const EVENT_PREFIX = "data: "
+
+// EventSource can't send a POST body, so the stream is read by hand.
 export async function postStream(
   url: string,
   body: unknown,
-  onEvent: (event: StreamEvent) => void,
+  onEvent: (streamEvent: StreamEvent) => void,
   signal?: AbortSignal
 ) {
   const response = await fetch(url, {
@@ -26,35 +27,22 @@ export async function postStream(
     return
   }
 
-  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
-  let unparsedText = ""
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let unfinishedText = ""
+
   while (true) {
     const { value, done } = await reader.read()
     if (done) break
 
-    unparsedText += value
-    const completeMessages = unparsedText.split("\n\n")
-    unparsedText = completeMessages.pop() ?? ""
-    for (const message of completeMessages) {
-      const streamEvent = parseEventMessage(message)
-      if (streamEvent) onEvent(streamEvent)
+    unfinishedText += decoder.decode(value, { stream: true })
+    const events = unfinishedText.split("\n\n")
+    unfinishedText = events.pop() ?? ""
+
+    for (const eventText of events) {
+      if (eventText.startsWith(EVENT_PREFIX)) {
+        onEvent(JSON.parse(eventText.slice(EVENT_PREFIX.length)))
+      }
     }
   }
-}
-
-function parseEventMessage(message: string): StreamEvent | null {
-  let eventName = ""
-  const dataLines: string[] = []
-  for (const line of message.split("\n")) {
-    if (line.startsWith("event:"))
-      eventName = line.slice("event:".length).trim()
-    if (line.startsWith("data:"))
-      dataLines.push(line.slice("data:".length).trimStart())
-  }
-  if (!eventName || dataLines.length === 0) return null
-
-  return {
-    event: eventName,
-    data: JSON.parse(dataLines.join("\n")),
-  } as StreamEvent
 }

@@ -50,8 +50,7 @@ export function NewDeckPage() {
     router.push(`/slide/${deck.id}${promptQuery}`)
   }
 
-  // Dev-only shortcut for manual checks. The sample's fixed id means loading
-  // it again resets it to the fixture.
+  // The sample keeps its fixed id, so loading it again resets it.
   async function loadSampleDeckAndOpen() {
     setIsCreatingDeck(true)
     await deckRepository.saveDeck(sampleDeck)

@@ -7,18 +7,17 @@ import { useEditorStore } from "@/store/EditorStore"
 const PREVIOUS_SLIDE_KEYS = ["ArrowUp", "PageUp"]
 const NEXT_SLIDE_KEYS = ["ArrowDown", "PageDown"]
 
-// Arrow keys move the selected element once canvas editing lands (Phase 8),
-// so slide navigation only applies while nothing is selected.
+// Skipped while an element is selected: the arrows will move it (Phase 8).
 export function useSlideKeyboardNavigation() {
   useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      const step = PREVIOUS_SLIDE_KEYS.includes(event.key)
-        ? -1
-        : NEXT_SLIDE_KEYS.includes(event.key)
-          ? 1
-          : 0
-      if (step === 0 || event.altKey || event.ctrlKey || event.metaKey) return
+    function goToNeighborSlide(event: KeyboardEvent) {
+      if (event.altKey || event.ctrlKey || event.metaKey) return
       if (isTypingTarget(event.target)) return
+
+      let direction = 0
+      if (PREVIOUS_SLIDE_KEYS.includes(event.key)) direction = -1
+      if (NEXT_SLIDE_KEYS.includes(event.key)) direction = 1
+      if (direction === 0) return
 
       const { currentSlideId, selectedElementIds, goToSlide } =
         useEditorStore.getState()
@@ -28,14 +27,14 @@ export function useSlideKeyboardNavigation() {
       const currentIndex = slides.findIndex(
         (slide) => slide.id === currentSlideId
       )
-      const targetSlide = slides[currentIndex + step]
-      if (!targetSlide) return
+      const neighborSlide = slides[currentIndex + direction]
+      if (!neighborSlide) return
 
       event.preventDefault()
-      goToSlide(targetSlide.id)
+      goToSlide(neighborSlide.id)
     }
 
-    window.addEventListener("keydown", onKeyDown)
-    return () => window.removeEventListener("keydown", onKeyDown)
+    window.addEventListener("keydown", goToNeighborSlide)
+    return () => window.removeEventListener("keydown", goToNeighborSlide)
   }, [])
 }

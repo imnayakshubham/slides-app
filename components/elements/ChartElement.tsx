@@ -21,12 +21,12 @@ import type { Deck, SlideElement } from "@/lib/schema/Deck"
 
 type ChartElementData = Extract<SlideElement, { type: "chart" }>
 
-// Artboard units: the whole slide is scaled down, so these read like a
-// projected slide, not like app UI.
-const CHART_TITLE_FONT_SIZE = 36
-const CHART_LABEL_FONT_SIZE = 24
-const CHART_LINE_WIDTH = 4
-const PALETTE_HUE_STEP = 55
+// Artboard pixels (1920x1080), not screen pixels.
+const TITLE_FONT_SIZE = 36
+const LABEL_FONT_SIZE = 24
+const LINE_WIDTH = 4
+const HUE_STEP_BETWEEN_SERIES = 55
+const CHART_MARGIN = { top: 8, right: 16, bottom: 8, left: 16 }
 
 type ChartElementProps = {
   element: ChartElementData
@@ -43,7 +43,7 @@ export function ChartElement({ element, theme, animate }: ChartElementProps) {
       {element.title && (
         <figcaption
           className="shrink-0 pb-4 text-center font-semibold"
-          style={{ fontSize: CHART_TITLE_FONT_SIZE }}
+          style={{ fontSize: TITLE_FONT_SIZE }}
         >
           {element.title}
         </figcaption>
@@ -51,9 +51,13 @@ export function ChartElement({ element, theme, animate }: ChartElementProps) {
       <div className="min-h-0 flex-1">
         <ResponsiveContainer width="100%" height="100%">
           {element.chartType === "pie" ? (
-            <PieChartBody element={element} theme={theme} animate={animate} />
+            <PieChartContent
+              element={element}
+              theme={theme}
+              animate={animate}
+            />
           ) : (
-            <CartesianChartBody
+            <AxisChartContent
               element={element}
               theme={theme}
               animate={animate}
@@ -65,36 +69,63 @@ export function ChartElement({ element, theme, animate }: ChartElementProps) {
   )
 }
 
-// Series without their own color get the theme accent, then hue-rotated
-// variants of it, so every chart matches the deck theme.
-function paletteColor(accent: string, index: number) {
-  if (index === 0) return accent
-  return `oklch(from ${accent} l c calc(h + ${index * PALETTE_HUE_STEP}))`
+// Hue steps from the accent color, so default colors match the theme.
+function defaultSeriesColor(accentColor: string, seriesIndex: number) {
+  if (seriesIndex === 0) return accentColor
+  const hueShift = seriesIndex * HUE_STEP_BETWEEN_SERIES
+  return `oklch(from ${accentColor} l c calc(h + ${hueShift}))`
 }
 
-function seriesKey(seriesIndex: number) {
+// Keyed by position because series names can repeat.
+function dataKeyForSeries(seriesIndex: number) {
   return `series${seriesIndex}`
 }
 
-// Series names can repeat or contain any text, so rows are keyed by index
-// and the visible name is passed separately.
-function toChartRows(element: ChartElementData) {
+function buildChartRows(element: ChartElementData) {
   return element.categories.map((category, categoryIndex) => {
     const row: Record<string, string | number> = { category }
     element.series.forEach((series, seriesIndex) => {
-      row[seriesKey(seriesIndex)] = series.data[categoryIndex]
+      row[dataKeyForSeries(seriesIndex)] = series.data[categoryIndex]
     })
     return row
   })
 }
 
-function CartesianChartBody({ element, theme, animate }: ChartElementProps) {
-  const rows = toChartRows(element)
+function AxisChartContent({ element, theme, animate }: ChartElementProps) {
+  const rows = buildChartRows(element)
   const textColor = theme.colors.text
-  const tickStyle = { fill: textColor, fontSize: CHART_LABEL_FONT_SIZE }
-  const chartMargin = { top: 8, right: 16, bottom: 8, left: 16 }
+  const labelStyle = { fill: textColor, fontSize: LABEL_FONT_SIZE }
+  const seriesColors = element.series.map(
+    (series, seriesIndex) =>
+      series.color ?? defaultSeriesColor(theme.colors.accent, seriesIndex)
+  )
 
-  const axes = [
+  let xAxisLabel = undefined
+  let xAxisHeight = undefined
+  if (element.xAxisLabel) {
+    xAxisLabel = {
+      value: element.xAxisLabel,
+      position: "insideBottom" as const,
+      ...labelStyle,
+    }
+    xAxisHeight = LABEL_FONT_SIZE * 3
+  }
+
+  let yAxisLabel = undefined
+  let yAxisWidth: number | "auto" = "auto"
+  if (element.yAxisLabel) {
+    yAxisLabel = {
+      value: element.yAxisLabel,
+      angle: -90,
+      position: "insideLeft" as const,
+      style: { textAnchor: "middle" as const },
+      ...labelStyle,
+    }
+    yAxisWidth = LABEL_FONT_SIZE * 5
+  }
+
+  // An array, not a component: Recharts needs them as direct chart children.
+  const gridAxesAndLegend = [
     <CartesianGrid
       key="grid"
       vertical={false}
@@ -102,65 +133,44 @@ function CartesianChartBody({ element, theme, animate }: ChartElementProps) {
       strokeOpacity={0.12}
     />,
     <XAxis
-      key="x"
+      key="x-axis"
       dataKey="category"
-      tick={tickStyle}
+      tick={labelStyle}
       stroke={textColor}
       strokeOpacity={0.3}
-      height={element.xAxisLabel ? CHART_LABEL_FONT_SIZE * 3 : undefined}
-      label={
-        element.xAxisLabel
-          ? {
-              value: element.xAxisLabel,
-              position: "insideBottom",
-              ...tickStyle,
-            }
-          : undefined
-      }
+      height={xAxisHeight}
+      label={xAxisLabel}
     />,
     <YAxis
-      key="y"
-      tick={tickStyle}
+      key="y-axis"
+      tick={labelStyle}
       stroke={textColor}
       strokeOpacity={0.3}
-      width={element.yAxisLabel ? CHART_LABEL_FONT_SIZE * 5 : "auto"}
-      label={
-        element.yAxisLabel
-          ? {
-              value: element.yAxisLabel,
-              angle: -90,
-              position: "insideLeft",
-              style: { textAnchor: "middle" },
-              ...tickStyle,
-            }
-          : undefined
-      }
+      width={yAxisWidth}
+      label={yAxisLabel}
     />,
-    element.showLegend && (
+  ]
+  if (element.showLegend) {
+    gridAxesAndLegend.push(
       <Legend
         key="legend"
-        wrapperStyle={{ fontSize: CHART_LABEL_FONT_SIZE, color: textColor }}
+        wrapperStyle={{ fontSize: LABEL_FONT_SIZE, color: textColor }}
       />
-    ),
-  ]
-
-  const seriesColors = element.series.map(
-    (series, seriesIndex) =>
-      series.color ?? paletteColor(theme.colors.accent, seriesIndex)
-  )
+    )
+  }
 
   if (element.chartType === "line") {
     return (
-      <LineChart data={rows} margin={chartMargin}>
-        {axes}
+      <LineChart data={rows} margin={CHART_MARGIN}>
+        {gridAxesAndLegend}
         {element.series.map((series, seriesIndex) => (
           <Line
             key={seriesIndex}
-            dataKey={seriesKey(seriesIndex)}
+            dataKey={dataKeyForSeries(seriesIndex)}
             name={series.name}
             stroke={seriesColors[seriesIndex]}
-            strokeWidth={CHART_LINE_WIDTH}
-            dot={{ r: CHART_LINE_WIDTH * 1.5 }}
+            strokeWidth={LINE_WIDTH}
+            dot={{ r: LINE_WIDTH * 1.5 }}
             isAnimationActive={animate}
           />
         ))}
@@ -170,17 +180,17 @@ function CartesianChartBody({ element, theme, animate }: ChartElementProps) {
 
   if (element.chartType === "area") {
     return (
-      <AreaChart data={rows} margin={chartMargin}>
-        {axes}
+      <AreaChart data={rows} margin={CHART_MARGIN}>
+        {gridAxesAndLegend}
         {element.series.map((series, seriesIndex) => (
           <Area
             key={seriesIndex}
-            dataKey={seriesKey(seriesIndex)}
+            dataKey={dataKeyForSeries(seriesIndex)}
             name={series.name}
             stroke={seriesColors[seriesIndex]}
             fill={seriesColors[seriesIndex]}
             fillOpacity={0.25}
-            strokeWidth={CHART_LINE_WIDTH}
+            strokeWidth={LINE_WIDTH}
             isAnimationActive={animate}
           />
         ))}
@@ -188,17 +198,17 @@ function CartesianChartBody({ element, theme, animate }: ChartElementProps) {
     )
   }
 
-  const isStacked = element.chartType === "stackedBar"
+  const stackId = element.chartType === "stackedBar" ? "stack" : undefined
   return (
-    <BarChart data={rows} margin={chartMargin}>
-      {axes}
+    <BarChart data={rows} margin={CHART_MARGIN}>
+      {gridAxesAndLegend}
       {element.series.map((series, seriesIndex) => (
         <Bar
           key={seriesIndex}
-          dataKey={seriesKey(seriesIndex)}
+          dataKey={dataKeyForSeries(seriesIndex)}
           name={series.name}
           fill={seriesColors[seriesIndex]}
-          stackId={isStacked ? "stack" : undefined}
+          stackId={stackId}
           isAnimationActive={animate}
         />
       ))}
@@ -206,9 +216,9 @@ function CartesianChartBody({ element, theme, animate }: ChartElementProps) {
   )
 }
 
-// A pie shows one series: the first. Each category is a slice.
-function PieChartBody({ element, theme, animate }: ChartElementProps) {
-  const [firstSeries] = element.series
+// A pie chart shows only the first series.
+function PieChartContent({ element, theme, animate }: ChartElementProps) {
+  const firstSeries = element.series[0]
   const slices = element.categories.map((category, categoryIndex) => ({
     category,
     value: firstSeries.data[categoryIndex],
@@ -222,22 +232,19 @@ function PieChartBody({ element, theme, animate }: ChartElementProps) {
         nameKey="category"
         outerRadius="85%"
         stroke={theme.colors.background}
-        strokeWidth={CHART_LINE_WIDTH}
+        strokeWidth={LINE_WIDTH}
         isAnimationActive={animate}
       >
         {slices.map((slice, sliceIndex) => (
           <Cell
-            key={slice.category + sliceIndex}
-            fill={paletteColor(theme.colors.accent, sliceIndex)}
+            key={sliceIndex}
+            fill={defaultSeriesColor(theme.colors.accent, sliceIndex)}
           />
         ))}
       </Pie>
       {element.showLegend && (
         <Legend
-          wrapperStyle={{
-            fontSize: CHART_LABEL_FONT_SIZE,
-            color: theme.colors.text,
-          }}
+          wrapperStyle={{ fontSize: LABEL_FONT_SIZE, color: theme.colors.text }}
         />
       )}
     </PieChart>

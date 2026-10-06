@@ -5,18 +5,14 @@ import { useShallow } from "zustand/react/shallow"
 
 import { Artboard } from "@/components/canvas/Artboard"
 import { cn } from "@/lib/utils"
-import { useDeckStore } from "@/store/DeckStore"
+import { selectSlideIds, useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
-// All slides stacked in one vertical scroll; the current slide is outlined.
 export function SlideCanvas() {
-  const slideIds = useDeckStore(
-    useShallow((state) => state.deck?.slides.map((slide) => slide.id) ?? [])
-  )
+  const slideIds = useDeckStore(useShallow(selectSlideIds))
   const currentSlideId = useEditorStore((state) => state.currentSlideId)
   const goToSlide = useEditorStore((state) => state.goToSlide)
 
-  // Keeps the current slide in view when it changes from the navigator or keys.
   useEffect(() => {
     if (!currentSlideId) return
     document

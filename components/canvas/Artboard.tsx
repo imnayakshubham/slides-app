@@ -10,25 +10,19 @@ import { useDeckStore } from "@/store/DeckStore"
 
 type ArtboardProps = {
   slideId: string
-  // Thumbnails turn this off: no chart animations, no position transitions.
   animate: boolean
   className?: string
 }
 
-// One slide at its true 1920×1080 size, scaled to fit the container's width.
-// The canvas and the navigator thumbnails both render through this.
 export function Artboard({ slideId, animate, className }: ArtboardProps) {
   const { containerRef, scale } = useArtboardScale()
   const theme = useDeckStore((state) => state.deck?.theme)
   const background = useDeckStore(
     (state) => findSlide(state.deck, slideId)?.background
   )
+  // useShallow: the list is rebuilt each time, so compare it by contents.
   const elementIds = useDeckStore(
-    useShallow(
-      (state) =>
-        findSlide(state.deck, slideId)?.elements.map((element) => element.id) ??
-        []
-    )
+    useShallow((state) => getElementIds(state.deck, slideId))
   )
 
   return (
@@ -45,7 +39,6 @@ export function Artboard({ slideId, animate, className }: ArtboardProps) {
             transform: `scale(${scale})`,
             background: background || theme.colors.background,
             color: theme.colors.text,
-            // The deck's font first; the app font if it is not installed.
             fontFamily: `${theme.fontFamily}, var(--font-sans)`,
           }}
         >
@@ -64,8 +57,7 @@ export function Artboard({ slideId, animate, className }: ArtboardProps) {
   )
 }
 
-// Subscribes to its own element only: edits keep unchanged element references,
-// so editing one element does not re-render the rest of the slide.
+// Reads only its own element, so editing one element doesn't re-render the others.
 function PositionedElement({
   slideId,
   elementId,
@@ -108,9 +100,15 @@ function findSlide(deck: Deck | null, slideId: string) {
   return deck?.slides.find((slide) => slide.id === slideId)
 }
 
+function getElementIds(deck: Deck | null, slideId: string) {
+  const slide = findSlide(deck, slideId)
+  if (!slide) return []
+  return slide.elements.map((element) => element.id)
+}
+
 function useArtboardScale() {
   const containerRef = useRef<HTMLDivElement>(null)
-  // 0 until measured, so nothing flashes at full size before the first layout.
+  // 0 until measured, so the slide never flashes at full size.
   const [scale, setScale] = useState(0)
 
   useEffect(() => {

@@ -24,6 +24,11 @@ type DeckStore = {
   endGroup: () => void
 }
 
+export function selectSlideIds(state: DeckStore) {
+  if (!state.deck) return []
+  return state.deck.slides.map((slide) => slide.id)
+}
+
 export const useDeckStore = create<DeckStore>()((set, get) => ({
   deck: null,
   past: [],

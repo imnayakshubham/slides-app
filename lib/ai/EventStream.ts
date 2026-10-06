@@ -3,7 +3,7 @@ import type { SendStreamEvent } from "@/lib/StreamEvents"
 export function createEventStream() {
   const encoder = new TextEncoder()
   let streamController: ReadableStreamDefaultController<Uint8Array>
-  // The browser may disconnect (Stop button) while the agent is still running.
+  // Also set when the browser disconnects, e.g. after Stop.
   let isClosed = false
 
   const body = new ReadableStream<Uint8Array>({
@@ -15,14 +15,13 @@ export function createEventStream() {
     },
   })
 
-  const send: SendStreamEvent = (event, data) => {
+  const sendEvent: SendStreamEvent = (streamEvent) => {
     if (isClosed) return
-    streamController.enqueue(
-      encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
-    )
+    const line = `data: ${JSON.stringify(streamEvent)}\n\n`
+    streamController.enqueue(encoder.encode(line))
   }
 
-  function close() {
+  function closeStream() {
     if (isClosed) return
     isClosed = true
     streamController.close()
@@ -35,5 +34,5 @@ export function createEventStream() {
     },
   })
 
-  return { response, send, close }
+  return { response, sendEvent, closeStream }
 }

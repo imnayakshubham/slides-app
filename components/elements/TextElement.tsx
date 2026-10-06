@@ -1,15 +1,17 @@
+import type { CSSProperties } from "react"
+
 import type { SlideElement } from "@/lib/schema/Deck"
 
 type TextElementData = Extract<SlideElement, { type: "text" }>
 
 export function TextElement({ element }: { element: TextElementData }) {
-  const textStyle = {
+  const textStyle: CSSProperties = {
     fontSize: element.fontSize,
     fontWeight: element.bold ? 700 : 400,
     fontStyle: element.italic ? "italic" : "normal",
     color: element.color,
     textAlign: element.align,
-  } as const
+  }
 
   if (element.listStyle === "none") {
     return (

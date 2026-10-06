@@ -23,9 +23,8 @@ const chatRequestSchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const parsedRequest = chatRequestSchema.safeParse(
-    await request.json().catch(() => null)
-  )
+  const requestBody = await request.json().catch(() => null)
+  const parsedRequest = chatRequestSchema.safeParse(requestBody)
   if (!parsedRequest.success) {
     return Response.json(
       { error: z.prettifyError(parsedRequest.error) },
@@ -35,19 +34,20 @@ export async function POST(request: Request) {
 
   const { deck, messages, currentSlideId, selectedIds, userMessage } =
     parsedRequest.data
-  const { response, send, close } = createEventStream()
-  const scratch = { deck }
+  const { response, sendEvent, closeStream } = createEventStream()
+  const deckContext = buildDeckContext(deck, currentSlideId, selectedIds)
 
-  void runAgent({
-    instructions: `${EDITOR_INSTRUCTIONS}\n\n${buildDeckContext(deck, currentSlideId, selectedIds)}`,
+  // Not awaited: the response streams while the agent runs.
+  runAgent({
+    instructions: `${EDITOR_INSTRUCTIONS}\n\n${deckContext}`,
     messages: [
       ...recentMessages(messages),
       { role: "user", content: userMessage },
     ],
-    tools: createAgentTools(scratch, send),
-    send,
+    tools: createAgentTools(deck, sendEvent),
+    sendEvent,
     abortSignal: request.signal,
-  }).finally(close)
+  }).finally(closeStream)
 
   return response
 }
