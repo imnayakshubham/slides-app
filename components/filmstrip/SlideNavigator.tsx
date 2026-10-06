@@ -81,7 +81,7 @@ function SlideThumbnail({
     >
       <Artboard
         slideId={slideId}
-        animate={false}
+        isThumbnail
         className={cn(
           "pointer-events-none w-full rounded-sm border shadow-xs transition-shadow group-hover:shadow-sm group-focus-visible:ring-2 group-focus-visible:ring-ring",
           isCurrentSlide && "ring-2 ring-primary"

@@ -1,6 +1,6 @@
 import { createId } from "@/lib/Ids"
 import type { Box } from "@/lib/edits/Geometry"
-import type { Deck, Slide, SlideLayout } from "@/lib/schema/Deck"
+import type { Deck, Slide, SlideElement, SlideLayout } from "@/lib/schema/Deck"
 
 const standardTitleSlot: Box = { x: 120, y: 80, w: 1680, h: 140 }
 const leftColumnSlot: Box = { x: 120, y: 260, w: 820, h: 740 }
@@ -88,5 +88,16 @@ export function duplicateSlide(slide: Slide): Slide {
       ...element,
       id: createId(),
     })),
+  }
+}
+
+const DUPLICATE_OFFSET = 20
+
+export function duplicateElement(element: SlideElement): SlideElement {
+  return {
+    ...element,
+    id: createId(),
+    x: element.x + DUPLICATE_OFFSET,
+    y: element.y + DUPLICATE_OFFSET,
   }
 }

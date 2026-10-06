@@ -131,3 +131,9 @@
     @apply font-sans;
   }
 }
+
+/* Divided by the artboard's scale so the outline stays 1px on screen. */
+[data-canvas-slide-id] [data-element-id]:hover {
+  outline: calc(1px / var(--artboard-scale)) solid
+    color-mix(in oklab, var(--primary) 45%, transparent);
+}

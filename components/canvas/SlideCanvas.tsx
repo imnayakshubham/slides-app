@@ -1,17 +1,28 @@
 "use client"
 
 import { useEffect } from "react"
+import { DndContext, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
 import { useShallow } from "zustand/react/shallow"
 
-import { Artboard } from "@/components/canvas/Artboard"
-import { cn } from "@/lib/utils"
+import { EditableSlide } from "@/components/canvas/EditableSlide"
+import { SelectionToolbar } from "@/components/canvas/SelectionToolbar"
+import { useCanvasGestures } from "@/hooks/UseCanvasGestures"
 import { selectSlideIds, useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
+
+// A press only becomes a drag after this many screen pixels, so clicks
+// never nudge anything.
+const DRAG_START_DISTANCE_PX = 3
 
 export function SlideCanvas() {
   const slideIds = useDeckStore(useShallow(selectSlideIds))
   const currentSlideId = useEditorStore((state) => state.currentSlideId)
-  const goToSlide = useEditorStore((state) => state.goToSlide)
+  const gestures = useCanvasGestures()
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: DRAG_START_DISTANCE_PX },
+    })
+  )
 
   useEffect(() => {
     if (!currentSlideId) return
@@ -34,22 +45,26 @@ export function SlideCanvas() {
   }
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col items-center gap-8 overflow-y-auto p-4 md:p-8">
-      {slideIds.map((slideId, slideIndex) => (
-        <article
-          key={slideId}
-          data-canvas-slide-id={slideId}
-          aria-label={`Slide ${slideIndex + 1}`}
-          aria-current={slideId === currentSlideId ? "true" : undefined}
-          onPointerDown={() => goToSlide(slideId)}
-          className={cn(
-            "w-full max-w-5xl shrink-0 scroll-m-4 rounded-sm shadow-md ring-offset-4 ring-offset-muted md:scroll-m-8",
-            slideId === currentSlideId && "ring-2 ring-primary"
-          )}
-        >
-          <Artboard slideId={slideId} animate className="rounded-sm" />
-        </article>
-      ))}
-    </div>
+    <DndContext
+      sensors={sensors}
+      onDragMove={gestures.handleDragMove}
+      onDragEnd={gestures.handleDragEnd}
+      onDragCancel={gestures.handleDragCancel}
+    >
+      <div
+        data-slide-canvas
+        className="relative flex min-w-0 flex-1 flex-col items-center gap-8 overflow-y-auto p-4 md:p-8"
+      >
+        {slideIds.map((slideId, slideIndex) => (
+          <EditableSlide
+            key={slideId}
+            slideId={slideId}
+            slideNumber={slideIndex + 1}
+            prepareGesture={gestures.prepareGesture}
+          />
+        ))}
+        <SelectionToolbar />
+      </div>
+    </DndContext>
   )
 }

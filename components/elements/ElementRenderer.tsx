@@ -1,3 +1,5 @@
+import { memo } from "react"
+
 import { ChartElement } from "@/components/elements/ChartElement"
 import { ImageElement } from "@/components/elements/ImageElement"
 import { ShapeElement } from "@/components/elements/ShapeElement"
@@ -11,7 +13,9 @@ type ElementRendererProps = {
   animate: boolean
 }
 
-export function ElementRenderer({
+// memo: moving an element changes only its wrapper's position, so its
+// content (e.g. a chart) doesn't need to render again.
+export const ElementRenderer = memo(function ElementRenderer({
   element,
   theme,
   animate,
@@ -28,4 +32,4 @@ export function ElementRenderer({
     case "shape":
       return <ShapeElement element={element} />
   }
-}
+})

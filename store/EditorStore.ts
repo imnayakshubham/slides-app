@@ -8,6 +8,9 @@ type EditorStore = {
   selectedElementIds: string[]
   goToSlide: (slideId: string) => void
   setSelectedElementIds: (elementIds: string[]) => void
+  // The text element being typed into on the canvas, if any.
+  editingElementId: string | null
+  setEditingElementId: (elementId: string | null) => void
 
   chatMessages: ChatMessage[]
   isAgentRunning: boolean
@@ -26,10 +29,17 @@ export const useEditorStore = create<EditorStore>()((set) => ({
   selectedElementIds: [],
 
   goToSlide: (slideId) =>
-    set({ currentSlideId: slideId, selectedElementIds: [] }),
+    set({
+      currentSlideId: slideId,
+      selectedElementIds: [],
+      editingElementId: null,
+    }),
 
   setSelectedElementIds: (elementIds) =>
     set({ selectedElementIds: elementIds }),
+
+  editingElementId: null,
+  setEditingElementId: (elementId) => set({ editingElementId: elementId }),
 
   chatMessages: [],
   isAgentRunning: false,

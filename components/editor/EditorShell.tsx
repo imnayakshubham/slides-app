@@ -9,6 +9,7 @@ import { TopBar } from "@/components/editor/TopBar"
 import { SlideNavigator } from "@/components/filmstrip/SlideNavigator"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { useAgentChat } from "@/hooks/UseAgentChat"
+import { useCanvasShortcuts } from "@/hooks/UseCanvasShortcuts"
 import type { SaveStatus } from "@/hooks/UseAutosave"
 import { useSlideKeyboardNavigation } from "@/hooks/UseSlideKeyboardNavigation"
 import { useDeckStore } from "@/store/DeckStore"
@@ -22,6 +23,7 @@ export function EditorShell({ saveStatus, onRetrySave }: EditorShellProps) {
   const deckTitle = useDeckStore((state) => state.deck?.title ?? "")
   const applyEdit = useDeckStore((state) => state.applyEdit)
   useSlideKeyboardNavigation()
+  useCanvasShortcuts()
   const agentChat = useAgentChat()
   const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(true)
   const [isMobileAgentOpen, setIsMobileAgentOpen] = useState(false)

@@ -1,20 +1,36 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react"
 import { useShallow } from "zustand/react/shallow"
 
 import { ElementRenderer } from "@/components/elements/ElementRenderer"
+import { TextElement } from "@/components/elements/TextElement"
 import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, type Deck } from "@/lib/schema/Deck"
 import { cn } from "@/lib/utils"
+import { useCanvasGestureStore } from "@/store/CanvasGestureStore"
 import { useDeckStore } from "@/store/DeckStore"
+import { useEditorStore } from "@/store/EditorStore"
 
 type ArtboardProps = {
   slideId: string
-  animate: boolean
+  isThumbnail?: boolean
   className?: string
+  // Drawn on top of the elements, in slide units (the selection overlay).
+  children?: ReactNode
 }
 
-export function Artboard({ slideId, animate, className }: ArtboardProps) {
+export function Artboard({
+  slideId,
+  isThumbnail = false,
+  className,
+  children,
+}: ArtboardProps) {
   const { containerRef, scale } = useArtboardScale()
   const theme = useDeckStore((state) => state.deck?.theme)
   const background = useDeckStore(
@@ -32,11 +48,14 @@ export function Artboard({ slideId, animate, className }: ArtboardProps) {
     >
       {theme && (
         <div
+          data-artboard
           className="absolute top-0 left-0 origin-top-left"
           style={{
             width: ARTBOARD_WIDTH,
             height: ARTBOARD_HEIGHT,
             transform: `scale(${scale})`,
+            // Lets the overlay keep lines and handles a fixed size on screen.
+            ...({ "--artboard-scale": scale } as CSSProperties),
             background: background || theme.colors.background,
             color: theme.colors.text,
             fontFamily: `${theme.fontFamily}, var(--font-sans)`,
@@ -48,9 +67,10 @@ export function Artboard({ slideId, animate, className }: ArtboardProps) {
               slideId={slideId}
               elementId={elementId}
               theme={theme}
-              animate={animate}
+              isThumbnail={isThumbnail}
             />
           ))}
+          {children}
         </div>
       )}
     </div>
@@ -62,38 +82,79 @@ function PositionedElement({
   slideId,
   elementId,
   theme,
-  animate,
+  isThumbnail,
 }: {
   slideId: string
   elementId: string
   theme: Deck["theme"]
-  animate: boolean
+  isThumbnail: boolean
 }) {
   const element = useDeckStore((state) =>
     findSlide(state.deck, slideId)?.elements.find(
       (slideElement) => slideElement.id === elementId
     )
   )
+  const isEditingText = useEditorStore(
+    (state) => !isThumbnail && state.editingElementId === elementId
+  )
+  // During a drag or resize the live box comes from the gesture store.
+  const previewBox = useCanvasGestureStore((state) =>
+    isThumbnail ? undefined : state.previewBoxes[elementId]
+  )
   if (!element) return null
+  const box = previewBox ?? element
+
+  function finishEditingText(paragraphs: string[], height: number) {
+    useEditorStore.getState().setEditingElementId(null)
+    if (element?.type === "text" && sameText(element.paragraphs, paragraphs)) {
+      return
+    }
+    useDeckStore.getState().applyEdit({
+      type: "updateElement",
+      elementId,
+      changes: { paragraphs, h: Math.round(height) },
+    })
+  }
 
   return (
     <div
       data-element-id={element.id}
+      data-element-type={element.type}
+      // Content ignores the pointer so clicks and drags land on this box,
+      // except while its text is being typed into.
       className={cn(
         "absolute",
-        animate &&
-          "transition-[left,top,width,height] duration-300 ease-out motion-reduce:transition-none"
+        !isEditingText && "*:pointer-events-none",
+        !isThumbnail && "touch-none",
+        !isThumbnail && (isEditingText ? "cursor-text" : "cursor-move")
       )}
       style={{
-        left: element.x,
-        top: element.y,
-        width: element.w,
-        height: element.h,
+        left: box.x,
+        top: box.y,
+        width: box.w,
+        // Text boxes grow with their text instead of overflowing.
+        height: element.type === "text" ? "auto" : box.h,
       }}
     >
-      <ElementRenderer element={element} theme={theme} animate={animate} />
+      {element.type === "text" ? (
+        <TextElement
+          element={element}
+          isEditing={isEditingText}
+          onFinishEditing={finishEditingText}
+        />
+      ) : (
+        <ElementRenderer
+          element={element}
+          theme={theme}
+          animate={!isThumbnail}
+        />
+      )}
     </div>
   )
+}
+
+function sameText(paragraphs: string[], otherParagraphs: string[]) {
+  return paragraphs.join("\n") === otherParagraphs.join("\n")
 }
 
 function findSlide(deck: Deck | null, slideId: string) {
