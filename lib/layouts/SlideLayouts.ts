@@ -1,6 +1,6 @@
-import { createId } from "@/lib/ids"
-import type { Box } from "@/lib/ops/geometry"
-import type { Deck, Slide, SlideLayout } from "@/lib/schema/deck"
+import { createId } from "@/lib/Ids"
+import type { Box } from "@/lib/edits/Geometry"
+import type { Deck, Slide, SlideLayout } from "@/lib/schema/Deck"
 
 const standardTitleSlot: Box = { x: 120, y: 80, w: 1680, h: 140 }
 const leftColumnSlot: Box = { x: 120, y: 260, w: 820, h: 740 }
@@ -56,7 +56,7 @@ export function createSlide(
   const isCenteredLayout = layout === "title" || layout === "section"
 
   return {
-    id: createId("slide"),
+    id: createId(),
     title,
     layout,
     background: theme.colors.background,
@@ -64,7 +64,7 @@ export function createSlide(
     elements: titleSlot
       ? [
           {
-            id: createId("el"),
+            id: createId(),
             type: "text",
             ...titleSlot,
             paragraphs: [title],
@@ -83,10 +83,10 @@ export function createSlide(
 export function duplicateSlide(slide: Slide): Slide {
   return {
     ...slide,
-    id: createId("slide"),
+    id: createId(),
     elements: slide.elements.map((element) => ({
       ...element,
-      id: createId("el"),
+      id: createId(),
     })),
   }
 }

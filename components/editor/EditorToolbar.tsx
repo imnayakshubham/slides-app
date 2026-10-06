@@ -1,7 +1,7 @@
 import { FilmIcon, LayoutGridIcon, Redo2Icon, Undo2Icon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { useDeckStore } from "@/store/deck-store"
+import { useDeckStore } from "@/store/DeckStore"
 
 type EditorToolbarProps = {
   isSlideNavigatorOpen: boolean

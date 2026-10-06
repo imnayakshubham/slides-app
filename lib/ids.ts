@@ -1,6 +1,6 @@
-import { nanoid } from "nanoid"
+import { v7 as uuidv7 } from "uuid"
 
-// Prefixed ids read clearly in AI context, e.g. "el_V1StGXR8" vs "slide_k3Jd92Lq".
-export function createId(prefix: "deck" | "slide" | "el") {
-  return `${prefix}_${nanoid(8)}`
+// UUIDv7 starts with a timestamp, so ids sort by creation time.
+export function createId() {
+  return uuidv7()
 }

@@ -1,4 +1,4 @@
-import { DeckEditor } from "@/components/editor/deck-editor"
+import { DeckEditor } from "@/components/editor/DeckEditor"
 
 export default async function SlidePage({
   params,

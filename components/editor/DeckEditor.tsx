@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 
-import { EditorShell } from "@/components/editor/editor-shell"
+import { EditorShell } from "@/components/editor/EditorShell"
 import { buttonVariants } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useAutosave } from "@/hooks/use-autosave"
+import { useAutosave } from "@/hooks/UseAutosave"
 import { deckRepository } from "@/lib/repository"
-import { useDeckStore } from "@/store/deck-store"
+import { useDeckStore } from "@/store/DeckStore"
 
 type DeckLoadState =
   | { status: "loading" }

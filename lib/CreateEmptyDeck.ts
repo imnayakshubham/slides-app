@@ -1,5 +1,5 @@
-import { createId } from "@/lib/ids"
-import type { Deck } from "@/lib/schema/deck"
+import { createId } from "@/lib/Ids"
+import type { Deck } from "@/lib/schema/Deck"
 
 const DEFAULT_THEME: Deck["theme"] = {
   fontFamily: "Inter",
@@ -8,7 +8,7 @@ const DEFAULT_THEME: Deck["theme"] = {
 
 export function createEmptyDeck(): Deck {
   return {
-    id: createId("deck"),
+    id: createId(),
     title: "Untitled deck",
     aspectRatio: "16:9",
     theme: DEFAULT_THEME,

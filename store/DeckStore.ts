@@ -1,7 +1,11 @@
 import { create } from "zustand"
 
-import { applyOp, type ApplyOpResult, type DeckOp } from "@/lib/ops/apply-op"
-import type { Deck } from "@/lib/schema/deck"
+import {
+  applyDeckEdit,
+  type DeckEditResult,
+  type DeckEdit,
+} from "@/lib/edits/DeckEdits"
+import type { Deck } from "@/lib/schema/Deck"
 
 const MAX_UNDO_STEPS = 100
 
@@ -9,11 +13,11 @@ type DeckStore = {
   deck: Deck | null
   past: Deck[]
   future: Deck[]
-  // Deck as it was when a group (e.g. one AI turn) began; dispatches inside a
+  // Deck as it was when a group (e.g. one AI turn) began; edits applied inside a
   // group skip history so the whole group undoes in one step.
   groupStart: Deck | null
   hydrate: (deck: Deck) => void
-  dispatch: (op: DeckOp) => ApplyOpResult
+  applyEdit: (edit: DeckEdit) => DeckEditResult
   undo: () => void
   redo: () => void
   beginGroup: () => void
@@ -28,11 +32,11 @@ export const useDeckStore = create<DeckStore>()((set, get) => ({
 
   hydrate: (deck) => set({ deck, past: [], future: [], groupStart: null }),
 
-  dispatch: (op) => {
+  applyEdit: (edit) => {
     const { deck, past, groupStart } = get()
     if (!deck) return { ok: false, error: "No deck is loaded." }
 
-    const result = applyOp(deck, op)
+    const result = applyDeckEdit(deck, edit)
     if (!result.ok) return result
 
     if (groupStart) {

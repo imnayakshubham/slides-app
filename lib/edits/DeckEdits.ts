@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { clampBox, findFreeSpot } from "@/lib/ops/geometry"
+import { clampBox, findFreeSpot } from "@/lib/edits/Geometry"
 import {
   slideElementSchema,
   slideSchema,
@@ -8,9 +8,9 @@ import {
   type ElementChanges,
   type Slide,
   type SlideElement,
-} from "@/lib/schema/deck"
+} from "@/lib/schema/Deck"
 
-export type DeckOp =
+export type DeckEdit =
   | { type: "updateDeck"; changes: { title?: string } }
   | { type: "addSlide"; slide: Slide; index?: number }
   | {
@@ -35,28 +35,28 @@ export type DeckOp =
       elementId: string
       direction: "forward" | "backward" | "front" | "back"
     }
-  | { type: "batch"; ops: DeckOp[] }
+  | { type: "batch"; edits: DeckEdit[] }
 
-export type ApplyOpResult =
+export type DeckEditResult =
   { ok: true; deck: Deck } | { ok: false; error: string }
 
 // Pure: never mutates `deck`, never throws. Unchanged slides and elements keep
 // their references so undo snapshots stay cheap and untouched UI does not re-render.
-export function applyOp(deck: Deck, op: DeckOp): ApplyOpResult {
-  switch (op.type) {
+export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
+  switch (edit.type) {
     case "updateDeck":
-      return succeed({ ...deck, ...op.changes })
+      return succeed({ ...deck, ...edit.changes })
 
     case "addSlide": {
-      const parsedSlide = slideSchema.safeParse(op.slide)
+      const parsedSlide = slideSchema.safeParse(edit.slide)
       if (!parsedSlide.success) {
         return fail(
-          `Slide "${op.slide.id}" is invalid: ${z.prettifyError(parsedSlide.error)}`
+          `Slide "${edit.slide.id}" is invalid: ${z.prettifyError(parsedSlide.error)}`
         )
       }
       const duplicateId = findDuplicateId(deck, [
-        op.slide.id,
-        ...op.slide.elements.map((element) => element.id),
+        edit.slide.id,
+        ...edit.slide.elements.map((element) => element.id),
       ])
       if (duplicateId)
         return fail(
@@ -64,7 +64,7 @@ export function applyOp(deck: Deck, op: DeckOp): ApplyOpResult {
         )
 
       const insertIndex = clampIndex(
-        op.index ?? deck.slides.length,
+        edit.index ?? deck.slides.length,
         deck.slides.length
       )
       return succeed({
@@ -74,34 +74,35 @@ export function applyOp(deck: Deck, op: DeckOp): ApplyOpResult {
     }
 
     case "updateSlide": {
-      const slide = findSlide(deck, op.slideId)
-      if (!slide) return fail(slideNotFoundMessage(deck, op.slideId))
+      const slide = findSlide(deck, edit.slideId)
+      if (!slide) return fail(slideNotFoundMessage(deck, edit.slideId))
 
-      const parsedSlide = slideSchema.safeParse({ ...slide, ...op.changes })
+      const parsedSlide = slideSchema.safeParse({ ...slide, ...edit.changes })
       if (!parsedSlide.success) {
         return fail(
-          `Slide "${op.slideId}" update is invalid: ${z.prettifyError(parsedSlide.error)}`
+          `Slide "${edit.slideId}" update is invalid: ${z.prettifyError(parsedSlide.error)}`
         )
       }
-      return succeed(mapSlide(deck, op.slideId, () => parsedSlide.data))
+      return succeed(mapSlide(deck, edit.slideId, () => parsedSlide.data))
     }
 
     case "deleteSlide": {
-      if (!findSlide(deck, op.slideId))
-        return fail(slideNotFoundMessage(deck, op.slideId))
+      if (!findSlide(deck, edit.slideId))
+        return fail(slideNotFoundMessage(deck, edit.slideId))
       return succeed({
         ...deck,
-        slides: deck.slides.filter((slide) => slide.id !== op.slideId),
+        slides: deck.slides.filter((slide) => slide.id !== edit.slideId),
       })
     }
 
     case "moveSlide": {
       const fromIndex = deck.slides.findIndex(
-        (slide) => slide.id === op.slideId
+        (slide) => slide.id === edit.slideId
       )
-      if (fromIndex === -1) return fail(slideNotFoundMessage(deck, op.slideId))
+      if (fromIndex === -1)
+        return fail(slideNotFoundMessage(deck, edit.slideId))
 
-      const toIndex = clampIndex(op.toIndex, deck.slides.length - 1)
+      const toIndex = clampIndex(edit.toIndex, deck.slides.length - 1)
       return succeed({
         ...deck,
         slides: moveItem(deck.slides, fromIndex, toIndex),
@@ -109,18 +110,18 @@ export function applyOp(deck: Deck, op: DeckOp): ApplyOpResult {
     }
 
     case "addElement": {
-      if (!findSlide(deck, op.slideId))
-        return fail(slideNotFoundMessage(deck, op.slideId))
-      if (findDuplicateId(deck, [op.element.id])) {
+      if (!findSlide(deck, edit.slideId))
+        return fail(slideNotFoundMessage(deck, edit.slideId))
+      if (findDuplicateId(deck, [edit.element.id])) {
         return fail(
-          `Id "${op.element.id}" is already used in this deck. Use a new id.`
+          `Id "${edit.element.id}" is already used in this deck. Use a new id.`
         )
       }
 
-      const placed = placeElement(op.element)
+      const placed = placeElement(edit.element)
       if (!placed.ok) return placed
       return succeed(
-        mapSlide(deck, op.slideId, (slide) => ({
+        mapSlide(deck, edit.slideId, (slide) => ({
           ...slide,
           elements: [...slide.elements, placed.element],
         }))
@@ -128,13 +129,13 @@ export function applyOp(deck: Deck, op: DeckOp): ApplyOpResult {
     }
 
     case "updateElement": {
-      const location = findElementLocation(deck, op.elementId)
-      if (!location) return fail(elementNotFoundMessage(op.elementId))
+      const location = findElementLocation(deck, edit.elementId)
+      if (!location) return fail(elementNotFoundMessage(edit.elementId))
 
       const { slide, element } = location
       const placed = placeElement({
         ...element,
-        ...op.changes,
+        ...edit.changes,
         id: element.id,
         type: element.type,
       } as SlideElement)
@@ -147,35 +148,35 @@ export function applyOp(deck: Deck, op: DeckOp): ApplyOpResult {
     }
 
     case "deleteElement": {
-      const location = findElementLocation(deck, op.elementId)
-      if (!location) return fail(elementNotFoundMessage(op.elementId))
+      const location = findElementLocation(deck, edit.elementId)
+      if (!location) return fail(elementNotFoundMessage(edit.elementId))
 
       return succeed(
         mapSlide(deck, location.slide.id, (slide) => ({
           ...slide,
           elements: slide.elements.filter(
-            (element) => element.id !== op.elementId
+            (element) => element.id !== edit.elementId
           ),
         }))
       )
     }
 
     case "moveElement": {
-      const location = findElementLocation(deck, op.elementId)
-      if (!location) return fail(elementNotFoundMessage(op.elementId))
-      const targetSlide = findSlide(deck, op.toSlideId)
-      if (!targetSlide) return fail(slideNotFoundMessage(deck, op.toSlideId))
+      const location = findElementLocation(deck, edit.elementId)
+      if (!location) return fail(elementNotFoundMessage(edit.elementId))
+      const targetSlide = findSlide(deck, edit.toSlideId)
+      if (!targetSlide) return fail(slideNotFoundMessage(deck, edit.toSlideId))
 
       const { slide: sourceSlide, element } = location
       const requestedBox = {
-        x: op.x ?? element.x,
-        y: op.y ?? element.y,
+        x: edit.x ?? element.x,
+        y: edit.y ?? element.y,
         w: element.w,
         h: element.h,
       }
 
       if (sourceSlide.id === targetSlide.id) {
-        return applyOp(deck, {
+        return applyDeckEdit(deck, {
           type: "updateElement",
           elementId: element.id,
           changes: { x: requestedBox.x, y: requestedBox.y },
@@ -201,12 +202,12 @@ export function applyOp(deck: Deck, op: DeckOp): ApplyOpResult {
     }
 
     case "reorderElement": {
-      const location = findElementLocation(deck, op.elementId)
-      if (!location) return fail(elementNotFoundMessage(op.elementId))
+      const location = findElementLocation(deck, edit.elementId)
+      if (!location) return fail(elementNotFoundMessage(edit.elementId))
 
       const { slide } = location
       const fromIndex = slide.elements.findIndex(
-        (element) => element.id === op.elementId
+        (element) => element.id === edit.elementId
       )
       const topIndex = slide.elements.length - 1
       const toIndexByDirection = {
@@ -221,7 +222,7 @@ export function applyOp(deck: Deck, op: DeckOp): ApplyOpResult {
           elements: moveItem(
             currentSlide.elements,
             fromIndex,
-            toIndexByDirection[op.direction]
+            toIndexByDirection[edit.direction]
           ),
         }))
       )
@@ -229,11 +230,11 @@ export function applyOp(deck: Deck, op: DeckOp): ApplyOpResult {
 
     case "batch": {
       let currentDeck = deck
-      for (const [index, batchedOp] of op.ops.entries()) {
-        const result = applyOp(currentDeck, batchedOp)
+      for (const [index, batchedEdit] of edit.edits.entries()) {
+        const result = applyDeckEdit(currentDeck, batchedEdit)
         if (!result.ok) {
           return fail(
-            `Step ${index + 1} of ${op.ops.length} (${batchedOp.type}) failed, so none of the batch was applied: ${result.error}`
+            `Step ${index + 1} of ${edit.edits.length} (${batchedEdit.type}) failed, so none of the batch was applied: ${result.error}`
           )
         }
         currentDeck = result.deck
@@ -243,11 +244,11 @@ export function applyOp(deck: Deck, op: DeckOp): ApplyOpResult {
   }
 }
 
-function succeed(deck: Deck): ApplyOpResult {
+function succeed(deck: Deck): DeckEditResult {
   return { ok: true, deck }
 }
 
-function fail(error: string): ApplyOpResult {
+function fail(error: string): DeckEditResult {
   return { ok: false, error }
 }
 

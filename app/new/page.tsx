@@ -1,4 +1,4 @@
-import { NewDeckPage } from "@/components/new/new-deck-page"
+import { NewDeckPage } from "@/components/new/NewDeckPage"
 
 export default function NewPage() {
   return <NewDeckPage />

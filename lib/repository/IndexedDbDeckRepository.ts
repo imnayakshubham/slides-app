@@ -1,13 +1,13 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb"
 import { z } from "zod"
 
-import type { DeckRepository } from "@/lib/repository/deck-repository"
-import type { Deck } from "@/lib/schema/deck"
+import type { DeckRepository } from "@/lib/repository/DeckRepository"
+import type { Deck } from "@/lib/schema/Deck"
 import {
   deckRecordSchema,
   type DeckRecord,
   type DeckSummary,
-} from "@/lib/schema/deck-record"
+} from "@/lib/schema/DeckRecord"
 
 const DATABASE_NAME = "ai-slides"
 const DATABASE_VERSION = 1

@@ -2,14 +2,15 @@
 
 import { useState } from "react"
 
-import { SlideCanvas } from "@/components/canvas/slide-canvas"
-import { AgentPanel } from "@/components/chat/agent-panel"
-import { EditorToolbar } from "@/components/editor/editor-toolbar"
-import { TopBar } from "@/components/editor/top-bar"
-import { SlideNavigator } from "@/components/filmstrip/slide-navigator"
+import { SlideCanvas } from "@/components/canvas/SlideCanvas"
+import { AgentPanel } from "@/components/chat/AgentPanel"
+import { EditorToolbar } from "@/components/editor/EditorToolbar"
+import { TopBar } from "@/components/editor/TopBar"
+import { SlideNavigator } from "@/components/filmstrip/SlideNavigator"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
-import type { SaveStatus } from "@/hooks/use-autosave"
-import { useDeckStore } from "@/store/deck-store"
+import type { SaveStatus } from "@/hooks/UseAutosave"
+import { useSlideKeyboardNavigation } from "@/hooks/UseSlideKeyboardNavigation"
+import { useDeckStore } from "@/store/DeckStore"
 
 type EditorShellProps = {
   saveStatus: SaveStatus
@@ -18,7 +19,8 @@ type EditorShellProps = {
 
 export function EditorShell({ saveStatus, onRetrySave }: EditorShellProps) {
   const deckTitle = useDeckStore((state) => state.deck?.title ?? "")
-  const dispatch = useDeckStore((state) => state.dispatch)
+  const applyEdit = useDeckStore((state) => state.applyEdit)
+  useSlideKeyboardNavigation()
   const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(true)
   const [isMobileAgentOpen, setIsMobileAgentOpen] = useState(false)
   // The navigator gives way to the agent panel: hidden while the panel is
@@ -31,7 +33,7 @@ export function EditorShell({ saveStatus, onRetrySave }: EditorShellProps) {
   }
 
   function renameDeck(title: string) {
-    dispatch({ type: "updateDeck", changes: { title } })
+    applyEdit({ type: "updateDeck", changes: { title } })
   }
 
   function openAgent() {

@@ -1,8 +1,8 @@
 import Link from "next/link"
 import { HouseIcon, PanelLeftCloseIcon, SparklesIcon } from "lucide-react"
 
-import { PromptComposer } from "@/components/chat/prompt-composer"
-import { DeckTitleInput } from "@/components/editor/deck-title-input"
+import { PromptComposer } from "@/components/chat/PromptComposer"
+import { DeckTitleInput } from "@/components/editor/DeckTitleInput"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 

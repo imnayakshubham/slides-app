@@ -1,4 +1,4 @@
-import { deckSchema } from "@/lib/schema/deck"
+import { deckSchema } from "@/lib/schema/Deck"
 
 // Fixed ids so manual checks and screenshots stay comparable between runs.
 export const sampleDeck = deckSchema.parse({

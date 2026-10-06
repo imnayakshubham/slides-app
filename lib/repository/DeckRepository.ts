@@ -1,5 +1,5 @@
-import type { Deck } from "@/lib/schema/deck"
-import type { DeckRecord, DeckSummary } from "@/lib/schema/deck-record"
+import type { Deck } from "@/lib/schema/Deck"
+import type { DeckRecord, DeckSummary } from "@/lib/schema/DeckRecord"
 
 // Components talk only to this interface, so IndexedDB can later be swapped
 // for an HTTP backend without touching them.

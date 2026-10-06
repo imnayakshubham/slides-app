@@ -1,6 +1,6 @@
 import { create } from "zustand"
 
-import { useDeckStore } from "@/store/deck-store"
+import { useDeckStore } from "@/store/DeckStore"
 
 type EditorStore = {
   currentSlideId: string | null
@@ -21,7 +21,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
 }))
 
 // Keep the editor pointing at things that still exist after any deck change
-// (hydrate, delete, undo, AI ops).
+// (hydrate, delete, undo, AI edits).
 useDeckStore.subscribe((deckState, previousDeckState) => {
   const slides = deckState.deck?.slides ?? []
   const { currentSlideId, selectedElementIds } = useEditorStore.getState()

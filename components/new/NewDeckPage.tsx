@@ -3,10 +3,16 @@
 import { useEffect, useId, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { MenuIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import {
+  FlaskConicalIcon,
+  MenuIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react"
 
-import { PromptComposer } from "@/components/chat/prompt-composer"
-import { DeckTitleInput } from "@/components/editor/deck-title-input"
+import { PromptComposer } from "@/components/chat/PromptComposer"
+import { DeckTitleInput } from "@/components/editor/DeckTitleInput"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,9 +27,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
-import { createEmptyDeck } from "@/lib/create-empty-deck"
+import { createEmptyDeck } from "@/lib/CreateEmptyDeck"
+import { sampleDeck } from "@/lib/fixtures/SampleDeck"
 import { deckRepository } from "@/lib/repository"
-import type { DeckSummary } from "@/lib/schema/deck-record"
+import type { DeckSummary } from "@/lib/schema/DeckRecord"
 
 export function NewDeckPage() {
   const router = useRouter()
@@ -41,6 +48,14 @@ export function NewDeckPage() {
     await deckRepository.saveDeck(deck)
     const promptQuery = prompt ? `?prompt=${encodeURIComponent(prompt)}` : ""
     router.push(`/slide/${deck.id}${promptQuery}`)
+  }
+
+  // Dev-only shortcut for manual checks. The sample's fixed id means loading
+  // it again resets it to the fixture.
+  async function loadSampleDeckAndOpen() {
+    setIsCreatingDeck(true)
+    await deckRepository.saveDeck(sampleDeck)
+    router.push(`/slide/${sampleDeck.id}`)
   }
 
   async function deleteDeck(deckId: string) {
@@ -100,6 +115,16 @@ export function NewDeckPage() {
             <PlusIcon />
             Start with a blank deck
           </Button>
+          {process.env.NODE_ENV === "development" && (
+            <Button
+              variant="ghost"
+              disabled={isCreatingDeck}
+              onClick={() => void loadSampleDeckAndOpen()}
+            >
+              <FlaskConicalIcon />
+              Load sample deck
+            </Button>
+          )}
         </section>
       </main>
 

@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { deckSchema } from "@/lib/schema/deck"
+import { deckSchema } from "@/lib/schema/Deck"
 
 // The saved shape of a deck. A future REST backend returns this same JSON.
 export const deckRecordSchema = z.strictObject({

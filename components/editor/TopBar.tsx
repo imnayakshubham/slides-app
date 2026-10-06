@@ -1,9 +1,9 @@
 import Link from "next/link"
 import { HouseIcon, PanelLeftOpenIcon, UploadIcon } from "lucide-react"
 
-import { DeckTitleInput } from "@/components/editor/deck-title-input"
+import { DeckTitleInput } from "@/components/editor/DeckTitleInput"
 import { Button } from "@/components/ui/button"
-import type { SaveStatus } from "@/hooks/use-autosave"
+import type { SaveStatus } from "@/hooks/UseAutosave"
 import { cn } from "@/lib/utils"
 
 type TopBarProps = {
