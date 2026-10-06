@@ -6,7 +6,10 @@ import type { Deck, SlideElement } from "@/lib/schema/Deck"
 const MAX_TEXT_PREVIEW_LENGTH = 120
 const MAX_CHAT_HISTORY_MESSAGES = 12
 
-export type ChatMessage = { role: "user" | "assistant"; content: string }
+export type AgentHistoryMessage = {
+  role: "user" | "assistant"
+  content: string
+}
 
 export function buildDeckContext(
   deck: Deck,
@@ -52,7 +55,7 @@ export function buildDeckContext(
   return lines.join("\n")
 }
 
-export function recentMessages(messages: ChatMessage[]) {
+export function recentMessages(messages: AgentHistoryMessage[]) {
   return messages.slice(-MAX_CHAT_HISTORY_MESSAGES)
 }
 

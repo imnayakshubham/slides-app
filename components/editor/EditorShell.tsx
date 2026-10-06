@@ -8,6 +8,7 @@ import { EditorToolbar } from "@/components/editor/EditorToolbar"
 import { TopBar } from "@/components/editor/TopBar"
 import { SlideNavigator } from "@/components/filmstrip/SlideNavigator"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
+import { useAgentChat } from "@/hooks/UseAgentChat"
 import type { SaveStatus } from "@/hooks/UseAutosave"
 import { useSlideKeyboardNavigation } from "@/hooks/UseSlideKeyboardNavigation"
 import { useDeckStore } from "@/store/DeckStore"
@@ -21,6 +22,7 @@ export function EditorShell({ saveStatus, onRetrySave }: EditorShellProps) {
   const deckTitle = useDeckStore((state) => state.deck?.title ?? "")
   const applyEdit = useDeckStore((state) => state.applyEdit)
   useSlideKeyboardNavigation()
+  const agentChat = useAgentChat()
   const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(true)
   const [isMobileAgentOpen, setIsMobileAgentOpen] = useState(false)
   // The navigator gives way to the agent panel: hidden while the panel is
@@ -49,6 +51,9 @@ export function EditorShell({ saveStatus, onRetrySave }: EditorShellProps) {
           deckTitle={deckTitle}
           onRenameDeck={renameDeck}
           onClose={() => setAgentPanelOpen(false)}
+          onSendMessage={agentChat.sendMessage}
+          onStopAgent={agentChat.stop}
+          onRetry={agentChat.retry}
           className="hidden w-88 shrink-0 lg:flex"
         />
       )}
@@ -90,6 +95,9 @@ export function EditorShell({ saveStatus, onRetrySave }: EditorShellProps) {
             deckTitle={deckTitle}
             onRenameDeck={renameDeck}
             onClose={() => setIsMobileAgentOpen(false)}
+            onSendMessage={agentChat.sendMessage}
+            onStopAgent={agentChat.stop}
+            onRetry={agentChat.retry}
             className="flex h-full"
           />
         </SheetContent>

@@ -1,3 +1,4 @@
+import type { ChatMessage } from "@/lib/schema/Conversation"
 import type { Deck } from "@/lib/schema/Deck"
 import type { DeckRecord, DeckSummary } from "@/lib/schema/DeckRecord"
 
@@ -9,5 +10,12 @@ export interface DeckRepository {
   getDeck(deckId: string): Promise<DeckRecord | null>
   // Creates the deck on first save, then bumps its version on every later save.
   saveDeck(deck: Deck): Promise<DeckRecord>
+  // Also deletes the deck's conversation.
   deleteDeck(deckId: string): Promise<void>
+  // Resolves an empty list when the deck has no conversation yet.
+  getConversationMessages(deckId: string): Promise<ChatMessage[]>
+  saveConversationMessages(
+    deckId: string,
+    messages: ChatMessage[]
+  ): Promise<void>
 }

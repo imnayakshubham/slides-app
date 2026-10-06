@@ -5,12 +5,14 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { deckRepository } from "@/lib/repository"
 import type { Deck } from "@/lib/schema/Deck"
 import { useDeckStore } from "@/store/DeckStore"
+import { useEditorStore } from "@/store/EditorStore"
 
 const AUTOSAVE_DELAY_MS = 1000
 
 export type SaveStatus = "saved" | "saving" | "error"
 
 // Saves the open deck 1s after the last change, when the tab is hidden, and on unmount.
+// While the agent runs it waits, then saves once when the agent finishes.
 export function useAutosave() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved")
   const unsavedDeckRef = useRef<Deck | null>(null)
@@ -44,8 +46,17 @@ export function useAutosave() {
       unsavedDeckRef.current = changedDeck
       setSaveStatus("saving")
       clearTimeout(saveTimeoutRef.current)
+      if (useEditorStore.getState().isAgentRunning) return
       saveTimeoutRef.current = setTimeout(saveUnsavedDeck, AUTOSAVE_DELAY_MS)
     })
+
+    const unsubscribeFromAgent = useEditorStore.subscribe(
+      (state, previousState) => {
+        const agentJustFinished =
+          previousState.isAgentRunning && !state.isAgentRunning
+        if (agentJustFinished) void saveUnsavedDeck()
+      }
+    )
 
     const saveWhenTabHidden = () => {
       if (document.visibilityState === "hidden") void saveUnsavedDeck()
@@ -54,6 +65,7 @@ export function useAutosave() {
 
     return () => {
       unsubscribe()
+      unsubscribeFromAgent()
       document.removeEventListener("visibilitychange", saveWhenTabHidden)
       void saveUnsavedDeck()
     }

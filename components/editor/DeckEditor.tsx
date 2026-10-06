@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useAutosave } from "@/hooks/UseAutosave"
 import { deckRepository } from "@/lib/repository"
 import { useDeckStore } from "@/store/DeckStore"
+import { useEditorStore } from "@/store/EditorStore"
 
 type DeckLoadState =
   | { status: "loading" }
@@ -23,15 +24,18 @@ export function DeckEditor({ deckId }: { deckId: string }) {
 
   useEffect(() => {
     let isStale = false
-    deckRepository
-      .getDeck(deckId)
-      .then((record) => {
+    Promise.all([
+      deckRepository.getDeck(deckId),
+      deckRepository.getConversationMessages(deckId),
+    ])
+      .then(([record, chatMessages]) => {
         if (isStale) return
         if (!record) {
           setLoadState({ status: "not-found" })
           return
         }
         useDeckStore.getState().hydrate(record.deck)
+        useEditorStore.getState().loadChatMessages(chatMessages)
         setLoadState({ status: "ready" })
       })
       .catch((error: Error) => {

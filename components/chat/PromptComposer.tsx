@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { ArrowUpIcon, PlusIcon } from "lucide-react"
+import { useId, useState } from "react"
+import { ArrowUpIcon, PlusIcon, SquareIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,19 +10,25 @@ import { cn } from "@/lib/utils"
 type PromptComposerProps = {
   placeholder: string
   onSubmitPrompt?: (prompt: string) => void
+  // While busy the input is disabled and Send becomes Stop.
+  isBusy?: boolean
+  onStop?: () => void
   className?: string
 }
 
 export function PromptComposer({
   placeholder,
   onSubmitPrompt,
+  isBusy = false,
+  onStop,
   className,
 }: PromptComposerProps) {
+  const promptInputId = useId()
   const [prompt, setPrompt] = useState("")
   const trimmedPrompt = prompt.trim()
 
   function submitPrompt() {
-    if (!trimmedPrompt || !onSubmitPrompt) return
+    if (!trimmedPrompt || !onSubmitPrompt || isBusy) return
     onSubmitPrompt(trimmedPrompt)
     setPrompt("")
   }
@@ -38,12 +44,13 @@ export function PromptComposer({
         submitPrompt()
       }}
     >
-      <label htmlFor="prompt-input" className="sr-only">
+      <label htmlFor={promptInputId} className="sr-only">
         Prompt
       </label>
       <Textarea
-        id="prompt-input"
+        id={promptInputId}
         value={prompt}
+        disabled={isBusy}
         onChange={(event) => setPrompt(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === "Enter" && !event.shiftKey) {
@@ -64,16 +71,29 @@ export function PromptComposer({
         >
           <PlusIcon />
         </Button>
-        <Button
-          type="submit"
-          size="icon"
-          className="rounded-full"
-          disabled={!trimmedPrompt}
-          aria-label="Send"
-          title="Send"
-        >
-          <ArrowUpIcon />
-        </Button>
+        {isBusy ? (
+          <Button
+            type="button"
+            size="icon"
+            className="rounded-full"
+            aria-label="Stop"
+            title="Stop"
+            onClick={onStop}
+          >
+            <SquareIcon className="fill-current" />
+          </Button>
+        ) : (
+          <Button
+            type="submit"
+            size="icon"
+            className="rounded-full"
+            disabled={!trimmedPrompt}
+            aria-label="Send"
+            title="Send"
+          >
+            <ArrowUpIcon />
+          </Button>
+        )}
       </div>
     </form>
   )

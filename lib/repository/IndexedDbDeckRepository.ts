@@ -2,6 +2,11 @@ import { openDB, type DBSchema, type IDBPDatabase } from "idb"
 import { z } from "zod"
 
 import type { DeckRepository } from "@/lib/repository/DeckRepository"
+import {
+  conversationRecordSchema,
+  type ChatMessage,
+  type ConversationRecord,
+} from "@/lib/schema/Conversation"
 import type { Deck } from "@/lib/schema/Deck"
 import {
   deckRecordSchema,
@@ -10,7 +15,7 @@ import {
 } from "@/lib/schema/DeckRecord"
 
 const DATABASE_NAME = "ai-slides"
-const DATABASE_VERSION = 1
+const DATABASE_VERSION = 2
 
 interface SlidesDatabase extends DBSchema {
   decks: { key: string; value: DeckRecord }
@@ -20,6 +25,7 @@ interface SlidesDatabase extends DBSchema {
     value: DeckSummary
     indexes: { updatedAt: string }
   }
+  conversations: { key: string; value: ConversationRecord }
 }
 
 function toDeckSummary(record: DeckRecord): DeckSummary {
@@ -40,12 +46,17 @@ export class IndexedDbDeckRepository implements DeckRepository {
       DATABASE_NAME,
       DATABASE_VERSION,
       {
-        upgrade(database) {
-          database.createObjectStore("decks", { keyPath: "deck.id" })
-          const deckIndex = database.createObjectStore("deckIndex", {
-            keyPath: "id",
-          })
-          deckIndex.createIndex("updatedAt", "updatedAt")
+        upgrade(database, oldVersion) {
+          if (oldVersion < 1) {
+            database.createObjectStore("decks", { keyPath: "deck.id" })
+            const deckIndex = database.createObjectStore("deckIndex", {
+              keyPath: "id",
+            })
+            deckIndex.createIndex("updatedAt", "updatedAt")
+          }
+          if (oldVersion < 2) {
+            database.createObjectStore("conversations", { keyPath: "deckId" })
+          }
         },
       }
     )
@@ -99,13 +110,42 @@ export class IndexedDbDeckRepository implements DeckRepository {
   async deleteDeck(deckId: string) {
     const database = await this.openDatabase()
     const transaction = database.transaction(
-      ["decks", "deckIndex"],
+      ["decks", "deckIndex", "conversations"],
       "readwrite"
     )
     await Promise.all([
       transaction.objectStore("decks").delete(deckId),
       transaction.objectStore("deckIndex").delete(deckId),
+      transaction.objectStore("conversations").delete(deckId),
       transaction.done,
     ])
+  }
+
+  async getConversationMessages(deckId: string) {
+    const database = await this.openDatabase()
+    const storedRecord = await database.get("conversations", deckId)
+    if (!storedRecord) return []
+
+    // A broken chat history should not stop the deck from opening.
+    const parsedRecord = conversationRecordSchema.safeParse(storedRecord)
+    if (!parsedRecord.success) {
+      console.error(
+        `Saved chat for deck "${deckId}" is invalid`,
+        parsedRecord.error
+      )
+      return []
+    }
+    return parsedRecord.data.messages
+  }
+
+  async saveConversationMessages(deckId: string, messages: ChatMessage[]) {
+    const record = conversationRecordSchema.parse({
+      schemaVersion: 1,
+      deckId,
+      updatedAt: new Date().toISOString(),
+      messages,
+    })
+    const database = await this.openDatabase()
+    await database.put("conversations", record)
   }
 }

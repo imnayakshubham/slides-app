@@ -1,5 +1,6 @@
 import { create } from "zustand"
 
+import type { ChatMessage } from "@/lib/schema/Conversation"
 import { useDeckStore } from "@/store/DeckStore"
 
 type EditorStore = {
@@ -7,6 +8,17 @@ type EditorStore = {
   selectedElementIds: string[]
   goToSlide: (slideId: string) => void
   setSelectedElementIds: (elementIds: string[]) => void
+
+  chatMessages: ChatMessage[]
+  isAgentRunning: boolean
+  loadChatMessages: (messages: ChatMessage[]) => void
+  addChatMessage: (message: ChatMessage) => void
+  updateChatMessage: (
+    messageId: string,
+    update: (message: ChatMessage) => ChatMessage
+  ) => void
+  removeChatMessage: (messageId: string) => void
+  setIsAgentRunning: (isAgentRunning: boolean) => void
 }
 
 export const useEditorStore = create<EditorStore>()((set) => ({
@@ -18,6 +30,32 @@ export const useEditorStore = create<EditorStore>()((set) => ({
 
   setSelectedElementIds: (elementIds) =>
     set({ selectedElementIds: elementIds }),
+
+  chatMessages: [],
+  isAgentRunning: false,
+
+  loadChatMessages: (messages) =>
+    set({ chatMessages: messages, isAgentRunning: false }),
+
+  addChatMessage: (message) =>
+    set((state) => ({ chatMessages: [...state.chatMessages, message] })),
+
+  // Other messages keep their object identity, so only the changed one re-renders.
+  updateChatMessage: (messageId, update) =>
+    set((state) => ({
+      chatMessages: state.chatMessages.map((message) =>
+        message.id === messageId ? update(message) : message
+      ),
+    })),
+
+  removeChatMessage: (messageId) =>
+    set((state) => ({
+      chatMessages: state.chatMessages.filter(
+        (message) => message.id !== messageId
+      ),
+    })),
+
+  setIsAgentRunning: (isAgentRunning) => set({ isAgentRunning }),
 }))
 
 // Keep the editor pointing at things that still exist after any deck change
