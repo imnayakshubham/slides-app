@@ -1,0 +1,97 @@
+"use client"
+
+import { useState } from "react"
+
+import { SlideCanvas } from "@/components/canvas/slide-canvas"
+import { AgentPanel } from "@/components/chat/agent-panel"
+import { EditorToolbar } from "@/components/editor/editor-toolbar"
+import { TopBar } from "@/components/editor/top-bar"
+import { SlideNavigator } from "@/components/filmstrip/slide-navigator"
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
+import type { SaveStatus } from "@/hooks/use-autosave"
+import { useDeckStore } from "@/store/deck-store"
+
+type EditorShellProps = {
+  saveStatus: SaveStatus
+  onRetrySave: () => void
+}
+
+export function EditorShell({ saveStatus, onRetrySave }: EditorShellProps) {
+  const deckTitle = useDeckStore((state) => state.deck?.title ?? "")
+  const dispatch = useDeckStore((state) => state.dispatch)
+  const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(true)
+  const [isMobileAgentOpen, setIsMobileAgentOpen] = useState(false)
+  // The navigator gives way to the agent panel: hidden while the panel is
+  // open (still openable by hand), shown once the panel is closed.
+  const [isSlideNavigatorOpen, setIsSlideNavigatorOpen] = useState(false)
+
+  function setAgentPanelOpen(isOpen: boolean) {
+    setIsAgentPanelOpen(isOpen)
+    setIsSlideNavigatorOpen(!isOpen)
+  }
+
+  function renameDeck(title: string) {
+    dispatch({ type: "updateDeck", changes: { title } })
+  }
+
+  function openAgent() {
+    const isDesktop = window.matchMedia("(min-width: 64rem)").matches
+    if (isDesktop) setAgentPanelOpen(true)
+    else setIsMobileAgentOpen(true)
+  }
+
+  return (
+    <div className="flex h-svh gap-3 bg-background p-3">
+      {isAgentPanelOpen && (
+        <AgentPanel
+          deckTitle={deckTitle}
+          onRenameDeck={renameDeck}
+          onClose={() => setAgentPanelOpen(false)}
+          className="hidden w-88 shrink-0 lg:flex"
+        />
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <TopBar
+          deckTitle={deckTitle}
+          onRenameDeck={renameDeck}
+          isAgentPanelOpen={isAgentPanelOpen}
+          onOpenAgentPanel={openAgent}
+          saveStatus={saveStatus}
+          onRetrySave={onRetrySave}
+        />
+
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border bg-card shadow-sm">
+          <EditorToolbar
+            isSlideNavigatorOpen={isSlideNavigatorOpen}
+            onToggleSlideNavigator={() =>
+              setIsSlideNavigatorOpen((isOpen) => !isOpen)
+            }
+          />
+          <div className="flex min-h-0 flex-1 bg-muted">
+            {isSlideNavigatorOpen && (
+              <SlideNavigator onClose={() => setIsSlideNavigatorOpen(false)} />
+            )}
+            <SlideCanvas />
+          </div>
+        </section>
+      </div>
+
+      <Sheet open={isMobileAgentOpen} onOpenChange={setIsMobileAgentOpen}>
+        <SheetContent
+          side="left"
+          showCloseButton={false}
+          className="w-full p-3 sm:max-w-sm"
+        >
+          <SheetTitle className="sr-only">Agent</SheetTitle>
+          <AgentPanel
+            deckTitle={deckTitle}
+            onRenameDeck={renameDeck}
+            onClose={() => setIsMobileAgentOpen(false)}
+            className="flex h-full"
+          />
+        </SheetContent>
+      </Sheet>
+    </div>
+  )
+}
