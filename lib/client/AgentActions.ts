@@ -1,6 +1,7 @@
 import { arrayMove } from "@dnd-kit/sortable"
 
 import { readServerStream } from "@/lib/client/ReadServerStream"
+import { endActiveTextEdit } from "@/lib/client/RichTextEditing"
 import { findElementLocation, type DeckEdit } from "@/lib/edits/DeckEdits"
 import { createId } from "@/lib/Ids"
 import { createSlide } from "@/lib/layouts/SlideLayouts"
@@ -11,6 +12,7 @@ import type { Outline, OutlineSlide } from "@/lib/schema/Outline"
 import type { StreamEvent } from "@/lib/StreamEvents"
 import { useDeckStore } from "@/store/DeckStore"
 import {
+  agentActivityOnSlide,
   deckAgentOf,
   useEditorStore,
   type AgentRunKind,
@@ -47,6 +49,41 @@ function updateDeckAgent(
   update: (agent: DeckAgentState) => Partial<DeckAgentState>
 ) {
   useEditorStore.getState().updateDeckAgent(deckId, update)
+}
+
+// True while the agent is changing this slide of the open deck (or has
+// yet to write it). The user can't edit a locked slide.
+export function isSlideLockedByAgent(slideId: string) {
+  const deckId = openDeckId()
+  if (!deckId) return false
+  return agentActivityOnSlide(deckAgent(deckId), slideId) !== null
+}
+
+// Called just before the agent starts on these slides: finishes (and so
+// saves) any typing on them and drops their elements from the selection,
+// so the user's work can't collide with the agent's.
+function releaseSlidesToAgent(slideIds: string[]) {
+  const deck = useDeckStore.getState().deck
+  if (!deck) return
+  const isOnLockedSlide = (elementId: string) => {
+    const location = findElementLocation(deck, elementId)
+    return location !== undefined && slideIds.includes(location.slide.id)
+  }
+
+  const editor = useEditorStore.getState()
+  if (editor.editingElementId && isOnLockedSlide(editor.editingElementId)) {
+    endActiveTextEdit()
+    // A table being typed into saves when its cell loses focus.
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
+  }
+  const unlockedSelection = editor.selectedElementIds.filter(
+    (elementId) => !isOnLockedSlide(elementId)
+  )
+  if (unlockedSelection.length !== editor.selectedElementIds.length) {
+    editor.setSelectedElementIds(unlockedSelection)
+  }
 }
 
 export function isAgentBusyOn(deckId: string | undefined) {
@@ -353,6 +390,7 @@ async function fillSlides(
       continue
     }
 
+    releaseSlidesToAgent([slideBuild.slideId])
     setSlideBuildStatus(deckId, slideBuild.slideId, "filling")
     if (deckAgent(deckId).isFollowingGeneration) {
       useEditorStore.getState().goToSlide(slideBuild.slideId)
@@ -459,16 +497,19 @@ async function streamRequest(request: StreamRequest) {
     if (streamEvent.event === "edit" && openDeckId() === deckId) {
       const { edit, label } = streamEvent.data
       const deckBeforeEdit = useDeckStore.getState().deck
-      // Fails when the user changed or deleted the target meanwhile.
+      // Lock the slides first, so the user's unsaved typing is saved before
+      // the agent's change lands on top of it.
+      if (isChatReply && deckBeforeEdit) {
+        markSlidesBeingEdited(deckId, slideIdsChangedBy(edit, deckBeforeEdit))
+      }
+      // Fails when the target was deleted meanwhile.
       const result = useDeckStore.getState().applyEdit(edit)
       if (result.ok) {
         appliedEditCount += 1
         addAction(label, false)
-        const editor = useEditorStore.getState()
-        editor.highlightAgentTouchedElements(elementIdsChangedBy(edit))
-        if (isChatReply && deckBeforeEdit) {
-          markSlidesBeingEdited(deckId, slideIdsChangedBy(edit, deckBeforeEdit))
-        }
+        useEditorStore
+          .getState()
+          .highlightAgentTouchedElements(elementIdsChangedBy(edit))
       } else {
         addAction(`Skipped "${label}": it changed while the agent worked`, true)
       }
@@ -497,6 +538,8 @@ function elementIdsChangedBy(edit: DeckEdit): string[] {
   switch (edit.type) {
     case "addElement":
       return [edit.element.id]
+    case "copyElement":
+      return [edit.newElementId]
     case "updateElement":
     case "moveElement":
     case "reorderElement":
@@ -516,6 +559,7 @@ function markSlidesBeingEdited(deckId: string, slideIds: string[]) {
   )
   // Most edits touch a slide that is already marked: no update then.
   if (newSlideIds.length === 0) return
+  releaseSlidesToAgent(newSlideIds)
   updateDeckAgent(deckId, () => ({
     run: { ...run, editingSlideIds: [...run.editingSlideIds, ...newSlideIds] },
   }))
@@ -534,6 +578,8 @@ function slideIdsChangedBy(edit: DeckEdit, deckBeforeEdit: Deck): string[] {
       return [edit.slideId]
     case "addElement":
       return [edit.slideId]
+    case "copyElement":
+      return [edit.toSlideId]
     case "updateElement":
     case "deleteElement":
     case "reorderElement":

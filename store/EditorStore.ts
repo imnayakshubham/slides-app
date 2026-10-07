@@ -70,6 +70,18 @@ export function deckAgentOf(
   return agentByDeckId[deckId] ?? NO_AGENT_ACTIVITY
 }
 
+// What the agent is doing on one slide, as a short label, or null when it
+// isn't working on it. A slide with a label is locked for the user.
+export function agentActivityOnSlide(agent: DeckAgentState, slideId: string) {
+  const buildStatus = agent.generation?.slides.find(
+    (slideBuild) => slideBuild.slideId === slideId
+  )?.status
+  if (buildStatus === "filling") return "Writing this slide…"
+  if (buildStatus === "waiting") return "Waiting…"
+  if (agent.run?.editingSlideIds.includes(slideId)) return "Agent is editing…"
+  return null
+}
+
 type EditorStore = {
   currentSlideId: string | null
   selectedElementIds: string[]

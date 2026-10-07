@@ -41,6 +41,7 @@ import {
 } from "@/lib/client/SlideActions"
 import { cn } from "@/lib/utils"
 import { selectSlideIds, useDeckStore } from "@/store/DeckStore"
+import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useEditorStore } from "@/store/EditorStore"
 
 // A mouse press only becomes a drag after this many pixels, so clicking a
@@ -142,6 +143,11 @@ function SlideThumbnail({
   )
   const goToSlide = useEditorStore((state) => state.goToSlide)
   const agentActivity = useAgentSlideActivity(slideId)
+  // The agent is changing this slide: no rename, duplicate or delete.
+  const isLockedByAgent = agentActivity !== null
+  const dropTarget = useDragPreviewStore((state) =>
+    state.dropTarget?.slideId === slideId ? state.dropTarget : null
+  )
   const thumbnailRef = useRef<HTMLButtonElement>(null)
   const [isRenaming, setIsRenaming] = useState(false)
   const { setNodeRef, listeners, transform, transition, isDragging } =
@@ -175,10 +181,21 @@ function SlideThumbnail({
           isThumbnail
           className={cn(
             "pointer-events-none w-full rounded-sm border shadow-xs transition-shadow group-hover:shadow-sm group-has-focus-visible:ring-2 group-has-focus-visible:ring-ring",
-            isCurrentSlide && "ring-2 ring-primary"
+            isCurrentSlide && "ring-2 ring-primary",
+            dropTarget && "ring-4 ring-primary"
           )}
         />
         {agentActivity && <AgentWorkingOverlay size="thumbnail" />}
+        {dropTarget && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 grid place-items-center rounded-sm bg-primary/15 text-xs font-medium"
+          >
+            <span className="rounded-full bg-primary px-2 py-0.5 text-primary-foreground">
+              {dropTarget.isCopy ? "Copy here" : "Move here"}
+            </span>
+          </span>
+        )}
       </button>
       <div className="mt-1 flex min-w-0 items-center gap-1.5 px-0.5 text-xs">
         <span className="shrink-0 text-muted-foreground tabular-nums">
@@ -210,6 +227,7 @@ function SlideThumbnail({
           variant="secondary"
           size="icon-xs"
           aria-label={`Rename slide ${slideNumber}`}
+          disabled={isLockedByAgent}
           title="Rename"
           onClick={() => setIsRenaming(true)}
         >
@@ -219,6 +237,7 @@ function SlideThumbnail({
           variant="secondary"
           size="icon-xs"
           aria-label={`Duplicate slide ${slideNumber}`}
+          disabled={isLockedByAgent}
           title="Duplicate"
           onClick={() => duplicateSlideAfterItself(slideId)}
         >
@@ -231,6 +250,7 @@ function SlideThumbnail({
                 variant="secondary"
                 size="icon-xs"
                 aria-label={`Delete slide ${slideNumber}`}
+                disabled={isLockedByAgent}
                 title="Delete"
               />
             }

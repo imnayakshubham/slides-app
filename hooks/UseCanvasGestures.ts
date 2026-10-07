@@ -1,6 +1,8 @@
 import { useEffect, useRef, type PointerEvent } from "react"
 import type { DragMoveEvent } from "@dnd-kit/core"
 
+import { positionDropCursorBadge } from "@/components/canvas/DropCursorBadge"
+import { isSlideLockedByAgent } from "@/lib/client/AgentActions"
 import type { DeckEdit } from "@/lib/edits/DeckEdits"
 import {
   boxesOverlap,
@@ -13,8 +15,9 @@ import {
   type Corner,
   type SnapGuide,
 } from "@/lib/edits/Geometry"
+import { createId } from "@/lib/Ids"
 import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, type Slide } from "@/lib/schema/Deck"
-import { useDragPreviewStore } from "@/store/DragPreviewStore"
+import { useDragPreviewStore, type DropTarget } from "@/store/DragPreviewStore"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
@@ -27,8 +30,17 @@ const RESIZE_CURSORS: Record<Corner, string> = {
   sw: "nesw-resize",
 }
 
-type Gesture = { scale: number; artboard: HTMLElement } & (
-  | { kind: "move"; startBoxes: Map<string, Box>; snapTargets: Box[] }
+// slideId: the slide the gesture started on.
+type Gesture = { scale: number; artboard: HTMLElement; slideId: string } & (
+  | {
+      kind: "move"
+      startBoxes: Map<string, Box>
+      snapTargets: Box[]
+      // Where the pointer grabbed, in slide units, so a drop on another
+      // slide keeps the element under the pointer the same way.
+      grabPoint: { x: number; y: number }
+      itemLabel: string
+    }
   | {
       kind: "resize"
       elementId: string
@@ -50,16 +62,27 @@ type Gesture = { scale: number; artboard: HTMLElement } & (
 export function useCanvasGestures() {
   const gestureRef = useRef<Gesture | null>(null)
   const heldKeysRef = useRef({ shift: false, alt: false })
+  // The pointer's real screen position. dnd-kit's delta also counts
+  // scrolling, so it can't tell which slide is under the pointer.
+  const pointerRef = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
     function rememberHeldKeys(event: KeyboardEvent) {
       heldKeysRef.current = { shift: event.shiftKey, alt: event.altKey }
+      // Alt switches between move and copy without moving the pointer.
+      const { dropTarget, setDropTarget } = useDragPreviewStore.getState()
+      if (dropTarget) setDropTarget({ ...dropTarget, isCopy: event.altKey })
+    }
+    function rememberPointer(event: globalThis.PointerEvent) {
+      pointerRef.current = { x: event.clientX, y: event.clientY }
     }
     window.addEventListener("keydown", rememberHeldKeys)
     window.addEventListener("keyup", rememberHeldKeys)
+    window.addEventListener("pointermove", rememberPointer)
     return () => {
       window.removeEventListener("keydown", rememberHeldKeys)
       window.removeEventListener("keyup", rememberHeldKeys)
+      window.removeEventListener("pointermove", rememberPointer)
     }
   }, [])
 
@@ -100,6 +123,7 @@ export function useCanvasGestures() {
         kind: "resize",
         scale,
         artboard,
+        slideId,
         elementId: handleElementId,
         corner,
         startBox,
@@ -127,12 +151,19 @@ export function useCanvasGestures() {
         const box = elementBoxes.get(selectedId)
         if (box) startBoxes.set(selectedId, box)
       }
+      pointerRef.current = { x: event.clientX, y: event.clientY }
       gestureRef.current = {
         kind: "move",
         scale,
         artboard,
         startBoxes,
         snapTargets: snapTargetsExcept(elementBoxes, selectedIds),
+        slideId,
+        grabPoint: {
+          x: (event.clientX - artboardRect.left) / scale,
+          y: (event.clientY - artboardRect.top) / scale,
+        },
+        itemLabel: describeDraggedItems(slide, selectedIds),
       }
       return true
     }
@@ -142,6 +173,7 @@ export function useCanvasGestures() {
       kind: "marquee",
       scale,
       artboard,
+      slideId,
       startPoint: {
         x: (event.clientX - artboardRect.left) / scale,
         y: (event.clientY - artboardRect.top) / scale,
@@ -159,9 +191,26 @@ export function useCanvasGestures() {
     const deltaY = delta.y / gesture.scale
     const snapDistance = SNAP_DISTANCE_PX / gesture.scale
     const { shift: isShiftHeld, alt: isAltHeld } = heldKeysRef.current
-    const { setPreview, setMarquee } = useDragPreviewStore.getState()
+    const { setPreview, setMarquee, setDropTarget } =
+      useDragPreviewStore.getState()
 
     if (gesture.kind === "move") {
+      // Over another slide (thumbnail or canvas): the elements stay where
+      // they are while the target shows what a drop would do.
+      const target = findSlideUnderPointer(pointerRef.current, gesture.slideId)
+      if (target) {
+        setDropTarget({
+          slideId: target.slideId,
+          slideNumber: slideNumberOf(target.slideId),
+          isCopy: isAltHeld,
+          itemLabel: gesture.itemLabel,
+        })
+        positionDropCursorBadge(pointerRef.current)
+        setPreview(Object.fromEntries(gesture.startBoxes), [])
+        return
+      }
+      setDropTarget(null)
+
       const movedElements = [...gesture.startBoxes].map(([elementId, box]) => ({
         elementId,
         box: { ...box, x: box.x + deltaX, y: box.y + deltaY },
@@ -227,8 +276,19 @@ export function useCanvasGestures() {
     const gesture = gestureRef.current
     endGesture()
     if (!gesture) return
-    const { previewBoxes, marqueeBox, clearGesture } =
+    const { previewBoxes, marqueeBox, dropTarget, clearGesture } =
       useDragPreviewStore.getState()
+
+    if (gesture.kind === "move" && dropTarget) {
+      dropOnOtherSlide(gesture, dropTarget, pointerRef.current)
+      clearGesture()
+      return
+    }
+    // The agent started on this slide mid-drag: its changes win.
+    if (isSlideLockedByAgent(gesture.slideId)) {
+      clearGesture()
+      return
+    }
 
     if (gesture.kind === "marquee") {
       if (marqueeBox) {
@@ -274,6 +334,105 @@ export function useCanvasGestures() {
   }
 
   return { prepareGesture, handleDragMove, handleDragEnd, handleDragCancel }
+}
+
+type MoveGesture = Extract<Gesture, { kind: "move" }>
+
+// One edit for the whole selection, so a single Undo brings it all back.
+function dropOnOtherSlide(
+  gesture: MoveGesture,
+  dropTarget: DropTarget,
+  pointer: { x: number; y: number }
+) {
+  // Dropped on a canvas slide: land where the pointer let go, keeping
+  // each element's offset from the grab point. Dropped on a thumbnail:
+  // keep the element's own position on the slide.
+  const target = findSlideUnderPointer(pointer, gesture.slideId)
+  let pointerOnTarget: { x: number; y: number } | null = null
+  if (target?.artboard) {
+    const targetRect = target.artboard.getBoundingClientRect()
+    const targetScale = targetRect.width / ARTBOARD_WIDTH
+    pointerOnTarget = {
+      x: (pointer.x - targetRect.left) / targetScale,
+      y: (pointer.y - targetRect.top) / targetScale,
+    }
+  }
+
+  const edits: DeckEdit[] = [...gesture.startBoxes].map(([elementId, box]) => {
+    const x = pointerOnTarget
+      ? Math.round(pointerOnTarget.x - (gesture.grabPoint.x - box.x))
+      : undefined
+    const y = pointerOnTarget
+      ? Math.round(pointerOnTarget.y - (gesture.grabPoint.y - box.y))
+      : undefined
+    if (dropTarget.isCopy) {
+      return {
+        type: "copyElement",
+        elementId,
+        toSlideId: dropTarget.slideId,
+        newElementId: createId(),
+        x,
+        y,
+      }
+    }
+    return {
+      type: "moveElement",
+      elementId,
+      toSlideId: dropTarget.slideId,
+      x,
+      y,
+    }
+  })
+
+  const result = useDeckStore.getState().applyEdit({ type: "batch", edits })
+  // Moved elements left this slide; copied ones stay selected here.
+  if (result.ok && !dropTarget.isCopy) {
+    useEditorStore.getState().setSelectedElementIds([])
+  }
+}
+
+// Another slide under the pointer: its thumbnail in the navigator, or the
+// slide itself on the canvas (with its artboard, to place the drop).
+function findSlideUnderPointer(
+  pointer: { x: number; y: number },
+  sourceSlideId: string
+): { slideId: string; artboard: HTMLElement | null } | null {
+  for (const node of document.elementsFromPoint(pointer.x, pointer.y)) {
+    const thumbnail = node.closest<HTMLElement>("[data-slide-drop-id]")
+    const thumbnailSlideId = thumbnail?.dataset.slideDropId
+    if (thumbnailSlideId) {
+      const isUnavailable =
+        thumbnailSlideId === sourceSlideId ||
+        isSlideLockedByAgent(thumbnailSlideId)
+      if (isUnavailable) return null
+      return { slideId: thumbnailSlideId, artboard: null }
+    }
+    const canvasSlide = node.closest<HTMLElement>("[data-canvas-slide-id]")
+    const canvasSlideId = canvasSlide?.dataset.canvasSlideId
+    if (canvasSlide && canvasSlideId) {
+      const isUnavailable =
+        canvasSlideId === sourceSlideId || isSlideLockedByAgent(canvasSlideId)
+      if (isUnavailable) return null
+      return {
+        slideId: canvasSlideId,
+        artboard: canvasSlide.querySelector<HTMLElement>("[data-artboard]"),
+      }
+    }
+  }
+  return null
+}
+
+function slideNumberOf(slideId: string) {
+  const slides = useDeckStore.getState().deck?.slides ?? []
+  return slides.findIndex((slide) => slide.id === slideId) + 1
+}
+
+function describeDraggedItems(slide: Slide, elementIds: string[]) {
+  if (elementIds.length !== 1) return `${elementIds.length} elements`
+  const element = slide.elements.find(
+    (candidate) => candidate.id === elementIds[0]
+  )
+  return element?.type ?? "element"
 }
 
 function findElementNode(artboard: HTMLElement, elementId: string) {

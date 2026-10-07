@@ -108,6 +108,14 @@ function PositionedElement({
     (state) => !isThumbnail && state.agentTouchedElementIds.includes(elementId)
   )
   // During a drag or resize the live box comes from the gesture store.
+  // Dimmed while a drag would move it to another slide.
+  const isBeingMovedAway = useDragPreviewStore(
+    (state) =>
+      !isThumbnail &&
+      state.dropTarget !== null &&
+      !state.dropTarget.isCopy &&
+      elementId in state.previewBoxes
+  )
   const previewBox = useDragPreviewStore((state) =>
     isThumbnail ? undefined : state.previewBoxes[elementId]
   )
@@ -149,7 +157,8 @@ function PositionedElement({
         !isThumbnail && (isEditing ? "cursor-text" : "cursor-move"),
         // A brief glow where the agent just added or changed something.
         "outline-[6px] outline-offset-4 transition-[outline-color] duration-700 outline-solid",
-        isAgentTouched ? "outline-primary/70" : "outline-transparent"
+        isAgentTouched ? "outline-primary/70" : "outline-transparent",
+        isBeingMovedAway && "opacity-40"
       )}
       style={{
         left: box.x,

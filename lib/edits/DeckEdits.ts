@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { clampBox, findFreeSpot } from "@/lib/edits/Geometry"
+import { clampBox, placeWithoutOverlap } from "@/lib/edits/Geometry"
 import {
   slideElementSchema,
   slideSchema,
@@ -27,6 +27,16 @@ export type DeckEdit =
       type: "moveElement"
       elementId: string
       toSlideId: string
+      x?: number
+      y?: number
+    }
+  // A copy on another (or the same) slide. The new id is passed in so this
+  // stays a pure, repeatable function.
+  | {
+      type: "copyElement"
+      elementId: string
+      toSlideId: string
+      newElementId: string
       x?: number
       y?: number
     }
@@ -168,6 +178,37 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
       )
     }
 
+    case "copyElement": {
+      const location = findElementLocation(deck, edit.elementId)
+      if (!location) return fail(elementNotFoundMessage(edit.elementId))
+      const targetSlide = findSlide(deck, edit.toSlideId)
+      if (!targetSlide) return fail(slideNotFoundMessage(deck, edit.toSlideId))
+      if (findDuplicateId(deck, [edit.newElementId])) {
+        return fail(
+          `Id "${edit.newElementId}" is already used in this deck. Use a new id.`
+        )
+      }
+
+      const { element } = location
+      // Free space on the target slide, shrunk if needed to fit.
+      const copiedElement = {
+        ...element,
+        id: edit.newElementId,
+        ...placeWithoutOverlap(targetSlide, {
+          x: edit.x ?? element.x,
+          y: edit.y ?? element.y,
+          w: element.w,
+          h: element.h,
+        }).box,
+      }
+      return succeed(
+        updateSlideInDeck(deck, targetSlide.id, (slide) => ({
+          ...slide,
+          elements: [...slide.elements, copiedElement],
+        }))
+      )
+    }
+
     case "moveElement": {
       const location = findElementLocation(deck, edit.elementId)
       if (!location) return fail(elementNotFoundMessage(edit.elementId))
@@ -190,9 +231,10 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
         })
       }
 
+      // Free space on the target slide, shrunk if needed to fit.
       const movedElement = {
         ...element,
-        ...findFreeSpot(targetSlide, requestedBox),
+        ...placeWithoutOverlap(targetSlide, requestedBox).box,
       }
       const deckWithoutElement = updateSlideInDeck(
         deck,

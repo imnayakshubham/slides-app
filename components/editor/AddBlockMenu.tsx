@@ -39,7 +39,9 @@ import {
   type TextPresetName,
 } from "@/lib/layouts/TextPresets"
 import { deckRepository } from "@/lib/repository"
+import { useAgentSlideActivity } from "@/hooks/UseAgentSlideActivity"
 import { useDeckStore } from "@/store/DeckStore"
+import { useEditorStore } from "@/store/EditorStore"
 
 const TEXT_PRESET_ICONS: Record<TextPresetName, typeof TextIcon> = {
   title: Heading1Icon,
@@ -56,6 +58,8 @@ function getTheme() {
 }
 
 export function AddBlockMenu() {
+  const currentSlideId = useEditorStore((state) => state.currentSlideId)
+  const isCurrentSlideLocked = useAgentSlideActivity(currentSlideId) !== null
   const hasSlides = useDeckStore(
     (state) => (state.deck?.slides.length ?? 0) > 0
   )
@@ -79,7 +83,12 @@ export function AddBlockMenu() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<Button variant="ghost" disabled={!hasSlides} />}
+          render={
+            <Button
+              variant="ghost"
+              disabled={!hasSlides || isCurrentSlideLocked}
+            />
+          }
         >
           <LayoutGridIcon />
           Add block

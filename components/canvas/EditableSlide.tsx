@@ -8,6 +8,7 @@ import { Artboard } from "@/components/canvas/Artboard"
 import { SelectionFrame } from "@/components/canvas/SelectionFrame"
 import { useAgentSlideActivity } from "@/hooks/UseAgentSlideActivity"
 import { cn } from "@/lib/utils"
+import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useEditorStore } from "@/store/EditorStore"
 
 type EditableSlideProps = {
@@ -29,9 +30,15 @@ export function EditableSlide({
   )
   const { setNodeRef, listeners } = useDraggable({ id: slideId })
   const agentActivity = useAgentSlideActivity(slideId)
+  // Locked while the agent changes this slide, so edits can't collide.
+  const isLockedByAgent = agentActivity !== null
+  const dropTarget = useDragPreviewStore((state) =>
+    state.dropTarget?.slideId === slideId ? state.dropTarget : null
+  )
 
   // Text boxes and tables are typed into in place.
   function startEditingInPlace(event: MouseEvent<HTMLElement>) {
+    if (isLockedByAgent) return
     const elementNode = (event.target as HTMLElement).closest<HTMLElement>(
       "[data-element-id]"
     )
@@ -53,19 +60,32 @@ export function EditableSlide({
       aria-label={`Slide ${slideNumber}`}
       aria-current={isCurrentSlide ? "true" : undefined}
       onPointerDown={(event) => {
+        if (isLockedByAgent) return
         if (prepareGesture(event, slideId)) listeners?.onPointerDown?.(event)
       }}
       onDoubleClick={startEditingInPlace}
       className={cn(
         "relative w-full max-w-5xl shrink-0 scroll-m-4 rounded-sm shadow-md ring-offset-4 ring-offset-muted select-none md:scroll-m-8",
-        isCurrentSlide && "ring-2 ring-primary"
+        isCurrentSlide && "ring-2 ring-primary",
+        dropTarget && "ring-4 ring-primary"
       )}
     >
       <Artboard slideId={slideId} className="rounded-sm">
         {isCurrentSlide && <SelectionFrame />}
       </Artboard>
       {agentActivity && (
-        <AgentWorkingOverlay size="slide" label={agentActivity} />
+        <AgentWorkingOverlay size="slide" label={agentActivity} isLocked />
+      )}
+      {dropTarget && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 grid place-items-center rounded-sm bg-primary/10"
+        >
+          <span className="rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-md">
+            {dropTarget.isCopy ? "Copy" : "Move"} to slide{" "}
+            {dropTarget.slideNumber}
+          </span>
+        </div>
       )}
     </article>
   )

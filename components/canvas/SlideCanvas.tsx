@@ -5,6 +5,7 @@ import { DndContext, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
 import { PlusIcon, SparklesIcon } from "lucide-react"
 import { useShallow } from "zustand/react/shallow"
 
+import { DropCursorBadge } from "@/components/canvas/DropCursorBadge"
 import { EditableSlide } from "@/components/canvas/EditableSlide"
 import { SelectionToolbar } from "@/components/canvas/SelectionToolbar"
 import { Button } from "@/components/ui/button"
@@ -81,6 +82,7 @@ export function SlideCanvas({ onOpenAgent }: { onOpenAgent: () => void }) {
         ))}
         <SelectionToolbar />
       </div>
+      <DropCursorBadge />
     </DndContext>
   )
 }
