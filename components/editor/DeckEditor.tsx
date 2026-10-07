@@ -12,10 +12,7 @@ import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
 type DeckLoadState =
-  | { status: "loading" }
-  | { status: "ready" }
-  | { status: "not-found" }
-  | { status: "invalid"; message: string }
+  { status: "loading" } | { status: "ready" } | { status: "not-found" } | { status: "invalid"; message: string }
 
 export function DeckEditor({ deckId }: { deckId: string }) {
   const [loadState, setLoadState] = useState<DeckLoadState>({
@@ -24,10 +21,7 @@ export function DeckEditor({ deckId }: { deckId: string }) {
 
   useEffect(() => {
     let isStale = false
-    Promise.all([
-      deckRepository.getDeck(deckId),
-      deckRepository.getConversationMessages(deckId),
-    ])
+    Promise.all([deckRepository.getDeck(deckId), deckRepository.getConversationMessages(deckId)])
       .then(([record, chatMessages]) => {
         if (isStale) return
         if (!record) {
@@ -39,8 +33,7 @@ export function DeckEditor({ deckId }: { deckId: string }) {
         setLoadState({ status: "ready" })
       })
       .catch((error: Error) => {
-        if (!isStale)
-          setLoadState({ status: "invalid", message: error.message })
+        if (!isStale) setLoadState({ status: "invalid", message: error.message })
       })
     return () => {
       isStale = true
@@ -58,20 +51,12 @@ export function DeckEditor({ deckId }: { deckId: string }) {
 
   if (loadState.status === "not-found") {
     return (
-      <DeckLoadProblem
-        title="Deck not found"
-        message="It may have been deleted, or it was saved in another browser."
-      />
+      <DeckLoadProblem title="Deck not found" message="It may have been deleted, or it was saved in another browser." />
     )
   }
 
   if (loadState.status === "invalid") {
-    return (
-      <DeckLoadProblem
-        title="This deck's saved data is invalid"
-        message={loadState.message}
-      />
-    )
+    return <DeckLoadProblem title="This deck's saved data is invalid" message={loadState.message} />
   }
 
   return <LoadedDeckEditor />
@@ -83,13 +68,7 @@ function LoadedDeckEditor() {
   return <EditorLayout saveStatus={saveStatus} onRetrySave={retrySave} />
 }
 
-function DeckLoadProblem({
-  title,
-  message,
-}: {
-  title: string
-  message: string
-}) {
+function DeckLoadProblem({ title, message }: { title: string; message: string }) {
   return (
     <div className="grid h-svh place-items-center p-6">
       <div className="flex max-w-md flex-col items-center gap-3 text-center">

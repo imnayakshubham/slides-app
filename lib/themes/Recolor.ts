@@ -1,10 +1,4 @@
-import type {
-  Deck,
-  Paragraph,
-  Slide,
-  SlideElement,
-  Theme,
-} from "@/lib/schema/Deck"
+import type { Deck, Paragraph, Slide, SlideElement, Theme } from "@/lib/schema/Deck"
 
 // Every color the old theme gave out, paired with the new theme's color
 // for the same role. The heading color is handled separately, because some
@@ -48,9 +42,7 @@ export function recolorDeck(deck: Deck, newTheme: Theme): Deck {
   function recolorParagraph(paragraph: Paragraph): Paragraph {
     if (typeof paragraph === "string") return paragraph
     if (!paragraph.some((run) => run.color)) return paragraph
-    return paragraph.map((run) =>
-      run.color ? { ...run, color: recolor(run.color) } : run
-    )
+    return paragraph.map((run) => (run.color ? { ...run, color: recolor(run.color) } : run))
   }
 
   function recolorElement(element: SlideElement): SlideElement {
@@ -70,9 +62,7 @@ export function recolorDeck(deck: Deck, newTheme: Theme): Deck {
       case "chart":
         return {
           ...element,
-          series: element.series.map((series) =>
-            series.color ? { ...series, color: recolor(series.color) } : series
-          ),
+          series: element.series.map((series) => (series.color ? { ...series, color: recolor(series.color) } : series)),
         }
       default:
         return element

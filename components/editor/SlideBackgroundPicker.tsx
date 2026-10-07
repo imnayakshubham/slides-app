@@ -5,11 +5,7 @@ import { ImageIcon, PaintBucketIcon, UploadIcon } from "lucide-react"
 
 import { ColorInput } from "@/components/canvas/toolbar/ToolbarInputs"
 import { Button } from "@/components/ui/button"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import type { DeckEdit } from "@/lib/edits/DeckEdits"
 import { deckRepository } from "@/lib/repository"
 import type { SlideBackground } from "@/lib/schema/Deck"
@@ -78,12 +74,9 @@ export function SlideBackgroundPicker() {
   const currentSlideId = useEditorStore((state) => state.currentSlideId)
   const isCurrentSlideLocked = useAgentSlideActivity(currentSlideId) !== null
   const currentSlideIndex = useDeckStore(
-    (state) =>
-      state.deck?.slides.findIndex((slide) => slide.id === currentSlideId) ?? -1
+    (state) => state.deck?.slides.findIndex((slide) => slide.id === currentSlideId) ?? -1
   )
-  const background = useDeckStore(
-    (state) => state.deck?.slides[currentSlideIndex]?.background
-  )
+  const background = useDeckStore((state) => state.deck?.slides[currentSlideIndex]?.background)
   const theme = useDeckStore((state) => state.deck?.theme)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -100,9 +93,7 @@ export function SlideBackgroundPicker() {
           angle: PRESET_GRADIENT_ANGLE,
         }
 
-  async function setBackgroundFromPickedImage(
-    event: ChangeEvent<HTMLInputElement>
-  ) {
+  async function setBackgroundFromPickedImage(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     // Cleared so picking the same file again still fires a change.
     event.target.value = ""
@@ -118,14 +109,7 @@ export function SlideBackgroundPicker() {
 
   return (
     <Popover>
-      <PopoverTrigger
-        render={
-          <Button
-            variant="ghost"
-            disabled={currentSlideIndex === -1 || isCurrentSlideLocked}
-          />
-        }
-      >
+      <PopoverTrigger render={<Button variant="ghost" disabled={currentSlideIndex === -1 || isCurrentSlideLocked} />}>
         <PaintBucketIcon />
         <span className="max-sm:sr-only">Background</span>
       </PopoverTrigger>
@@ -135,39 +119,25 @@ export function SlideBackgroundPicker() {
         <section className="flex flex-col gap-1.5">
           <h3 className="text-xs font-medium text-muted-foreground">Color</h3>
           <div className="flex flex-wrap items-center gap-1.5">
-            {[
-              theme.colors.background,
-              theme.colors.accent,
-              ...COLOR_SWATCHES,
-            ].map((color, swatchIndex) => (
+            {[theme.colors.background, theme.colors.accent, ...COLOR_SWATCHES].map((color, swatchIndex) => (
               <SwatchButton
                 key={`${color}-${swatchIndex}`}
                 label={`Color ${color}`}
                 swatch={color}
-                isSelected={
-                  background?.type === "color" && background.color === color
-                }
-                onClick={() =>
-                  setCurrentSlideBackground({ type: "color", color })
-                }
+                isSelected={background?.type === "color" && background.color === color}
+                onClick={() => setCurrentSlideBackground({ type: "color", color })}
               />
             ))}
             <ColorInput
               label="Custom color"
-              color={
-                background?.type === "color" ? background.color : "#FFFFFF"
-              }
-              onChange={(color) =>
-                setCurrentSlideBackground({ type: "color", color })
-              }
+              color={background?.type === "color" ? background.color : "#FFFFFF"}
+              onChange={(color) => setCurrentSlideBackground({ type: "color", color })}
             />
           </div>
         </section>
 
         <section className="flex flex-col gap-1.5">
-          <h3 className="text-xs font-medium text-muted-foreground">
-            Gradient
-          </h3>
+          <h3 className="text-xs font-medium text-muted-foreground">Gradient</h3>
           <div className="flex flex-wrap gap-1.5">
             {GRADIENT_PRESETS.map((preset) => (
               <SwatchButton
@@ -175,9 +145,7 @@ export function SlideBackgroundPicker() {
                 label={`${preset.name} gradient`}
                 swatch={`linear-gradient(${PRESET_GRADIENT_ANGLE}deg, ${preset.from}, ${preset.to})`}
                 isSelected={
-                  background?.type === "gradient" &&
-                  background.from === preset.from &&
-                  background.to === preset.to
+                  background?.type === "gradient" && background.from === preset.from && background.to === preset.to
                 }
                 onClick={() =>
                   setCurrentSlideBackground({
@@ -194,9 +162,7 @@ export function SlideBackgroundPicker() {
             <ColorInput
               label="Gradient start color"
               color={gradient.from}
-              onChange={(from) =>
-                setCurrentSlideBackground({ ...gradient, from })
-              }
+              onChange={(from) => setCurrentSlideBackground({ ...gradient, from })}
             />
             <ColorInput
               label="Gradient end color"
@@ -207,18 +173,11 @@ export function SlideBackgroundPicker() {
               {GRADIENT_DIRECTIONS.map(({ angle, arrow, label }) => (
                 <Button
                   key={angle}
-                  variant={
-                    background?.type === "gradient" &&
-                    background.angle === angle
-                      ? "secondary"
-                      : "ghost"
-                  }
+                  variant={background?.type === "gradient" && background.angle === angle ? "secondary" : "ghost"}
                   size="icon-sm"
                   aria-label={label}
                   title={label}
-                  onClick={() =>
-                    setCurrentSlideBackground({ ...gradient, angle })
-                  }
+                  onClick={() => setCurrentSlideBackground({ ...gradient, angle })}
                 >
                   {arrow}
                 </Button>
@@ -229,11 +188,7 @@ export function SlideBackgroundPicker() {
 
         <section className="flex flex-col gap-1.5">
           <h3 className="text-xs font-medium text-muted-foreground">Image</h3>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => imageInputRef.current?.click()}
-          >
+          <Button variant="outline" size="sm" onClick={() => imageInputRef.current?.click()}>
             {background?.type === "image" ? <ImageIcon /> : <UploadIcon />}
             {background?.type === "image" ? "Replace image" : "Upload image"}
           </Button>
@@ -252,20 +207,10 @@ export function SlideBackgroundPicker() {
         </section>
 
         <div className="flex gap-2 border-t pt-2.5">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={!background}
-            onClick={() => setCurrentSlideBackground(undefined)}
-          >
+          <Button variant="ghost" size="sm" disabled={!background} onClick={() => setCurrentSlideBackground(undefined)}>
             Reset to theme
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="ms-auto"
-            onClick={applyCurrentBackgroundToAllSlides}
-          >
+          <Button variant="outline" size="sm" className="ms-auto" onClick={applyCurrentBackgroundToAllSlides}>
             Apply to all slides
           </Button>
         </div>

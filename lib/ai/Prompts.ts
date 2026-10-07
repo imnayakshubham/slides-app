@@ -14,9 +14,7 @@ Rules:
 - If a tool returns ok: false, read the error, fix the call and try again.
 - When you are done, reply with one or two short sentences saying what you changed. If the request is unclear, ask instead of guessing.`
 
-const THEME_LIST = THEME_IDS.map(
-  (themeId) => `- ${themeId}: ${THEMES[themeId].mood}`
-).join("\n")
+const THEME_LIST = THEME_IDS.map((themeId) => `- ${themeId}: ${THEMES[themeId].mood}`).join("\n")
 
 export const PLANNER_INSTRUCTIONS = `You plan slide decks. Call create_outline exactly once with the full outline.
 

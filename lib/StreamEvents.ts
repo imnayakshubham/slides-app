@@ -1,12 +1,7 @@
 import type { DeckEdit } from "@/lib/edits/DeckEdits"
 import type { Outline } from "@/lib/schema/Outline"
 
-export type StreamErrorCode =
-  | "missing_api_key"
-  | "invalid_api_key"
-  | "rate_limited"
-  | "provider_error"
-  | "http_error"
+type StreamErrorCode = "missing_api_key" | "invalid_api_key" | "rate_limited" | "provider_error" | "http_error"
 
 export type StreamEvent =
   | { event: "status"; data: { message: string } }

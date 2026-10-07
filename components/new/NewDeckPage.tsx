@@ -3,13 +3,7 @@
 import { useEffect, useId, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import {
-  FlaskConicalIcon,
-  MenuIcon,
-  PencilIcon,
-  PlusIcon,
-  Trash2Icon,
-} from "lucide-react"
+import { FlaskConicalIcon, MenuIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react"
 
 import { MessageInput } from "@/components/chat/MessageInput"
 import { DeckTitleInput } from "@/components/editor/DeckTitleInput"
@@ -59,9 +53,7 @@ export function NewDeckPage() {
 
   async function deleteDeck(deckId: string) {
     await deckRepository.deleteDeck(deckId)
-    setDeckSummaries((summaries) =>
-      (summaries ?? []).filter((summary) => summary.id !== deckId)
-    )
+    setDeckSummaries((summaries) => (summaries ?? []).filter((summary) => summary.id !== deckId))
   }
 
   async function renameDeck(deckId: string, title: string) {
@@ -81,9 +73,7 @@ export function NewDeckPage() {
 
   return (
     <div className="flex h-svh bg-background">
-      <aside className="hidden w-72 shrink-0 border-e bg-sidebar text-sidebar-foreground lg:flex">
-        {decksSidebar}
-      </aside>
+      <aside className="hidden w-72 shrink-0 border-e bg-sidebar text-sidebar-foreground lg:flex">{decksSidebar}</aside>
 
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
         <header className="flex h-14 shrink-0 items-center px-3 lg:hidden">
@@ -99,27 +89,17 @@ export function NewDeckPage() {
         </header>
 
         <section className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-6 px-4 pb-16">
-          <h1 className="text-center text-3xl font-medium tracking-tight">
-            What do you want to present?
-          </h1>
+          <h1 className="text-center text-3xl font-medium tracking-tight">What do you want to present?</h1>
           <MessageInput
             placeholder="Describe your deck, e.g. a 6-slide Q3 roadmap with a revenue chart"
             onSubmitPrompt={(prompt) => void createDeckAndOpen(prompt)}
           />
-          <Button
-            variant="ghost"
-            disabled={isCreatingDeck}
-            onClick={() => void createDeckAndOpen()}
-          >
+          <Button variant="ghost" disabled={isCreatingDeck} onClick={() => void createDeckAndOpen()}>
             <PlusIcon />
             Start with a blank deck
           </Button>
           {process.env.NODE_ENV === "development" && (
-            <Button
-              variant="ghost"
-              disabled={isCreatingDeck}
-              onClick={() => void loadSampleDeckAndOpen()}
-            >
+            <Button variant="ghost" disabled={isCreatingDeck} onClick={() => void loadSampleDeckAndOpen()}>
               <FlaskConicalIcon />
               Load sample deck
             </Button>
@@ -128,10 +108,7 @@ export function NewDeckPage() {
       </main>
 
       <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
-        <SheetContent
-          side="left"
-          className="w-72 bg-sidebar p-0 text-sidebar-foreground"
-        >
+        <SheetContent side="left" className="w-72 bg-sidebar p-0 text-sidebar-foreground">
           <SheetTitle className="sr-only">Your decks</SheetTitle>
           {decksSidebar}
         </SheetContent>
@@ -153,14 +130,8 @@ function DecksSidebar({
   const headingId = useId()
 
   return (
-    <nav
-      aria-labelledby={headingId}
-      className="flex min-h-0 w-full flex-1 flex-col gap-2 p-3"
-    >
-      <h2
-        id={headingId}
-        className="px-2 pt-2 text-xs font-medium text-muted-foreground"
-      >
+    <nav aria-labelledby={headingId} className="flex min-h-0 w-full flex-1 flex-col gap-2 p-3">
+      <h2 id={headingId} className="px-2 pt-2 text-xs font-medium text-muted-foreground">
         Your decks
       </h2>
       {deckSummaries === null ? (

@@ -12,12 +12,7 @@ export function ShapeElement({ element }: { element: ShapeElementData }) {
   }
 
   return (
-    <svg
-      className="size-full"
-      viewBox={`0 0 ${element.w} ${element.h}`}
-      preserveAspectRatio="none"
-      aria-hidden
-    >
+    <svg className="size-full" viewBox={`0 0 ${element.w} ${element.h}`} preserveAspectRatio="none" aria-hidden>
       {element.shape === "rect" ? (
         <rect
           x={inset}

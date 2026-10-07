@@ -16,10 +16,7 @@ export interface DeckRepository {
   deleteDeck(deckId: string): Promise<void>
   // Resolves an empty list when the deck has no conversation yet.
   getConversationMessages(deckId: string): Promise<ChatMessage[]>
-  saveConversationMessages(
-    deckId: string,
-    messages: ChatMessage[]
-  ): Promise<void>
+  saveConversationMessages(deckId: string, messages: ChatMessage[]): Promise<void>
   // Resolves the image's address and its size after any downscaling.
   uploadImage(file: File): Promise<UploadedImage>
 }

@@ -19,17 +19,13 @@ function getSelectedElements() {
 
 function applyEdits(edits: DeckEdit[]) {
   if (edits.length === 0) return
-  useDeckStore
-    .getState()
-    .applyEdit(edits.length === 1 ? edits[0] : { type: "batch", edits })
+  useDeckStore.getState().applyEdit(edits.length === 1 ? edits[0] : { type: "batch", edits })
 }
 
 export function updateSelectedElement(changes: ElementChanges) {
   const [selected] = getSelectedElements()
   if (!selected) return
-  applyEdits([
-    { type: "updateElement", elementId: selected.element.id, changes },
-  ])
+  applyEdits([{ type: "updateElement", elementId: selected.element.id, changes }])
 }
 
 export function deleteSelectedElements() {
@@ -53,9 +49,7 @@ export function duplicateSelectedElements() {
       element: copy.element,
     }))
   )
-  useEditorStore
-    .getState()
-    .setSelectedElementIds(copies.map((copy) => copy.element.id))
+  useEditorStore.getState().setSelectedElementIds(copies.map((copy) => copy.element.id))
 }
 
 export function nudgeSelectedElements(deltaX: number, deltaY: number) {
@@ -71,7 +65,5 @@ export function nudgeSelectedElements(deltaX: number, deltaY: number) {
 export function moveSelectedElementInStack(direction: "forward" | "backward") {
   const [selected] = getSelectedElements()
   if (!selected) return
-  applyEdits([
-    { type: "reorderElement", elementId: selected.element.id, direction },
-  ])
+  applyEdits([{ type: "reorderElement", elementId: selected.element.id, direction }])
 }

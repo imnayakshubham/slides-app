@@ -5,10 +5,7 @@ import type { OutlineSlide } from "@/lib/schema/Outline"
 // What the AI writes for one slide. It only writes content; the layout code
 // (lib/layouts/BuildSlideElements.ts) decides where everything goes.
 
-const speakerNotesSchema = z
-  .string()
-  .max(600)
-  .describe("What the presenter says on this slide, 2 to 4 sentences.")
+const speakerNotesSchema = z.string().max(600).describe("What the presenter says on this slide, 2 to 4 sentences.")
 
 const eyebrowSchema = z
   .string()
@@ -36,22 +33,16 @@ const chartSchema = z
       .array(
         z.strictObject({
           name: z.string().max(40),
-          data: z
-            .array(z.number())
-            .describe("One number per category, in the same order."),
+          data: z.array(z.number()).describe("One number per category, in the same order."),
         })
       )
       .min(1)
       .max(4)
       .describe("Data series. A pie chart only shows the first series."),
   })
-  .refine(
-    (chart) =>
-      chart.series.every(
-        (series) => series.data.length === chart.categories.length
-      ),
-    { message: "Every series needs exactly one value per category." }
-  )
+  .refine((chart) => chart.series.every((series) => series.data.length === chart.categories.length), {
+    message: "Every series needs exactly one value per category.",
+  })
 
 const tableSchema = z
   .strictObject({
@@ -61,10 +52,9 @@ const tableSchema = z
       .max(7)
       .describe("Rows of cell text. The first row is the header row."),
   })
-  .refine(
-    (table) => table.rows.every((row) => row.length === table.rows[0].length),
-    { message: "Every table row needs the same number of cells." }
-  )
+  .refine((table) => table.rows.every((row) => row.length === table.rows[0].length), {
+    message: "Every table row needs the same number of cells.",
+  })
 
 const columnSchema = z.strictObject({
   heading: z.string().max(60).describe("Short column heading."),
@@ -86,9 +76,7 @@ export type SlideContent = {
 
 // The exact content this slide needs, so the AI can't skip the chart the
 // outline promised or send fields its layout has no room for.
-export function slideContentSchema(
-  outlineSlide: OutlineSlide
-): z.ZodType<SlideContent> {
+export function slideContentSchema(outlineSlide: OutlineSlide): z.ZodType<SlideContent> {
   switch (outlineSlide.layout) {
     case "title":
     case "section":
@@ -119,11 +107,7 @@ export function slideContentSchema(
       return z.strictObject({
         eyebrow: eyebrowSchema,
         chart: chartSchema,
-        takeaway: z
-          .string()
-          .max(140)
-          .optional()
-          .describe("One line under the chart: what the numbers show."),
+        takeaway: z.string().max(140).optional().describe("One line under the chart: what the numbers show."),
         speakerNotes: speakerNotesSchema,
       })
 

@@ -15,11 +15,7 @@ type TableElementProps = {
   onFinishEditing?: (rows: string[][]) => void
 }
 
-export function TableElement({
-  element,
-  isEditing = false,
-  onFinishEditing,
-}: TableElementProps) {
+export function TableElement({ element, isEditing = false, onFinishEditing }: TableElementProps) {
   const [firstRow, ...otherRows] = element.rows
   const headerCells = element.headerRow ? firstRow : null
   const bodyRows = element.headerRow ? otherRows : element.rows
@@ -62,8 +58,7 @@ export function TableElement({
       {headerCells && (
         <thead
           style={{
-            background:
-              "color-mix(in srgb, var(--slide-accent) 18%, transparent)",
+            background: "color-mix(in srgb, var(--slide-accent) 18%, transparent)",
             color: "var(--slide-heading)",
           }}
         >
@@ -102,9 +97,7 @@ export function TableElement({
 }
 
 function readRows(table: HTMLTableElement) {
-  return Array.from(table.rows).map((row) =>
-    Array.from(row.cells).map((cell) => cell.textContent ?? "")
-  )
+  return Array.from(table.rows).map((row) => Array.from(row.cells).map((cell) => cell.textContent ?? ""))
 }
 
 function getCells(table: HTMLTableElement) {

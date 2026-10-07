@@ -1,12 +1,6 @@
 import { createId } from "@/lib/Ids"
 import { estimateTextHeight, type Box } from "@/lib/edits/Geometry"
-import {
-  MIN_ELEMENT_SIZE,
-  type Deck,
-  type Slide,
-  type SlideElement,
-  type SlideLayout,
-} from "@/lib/schema/Deck"
+import { MIN_ELEMENT_SIZE, type Deck, type Slide, type SlideElement, type SlideLayout } from "@/lib/schema/Deck"
 
 // Every layout with a title leaves room for a short eyebrow label above it.
 const standardEyebrowSlot: Box = { x: 120, y: 64, w: 1680, h: 48 }
@@ -64,11 +58,7 @@ const titleFontSizeByLayout: Record<SlideLayout, number> = {
 
 // The title is in the theme's heading font and color, and its box is as
 // tall as the text needs, so content placed under it never overlaps.
-export function createSlide(
-  layout: SlideLayout,
-  title: string,
-  theme: Deck["theme"]
-): Slide {
+export function createSlide(layout: SlideLayout, title: string, theme: Deck["theme"]): Slide {
   const titleSlot = slideLayoutSlots[layout].title
   const fontSize = titleFontSizeByLayout[layout]
 
@@ -83,10 +73,7 @@ export function createSlide(
             id: createId(),
             type: "text",
             ...titleSlot,
-            h: Math.max(
-              MIN_ELEMENT_SIZE,
-              estimateTextHeight([title], fontSize, titleSlot.w, "none")
-            ),
+            h: Math.max(MIN_ELEMENT_SIZE, estimateTextHeight([title], fontSize, titleSlot.w, "none")),
             paragraphs: [title],
             fontSize,
             bold: true,

@@ -29,10 +29,8 @@ import {
 // it goes through runAgentWork (one run per deck, one undo step) and
 // streamRequest (one streamed API call into a chat message).
 
-const CONNECTION_ERROR_MESSAGE =
-  "Couldn't reach the agent. Check your connection and try again."
-const NO_OUTLINE_MESSAGE =
-  "The agent didn't return an outline. Please try again."
+const CONNECTION_ERROR_MESSAGE = "Couldn't reach the agent. Check your connection and try again."
+const NO_OUTLINE_MESSAGE = "The agent didn't return an outline. Please try again."
 
 // Running requests by run id, so Stop aborts exactly the right one.
 const abortControllersByRunId = new Map<string, AbortController>()
@@ -45,10 +43,7 @@ function deckAgent(deckId: string) {
   return deckAgentOf(useEditorStore.getState().agentByDeckId, deckId)
 }
 
-function updateDeckAgent(
-  deckId: string,
-  update: (agent: DeckAgentState) => Partial<DeckAgentState>
-) {
+function updateDeckAgent(deckId: string, update: (agent: DeckAgentState) => Partial<DeckAgentState>) {
   useEditorStore.getState().updateDeckAgent(deckId, update)
 }
 
@@ -79,9 +74,7 @@ function releaseSlidesToAgent(slideIds: string[]) {
       document.activeElement.blur()
     }
   }
-  const unlockedSelection = editor.selectedElementIds.filter(
-    (elementId) => !isOnLockedSlide(elementId)
-  )
+  const unlockedSelection = editor.selectedElementIds.filter((elementId) => !isOnLockedSlide(elementId))
   if (unlockedSelection.length !== editor.selectedElementIds.length) {
     editor.setSelectedElementIds(unlockedSelection)
   }
@@ -123,22 +116,12 @@ export async function retryLastAgentMessage() {
   const lastMessage = chatMessages.at(-1)
   if (lastMessage?.status === "error") removeChatMessage(lastMessage.id)
 
-  const lastUserMessageIndex = chatMessages.findLastIndex(
-    (message) => message.role === "user"
-  )
+  const lastUserMessageIndex = chatMessages.findLastIndex((message) => message.role === "user")
   if (lastUserMessageIndex === -1) return
-  await respondTo(
-    deckId,
-    chatMessages[lastUserMessageIndex].content,
-    chatMessages.slice(0, lastUserMessageIndex)
-  )
+  await respondTo(deckId, chatMessages[lastUserMessageIndex].content, chatMessages.slice(0, lastUserMessageIndex))
 }
 
-async function respondTo(
-  deckId: string,
-  text: string,
-  earlierMessages: ChatMessage[]
-) {
+async function respondTo(deckId: string, text: string, earlierMessages: ChatMessage[]) {
   const deck = useDeckStore.getState().deck
   if (!deck) return
   if (deck.slides.length === 0) {
@@ -148,11 +131,7 @@ async function respondTo(
   }
 }
 
-async function runChatTurn(
-  deckId: string,
-  userMessage: string,
-  earlierMessages: ChatMessage[]
-) {
+async function runChatTurn(deckId: string, userMessage: string, earlierMessages: ChatMessage[]) {
   await runAgentWork(deckId, "chat", async (abortSignal) => {
     const { currentSlideId, selectedElementIds } = useEditorStore.getState()
     const messageId = startAssistantMessage()
@@ -162,9 +141,7 @@ async function runChatTurn(
       url: "/api/chat",
       body: {
         deck: useDeckStore.getState().deck,
-        messages: earlierMessages
-          .filter((message) => message.status === "complete")
-          .map(toAgentHistoryMessage),
+        messages: earlierMessages.filter((message) => message.status === "complete").map(toAgentHistoryMessage),
         currentSlideId,
         selectedIds: selectedElementIds,
         userMessage,
@@ -202,15 +179,8 @@ async function planDeck(deckId: string, prompt: string) {
         },
       }))
     }
-    const missingOutline =
-      !outline && !errorMessage && !abortSignal.aborted
-        ? NO_OUTLINE_MESSAGE
-        : undefined
-    finishAssistantMessage(
-      messageId,
-      errorMessage ?? missingOutline,
-      abortSignal.aborted
-    )
+    const missingOutline = !outline && !errorMessage && !abortSignal.aborted ? NO_OUTLINE_MESSAGE : undefined
+    finishAssistantMessage(messageId, errorMessage ?? missingOutline, abortSignal.aborted)
   })
 }
 
@@ -229,10 +199,7 @@ function updateOutlineReview(
   if (!deckId) return
   updateDeckAgent(deckId, ({ outlineReview }) => {
     if (!outlineReview) return {}
-    const { slides, slideKeys } = update(
-      outlineReview.outline.slides,
-      outlineReview.slideKeys
-    )
+    const { slides, slideKeys } = update(outlineReview.outline.slides, outlineReview.slideKeys)
     return {
       outlineReview: {
         ...outlineReview,
@@ -245,9 +212,7 @@ function updateOutlineReview(
 
 export function renameOutlineSlide(slideIndex: number, title: string) {
   updateOutlineReview((slides, slideKeys) => ({
-    slides: slides.map((slide, index) =>
-      index === slideIndex ? { ...slide, title } : slide
-    ),
+    slides: slides.map((slide, index) => (index === slideIndex ? { ...slide, title } : slide)),
     slideKeys,
   }))
 }
@@ -329,13 +294,9 @@ export async function generateApprovedOutline() {
 export async function retrySlideBuild(slideId: string) {
   const deckId = openDeckId()
   if (!deckId || isAgentBusyOn(deckId)) return
-  const slideBuild = deckAgent(deckId).generation?.slides.find(
-    (build) => build.slideId === slideId
-  )
+  const slideBuild = deckAgent(deckId).generation?.slides.find((build) => build.slideId === slideId)
   if (!slideBuild) return
-  await runAgentWork(deckId, "generating", (abortSignal) =>
-    fillSlides(deckId, [slideBuild], abortSignal)
-  )
+  await runAgentWork(deckId, "generating", (abortSignal) => fillSlides(deckId, [slideBuild], abortSignal))
 }
 
 export async function continueStoppedGeneration() {
@@ -343,44 +304,28 @@ export async function continueStoppedGeneration() {
   if (!deckId || isAgentBusyOn(deckId)) return
   const generation = deckAgent(deckId).generation
   if (!generation) return
-  const waitingBuilds = generation.slides.filter(
-    (build) => build.status === "waiting"
-  )
+  const waitingBuilds = generation.slides.filter((build) => build.status === "waiting")
   updateDeckAgent(deckId, () => ({ isFollowingGeneration: true }))
-  await runAgentWork(deckId, "generating", (abortSignal) =>
-    fillSlides(deckId, waitingBuilds, abortSignal)
-  )
+  await runAgentWork(deckId, "generating", (abortSignal) => fillSlides(deckId, waitingBuilds, abortSignal))
 }
 
-function setSlideBuildStatus(
-  deckId: string,
-  slideId: string,
-  status: SlideBuildStatus
-) {
+function setSlideBuildStatus(deckId: string, slideId: string, status: SlideBuildStatus) {
   updateDeckAgent(deckId, ({ generation }) => {
     if (!generation) return {}
     return {
       generation: {
         ...generation,
-        slides: generation.slides.map((build) =>
-          build.slideId === slideId ? { ...build, status } : build
-        ),
+        slides: generation.slides.map((build) => (build.slideId === slideId ? { ...build, status } : build)),
       },
     }
   })
 }
 
 function setGenerationStopped(deckId: string, isStopped: boolean) {
-  updateDeckAgent(deckId, ({ generation }) =>
-    generation ? { generation: { ...generation, isStopped } } : {}
-  )
+  updateDeckAgent(deckId, ({ generation }) => (generation ? { generation: { ...generation, isStopped } } : {}))
 }
 
-async function fillSlides(
-  deckId: string,
-  slideBuilds: SlideBuild[],
-  abortSignal: AbortSignal
-) {
+async function fillSlides(deckId: string, slideBuilds: SlideBuild[], abortSignal: AbortSignal) {
   const generation = deckAgent(deckId).generation
   if (!generation) return
   setGenerationStopped(deckId, false)
@@ -419,11 +364,7 @@ async function fillSlides(
     }
     // No edit means every attempt to write the slide was rejected.
     const isFilled = !errorMessage && appliedEditCount > 0
-    setSlideBuildStatus(
-      deckId,
-      slideBuild.slideId,
-      isFilled ? "done" : "failed"
-    )
+    setSlideBuildStatus(deckId, slideBuild.slideId, isFilled ? "done" : "failed")
   }
 
   if (abortSignal.aborted) setGenerationStopped(deckId, true)
@@ -434,11 +375,7 @@ async function fillSlides(
 // the deck is saved once it ends (see useAutosave). Its cleanup only
 // touches its own run: a run that was stopped when the user left this deck
 // can't end a newer run, or close another deck's undo step.
-async function runAgentWork(
-  deckId: string,
-  kind: AgentRunKind,
-  work: (abortSignal: AbortSignal) => Promise<void>
-) {
+async function runAgentWork(deckId: string, kind: AgentRunKind, work: (abortSignal: AbortSignal) => Promise<void>) {
   const runId = createId()
   const abortController = new AbortController()
   abortControllersByRunId.set(runId, abortController)
@@ -511,9 +448,7 @@ async function streamRequest(request: StreamRequest) {
       if (result.ok) {
         appliedEditCount += 1
         addAction(label, false)
-        useEditorStore
-          .getState()
-          .highlightAgentTouchedElements(elementIdsChangedBy(edit))
+        useEditorStore.getState().highlightAgentTouchedElements(elementIdsChangedBy(edit))
       } else {
         addAction(`Skipped "${label}": it changed while the agent worked`, true)
       }
@@ -558,9 +493,7 @@ function elementIdsChangedBy(edit: DeckEdit): string[] {
 function markSlidesBeingEdited(deckId: string, slideIds: string[]) {
   const run = deckAgent(deckId).run
   if (!run) return
-  const newSlideIds = slideIds.filter(
-    (slideId) => !run.editingSlideIds.includes(slideId)
-  )
+  const newSlideIds = slideIds.filter((slideId) => !run.editingSlideIds.includes(slideId))
   // Most edits touch a slide that is already marked: no update then.
   if (newSlideIds.length === 0) return
   releaseSlidesToAgent(newSlideIds)
@@ -572,8 +505,7 @@ function markSlidesBeingEdited(deckId: string, slideIds: string[]) {
 // Read from the deck before the edit, so a moved element marks both the
 // slide it left and the slide it landed on.
 function slideIdsChangedBy(edit: DeckEdit, deckBeforeEdit: Deck): string[] {
-  const slideOfElement = (elementId: string) =>
-    findElementLocation(deckBeforeEdit, elementId)?.slide.id
+  const slideOfElement = (elementId: string) => findElementLocation(deckBeforeEdit, elementId)?.slide.id
   switch (edit.type) {
     case "addSlide":
       return [edit.slide.id]
@@ -587,17 +519,11 @@ function slideIdsChangedBy(edit: DeckEdit, deckBeforeEdit: Deck): string[] {
     case "updateElement":
     case "deleteElement":
     case "reorderElement":
-      return [slideOfElement(edit.elementId)].filter(
-        (slideId) => slideId !== undefined
-      )
+      return [slideOfElement(edit.elementId)].filter((slideId) => slideId !== undefined)
     case "moveElement":
-      return [slideOfElement(edit.elementId), edit.toSlideId].filter(
-        (slideId) => slideId !== undefined
-      )
+      return [slideOfElement(edit.elementId), edit.toSlideId].filter((slideId) => slideId !== undefined)
     case "batch":
-      return edit.edits.flatMap((innerEdit) =>
-        slideIdsChangedBy(innerEdit, deckBeforeEdit)
-      )
+      return edit.edits.flatMap((innerEdit) => slideIdsChangedBy(innerEdit, deckBeforeEdit))
     default:
       return []
   }
@@ -612,11 +538,7 @@ function startAssistantMessage() {
   return message.id
 }
 
-function finishAssistantMessage(
-  messageId: string,
-  errorMessage: string | undefined,
-  wasStopped: boolean
-) {
+function finishAssistantMessage(messageId: string, errorMessage: string | undefined, wasStopped: boolean) {
   updateMessage(messageId, (message) => {
     if (errorMessage) return { ...message, status: "error", errorMessage }
     const isEmpty = !message.content && message.actions.length === 0
@@ -627,17 +549,11 @@ function finishAssistantMessage(
   })
 }
 
-function updateMessage(
-  messageId: string,
-  update: (message: ChatMessage) => ChatMessage
-) {
+function updateMessage(messageId: string, update: (message: ChatMessage) => ChatMessage) {
   useEditorStore.getState().updateChatMessage(messageId, update)
 }
 
-function createMessage(
-  role: ChatMessage["role"],
-  content: string
-): ChatMessage {
+function createMessage(role: ChatMessage["role"], content: string): ChatMessage {
   return {
     id: createId(),
     role,
@@ -687,9 +603,7 @@ function createTextBuffer(writeText: (text: string) => void) {
 function saveConversation(deckId: string) {
   if (openDeckId() !== deckId) return
 
-  const finishedMessages = useEditorStore
-    .getState()
-    .chatMessages.filter((message) => message.status !== "streaming")
+  const finishedMessages = useEditorStore.getState().chatMessages.filter((message) => message.status !== "streaming")
   deckRepository
     .saveConversationMessages(deckId, finishedMessages)
     .catch((error) => console.error("Saving the chat failed", error))

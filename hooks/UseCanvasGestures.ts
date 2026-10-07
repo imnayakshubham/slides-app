@@ -84,11 +84,8 @@ export function useCanvasGestures() {
   // gesture a drag would be. Returns false when there is nothing to drag.
   function prepareGesture(event: PointerEvent<HTMLElement>, slideId: string) {
     if (event.button !== 0) return false
-    const artboard =
-      event.currentTarget.querySelector<HTMLElement>("[data-artboard]")
-    const slide = useDeckStore
-      .getState()
-      .deck?.slides.find((candidate) => candidate.id === slideId)
+    const artboard = event.currentTarget.querySelector<HTMLElement>("[data-artboard]")
+    const slide = useDeckStore.getState().deck?.slides.find((candidate) => candidate.id === slideId)
     if (!artboard || !slide) return false
 
     const editor = useEditorStore.getState()
@@ -185,8 +182,7 @@ export function useCanvasGestures() {
     const deltaY = delta.y / gesture.scale
     const snapDistance = SNAP_DISTANCE_PX / gesture.scale
     const { shift: isShiftHeld, alt: isAltHeld } = heldKeysRef.current
-    const { setPreview, setMarquee, setDropTarget } =
-      useDragPreviewStore.getState()
+    const { setPreview, setMarquee, setDropTarget } = useDragPreviewStore.getState()
 
     if (gesture.kind === "move") {
       // Over another slide (thumbnail or canvas): the elements stay where
@@ -240,13 +236,9 @@ export function useCanvasGestures() {
       })
       let guides: SnapGuide[] = []
       if (!isAltHeld && !keepRatio) {
-        const snapped = snapResizedEdges(
-          box,
-          gesture.handle,
-          gesture.snapTargets,
-          snapDistance,
-          { snapHeight: !gesture.isText }
-        )
+        const snapped = snapResizedEdges(box, gesture.handle, gesture.snapTargets, snapDistance, {
+          snapHeight: !gesture.isText,
+        })
         box = snapped.box
         guides = snapped.guides
       }
@@ -270,8 +262,7 @@ export function useCanvasGestures() {
     const gesture = gestureRef.current
     endGesture()
     if (!gesture) return
-    const { previewBoxes, marqueeBox, dropTarget, clearGesture } =
-      useDragPreviewStore.getState()
+    const { previewBoxes, marqueeBox, dropTarget, clearGesture } = useDragPreviewStore.getState()
 
     if (gesture.kind === "move" && dropTarget) {
       dropOnOtherSlide(gesture, dropTarget, pointerRef.current)
@@ -295,24 +286,19 @@ export function useCanvasGestures() {
       return
     }
 
-    const edits: DeckEdit[] = Object.entries(previewBoxes).map(
-      ([elementId, box]) => {
-        // Text height follows its text, so store what the browser laid out.
-        const height = elementBoxIsText(gesture.artboard, elementId)
-          ? (findElementNode(gesture.artboard, elementId)?.offsetHeight ??
-            box.h)
-          : box.h
-        return {
-          type: "updateElement",
-          elementId,
-          changes: { ...box, h: Math.round(height) },
-        }
+    const edits: DeckEdit[] = Object.entries(previewBoxes).map(([elementId, box]) => {
+      // Text height follows its text, so store what the browser laid out.
+      const height = elementBoxIsText(gesture.artboard, elementId)
+        ? (findElementNode(gesture.artboard, elementId)?.offsetHeight ?? box.h)
+        : box.h
+      return {
+        type: "updateElement",
+        elementId,
+        changes: { ...box, h: Math.round(height) },
       }
-    )
+    })
     if (edits.length > 0) {
-      useDeckStore
-        .getState()
-        .applyEdit(edits.length === 1 ? edits[0] : { type: "batch", edits })
+      useDeckStore.getState().applyEdit(edits.length === 1 ? edits[0] : { type: "batch", edits })
     }
     clearGesture()
   }
@@ -333,11 +319,7 @@ export function useCanvasGestures() {
 type MoveGesture = Extract<Gesture, { kind: "move" }>
 
 // One edit for the whole selection, so a single Undo brings it all back.
-function dropOnOtherSlide(
-  gesture: MoveGesture,
-  dropTarget: DropTarget,
-  pointer: { x: number; y: number }
-) {
+function dropOnOtherSlide(gesture: MoveGesture, dropTarget: DropTarget, pointer: { x: number; y: number }) {
   // Dropped on a canvas slide: land where the pointer let go, keeping
   // each element's offset from the grab point. Dropped on a thumbnail:
   // keep the element's own position on the slide.
@@ -353,12 +335,8 @@ function dropOnOtherSlide(
   }
 
   const edits: DeckEdit[] = [...gesture.startBoxes].map(([elementId, box]) => {
-    const x = pointerOnTarget
-      ? Math.round(pointerOnTarget.x - (gesture.grabPoint.x - box.x))
-      : undefined
-    const y = pointerOnTarget
-      ? Math.round(pointerOnTarget.y - (gesture.grabPoint.y - box.y))
-      : undefined
+    const x = pointerOnTarget ? Math.round(pointerOnTarget.x - (gesture.grabPoint.x - box.x)) : undefined
+    const y = pointerOnTarget ? Math.round(pointerOnTarget.y - (gesture.grabPoint.y - box.y)) : undefined
     if (dropTarget.isCopy) {
       return {
         type: "copyElement",
@@ -395,17 +373,14 @@ function findSlideUnderPointer(
     const thumbnail = node.closest<HTMLElement>("[data-slide-drop-id]")
     const thumbnailSlideId = thumbnail?.dataset.slideDropId
     if (thumbnailSlideId) {
-      const isUnavailable =
-        thumbnailSlideId === sourceSlideId ||
-        isSlideLockedByAgent(thumbnailSlideId)
+      const isUnavailable = thumbnailSlideId === sourceSlideId || isSlideLockedByAgent(thumbnailSlideId)
       if (isUnavailable) return null
       return { slideId: thumbnailSlideId, artboard: null }
     }
     const canvasSlide = node.closest<HTMLElement>("[data-canvas-slide-id]")
     const canvasSlideId = canvasSlide?.dataset.canvasSlideId
     if (canvasSlide && canvasSlideId) {
-      const isUnavailable =
-        canvasSlideId === sourceSlideId || isSlideLockedByAgent(canvasSlideId)
+      const isUnavailable = canvasSlideId === sourceSlideId || isSlideLockedByAgent(canvasSlideId)
       if (isUnavailable) return null
       return {
         slideId: canvasSlideId,
@@ -423,9 +398,7 @@ function slideNumberOf(slideId: string) {
 
 function describeDraggedItems(slide: Slide, elementIds: string[]) {
   if (elementIds.length !== 1) return `${elementIds.length} elements`
-  const element = slide.elements.find(
-    (candidate) => candidate.id === elementIds[0]
-  )
+  const element = slide.elements.find((candidate) => candidate.id === elementIds[0])
   return element?.type ?? "element"
 }
 
@@ -448,12 +421,7 @@ function measureElementBoxes(slide: Slide, artboard: HTMLElement) {
   return boxes
 }
 
-function snapTargetsExcept(
-  elementBoxes: Map<string, Box>,
-  movingIds: string[]
-) {
-  const otherBoxes = [...elementBoxes]
-    .filter(([elementId]) => !movingIds.includes(elementId))
-    .map(([, box]) => box)
+function snapTargetsExcept(elementBoxes: Map<string, Box>, movingIds: string[]) {
+  const otherBoxes = [...elementBoxes].filter(([elementId]) => !movingIds.includes(elementId)).map(([, box]) => box)
   return [SLIDE_BOX, ...otherBoxes]
 }

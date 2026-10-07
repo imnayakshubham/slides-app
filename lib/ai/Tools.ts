@@ -3,11 +3,7 @@ import "server-only"
 import { tool, type ToolSet } from "ai"
 import { z } from "zod"
 
-import {
-  applyDeckEdit,
-  findElementLocation,
-  type DeckEdit,
-} from "@/lib/edits/DeckEdits"
+import { applyDeckEdit, findElementLocation, type DeckEdit } from "@/lib/edits/DeckEdits"
 import {
   estimateTextHeight,
   findFreeSpot,
@@ -17,11 +13,7 @@ import {
 } from "@/lib/edits/Geometry"
 import { createId } from "@/lib/Ids"
 import { imagePlaceholderSrc } from "@/lib/layouts/ImagePlaceholder"
-import {
-  createSlide,
-  duplicateSlide,
-  slideLayoutSlots,
-} from "@/lib/layouts/SlideLayouts"
+import { createSlide, duplicateSlide, slideLayoutSlots } from "@/lib/layouts/SlideLayouts"
 import {
   ARTBOARD_HEIGHT,
   ARTBOARD_WIDTH,
@@ -39,12 +31,8 @@ const DEFAULT_TEXT_FONT_SIZE = 40
 const DEFAULT_NEW_ELEMENT_WIDTH = 800
 const DEFAULT_NEW_ELEMENT_HEIGHT = 450
 
-const slideIdInput = z
-  .string()
-  .describe("Id of the slide, from the deck context.")
-const elementIdInput = z
-  .string()
-  .describe("Id of the element, from the deck context.")
+const slideIdInput = z.string().describe("Id of the slide, from the deck context.")
+const elementIdInput = z.string().describe("Id of the element, from the deck context.")
 
 const boxInput = z
   .object({
@@ -63,26 +51,17 @@ const slotInput = z
   )
 
 const chartTypeInput = z.enum(["bar", "line", "pie", "area", "stackedBar"])
-const chartTitleInput = z
-  .string()
-  .describe("Title shown above the chart. Empty for no title.")
+const chartTitleInput = z.string().describe("Title shown above the chart. Empty for no title.")
 const chartCategoriesInput = z
   .array(z.string())
   .min(1)
-  .describe(
-    "Category names along the x-axis. For a pie chart, the slice names."
-  )
+  .describe("Category names along the x-axis. For a pie chart, the slice names.")
 const chartSeriesInput = z
   .array(
     z.object({
       name: z.string().describe("Series name shown in the legend."),
-      data: z
-        .array(z.number())
-        .describe("One number per category, in the same order as categories."),
-      color: z
-        .string()
-        .optional()
-        .describe("CSS color. Leave out to use the theme colors."),
+      data: z.array(z.number()).describe("One number per category, in the same order as categories."),
+      color: z.string().optional().describe("CSS color. Leave out to use the theme colors."),
     })
   )
   .min(1)
@@ -90,10 +69,7 @@ const chartSeriesInput = z
 
 // All optional, so one tool covers text, image and shape elements.
 const elementStyleInputs = {
-  paragraphs: z
-    .array(z.string())
-    .optional()
-    .describe("Text: one string per paragraph or list item."),
+  paragraphs: z.array(z.string()).optional().describe("Text: one string per paragraph or list item."),
   fontSize: z.number().positive().optional().describe("Text: font size in px."),
   bold: z.boolean().optional().describe("Text"),
   italic: z.boolean().optional().describe("Text"),
@@ -106,10 +82,7 @@ const elementStyleInputs = {
     .describe(
       "Image: a real image URL. Leave out unless you are sure the URL works; a placeholder showing alt is placed instead, which the user replaces."
     ),
-  alt: z
-    .string()
-    .optional()
-    .describe("Image: what the image shows. Required when there is no src."),
+  alt: z.string().optional().describe("Image: what the image shows. Required when there is no src."),
   fit: z.enum(["cover", "contain"]).optional().describe("Image"),
   shape: z.enum(["rect", "ellipse"]).optional().describe("Shape"),
   fill: z.string().optional().describe("Shape: CSS fill color."),
@@ -119,9 +92,7 @@ const elementStyleInputs = {
 
 // A warning means the change was made but needs a follow-up, e.g. the new
 // element overlaps others because the slide had no free space.
-type ToolResult =
-  | { ok: true; createdIds: string[]; warning?: string }
-  | { ok: false; error: string }
+type ToolResult = { ok: true; createdIds: string[]; warning?: string } | { ok: false; error: string }
 
 function overlapWarning(overlapsWith: string[]) {
   if (overlapsWith.length === 0) return undefined
@@ -147,18 +118,10 @@ function withTextHeight(element: SlideElement): SlideElement {
 }
 
 // Tools edit `workingDeck` so later calls in the same request see earlier changes.
-export function createAgentTools(
-  deck: Deck,
-  sendEvent: SendStreamEvent
-): ToolSet {
+export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSet {
   let workingDeck = deck
 
-  function applyChange(
-    edit: DeckEdit,
-    label: string,
-    toolCallId: string,
-    createdIds: string[] = []
-  ): ToolResult {
+  function applyChange(edit: DeckEdit, label: string, toolCallId: string, createdIds: string[] = []): ToolResult {
     const result = applyDeckEdit(workingDeck, edit)
     if (!result.ok) return reportError(result.error)
 
@@ -174,12 +137,7 @@ export function createAgentTools(
   }
 
   // Every element the agent adds lands in free space when there is any.
-  function addElementToSlide(
-    slideId: string,
-    element: SlideElement,
-    label: string,
-    toolCallId: string
-  ) {
+  function addElementToSlide(slideId: string, element: SlideElement, label: string, toolCallId: string) {
     const slide = findSlide(workingDeck, slideId)
     if (!slide) return reportError(`Slide "${slideId}" does not exist.`)
     const sizedElement = withTextHeight(element)
@@ -206,26 +164,19 @@ export function createAgentTools(
     }),
 
     add_slide: tool({
-      description:
-        "Add a new slide with a layout and a title. Returns the new slide id and the id of its title text.",
+      description: "Add a new slide with a layout and a title. Returns the new slide id and the id of its title text.",
       inputSchema: z.object({
         layout: slideLayoutSchema,
         title: z.string(),
-        index: z
-          .number()
-          .int()
-          .optional()
-          .describe("Position starting at 0. Leave out to add at the end."),
+        index: z.number().int().optional().describe("Position starting at 0. Leave out to add at the end."),
       }),
       execute: ({ layout, title, index }, { toolCallId }) => {
         const slide = createSlide(layout, title, workingDeck.theme)
         const titleElementIds = slide.elements.map((element) => element.id)
-        return applyChange(
-          { type: "addSlide", slide, index },
-          `Added slide "${title}"`,
-          toolCallId,
-          [slide.id, ...titleElementIds]
-        )
+        return applyChange({ type: "addSlide", slide, index }, `Added slide "${title}"`, toolCallId, [
+          slide.id,
+          ...titleElementIds,
+        ])
       },
     }),
 
@@ -258,11 +209,7 @@ export function createAgentTools(
       description: "Delete a slide and everything on it.",
       inputSchema: z.object({ slideId: slideIdInput }),
       execute: ({ slideId }, { toolCallId }) =>
-        applyChange(
-          { type: "deleteSlide", slideId },
-          `Deleted ${describeSlide(workingDeck, slideId)}`,
-          toolCallId
-        ),
+        applyChange({ type: "deleteSlide", slideId }, `Deleted ${describeSlide(workingDeck, slideId)}`, toolCallId),
     }),
 
     reorder_slides: tool({
@@ -280,13 +227,10 @@ export function createAgentTools(
     }),
 
     duplicate_slide: tool({
-      description:
-        "Copy a slide and put the copy right after it. Returns the id of the copy.",
+      description: "Copy a slide and put the copy right after it. Returns the id of the copy.",
       inputSchema: z.object({ slideId: slideIdInput }),
       execute: ({ slideId }, { toolCallId }) => {
-        const slideIndex = workingDeck.slides.findIndex(
-          (slide) => slide.id === slideId
-        )
+        const slideIndex = workingDeck.slides.findIndex((slide) => slide.id === slideId)
         if (slideIndex === -1) {
           return reportError(`Slide "${slideId}" does not exist.`)
         }
@@ -352,16 +296,13 @@ export function createAgentTools(
         } else if (type === "image") {
           const description = style.alt?.trim() ?? ""
           if (!style.src && !description) {
-            return reportError(
-              "An image needs a src URL or an alt description for a placeholder."
-            )
+            return reportError("An image needs a src URL or an alt description for a placeholder.")
           }
           element = {
             id: elementId,
             type: "image",
             ...position,
-            src:
-              style.src ?? imagePlaceholderSrc(description, workingDeck.theme),
+            src: style.src ?? imagePlaceholderSrc(description, workingDeck.theme),
             alt: description,
             fit: style.fit ?? "cover",
           }
@@ -401,17 +342,14 @@ export function createAgentTools(
 
         // Rewritten or restyled text gets its new height, and the model hears
         // about it if the taller text now runs into something.
-        const changesTextSize =
-          changes.paragraphs || changes.fontSize || changes.listStyle
+        const changesTextSize = changes.paragraphs || changes.fontSize || changes.listStyle
         if (location?.element.type === "text" && changesTextSize) {
           const resizedText = withTextHeight({
             ...location.element,
             ...fullChanges,
           } as SlideElement)
           fullChanges = { ...fullChanges, h: resizedText.h }
-          warning = overlapWarning(
-            overlappingElementIds(location.slide, resizedText, elementId)
-          )
+          warning = overlapWarning(overlappingElementIds(location.slide, resizedText, elementId))
         }
 
         const result = applyChange(
@@ -439,19 +377,9 @@ export function createAgentTools(
         "Move an element to a new position on its slide, or to another slide. Always use this to move content between slides; never delete it and add it again.",
       inputSchema: z.object({
         elementId: elementIdInput,
-        toSlideId: z
-          .string()
-          .describe(
-            "Slide to move it to. Use its current slide to move it within that slide."
-          ),
-        x: z
-          .number()
-          .optional()
-          .describe("New left edge. Leave out to keep it."),
-        y: z
-          .number()
-          .optional()
-          .describe("New top edge. Leave out to keep it."),
+        toSlideId: z.string().describe("Slide to move it to. Use its current slide to move it within that slide."),
+        x: z.number().optional().describe("New left edge. Leave out to keep it."),
+        y: z.number().optional().describe("New top edge. Leave out to keep it."),
       }),
       execute: ({ elementId, toSlideId, x, y }, { toolCallId }) => {
         const label = `Moved ${describeElement(workingDeck, elementId)} to ${describeSlide(workingDeck, toSlideId)}`
@@ -459,28 +387,17 @@ export function createAgentTools(
         const isMoveWithinSlide = location?.slide.id === toSlideId
         // Moves to another slide find free space in applyDeckEdit.
         if (!location || !isMoveWithinSlide) {
-          return applyChange(
-            { type: "moveElement", elementId, toSlideId, x, y },
-            label,
-            toolCallId
-          )
+          return applyChange({ type: "moveElement", elementId, toSlideId, x, y }, label, toolCallId)
         }
 
         const { slide, element } = location
-        const spot = findFreeSpot(
-          slide,
-          { ...element, x: x ?? element.x, y: y ?? element.y },
-          elementId
-        )
+        const spot = findFreeSpot(slide, { ...element, x: x ?? element.x, y: y ?? element.y }, elementId)
         const result = applyChange(
           { type: "moveElement", elementId, toSlideId, x: spot.x, y: spot.y },
           label,
           toolCallId
         )
-        return withWarning(
-          result,
-          overlapWarning(overlappingElementIds(slide, spot, elementId))
-        )
+        return withWarning(result, overlapWarning(overlappingElementIds(slide, spot, elementId)))
       },
     }),
 
@@ -495,37 +412,26 @@ export function createAgentTools(
       }),
       execute: ({ elementId, w, h, x, y }, { toolCallId }) => {
         const location = findElementLocation(workingDeck, elementId)
-        if (!location)
-          return reportError(`Element "${elementId}" does not exist.`)
+        if (!location) return reportError(`Element "${elementId}" does not exist.`)
         const { slide, element } = location
         // Keeps the asked-for size; only the position moves to free space.
-        const spot = findFreeSpot(
-          slide,
-          { x: x ?? element.x, y: y ?? element.y, w, h },
-          elementId
-        )
+        const spot = findFreeSpot(slide, { x: x ?? element.x, y: y ?? element.y, w, h }, elementId)
         const result = applyChange(
           { type: "updateElement", elementId, changes: spot },
           `Resized ${describeElement(workingDeck, elementId)}`,
           toolCallId
         )
-        return withWarning(
-          result,
-          overlapWarning(overlappingElementIds(slide, spot, elementId))
-        )
+        return withWarning(result, overlapWarning(overlappingElementIds(slide, spot, elementId)))
       },
     }),
 
     reorder_elements: tool({
-      description:
-        "Change which elements are drawn on top of which on a slide.",
+      description: "Change which elements are drawn on top of which on a slide.",
       inputSchema: z.object({
         elementId: elementIdInput,
         direction: z
           .enum(["forward", "backward", "front", "back"])
-          .describe(
-            "forward/backward move one step; front puts it on top of everything, back behind everything."
-          ),
+          .describe("forward/backward move one step; front puts it on top of everything, back behind everything."),
       }),
       execute: ({ elementId, direction }, { toolCallId }) =>
         applyChange(
@@ -546,10 +452,7 @@ export function createAgentTools(
         title: chartTitleInput,
         categories: chartCategoriesInput,
         series: chartSeriesInput,
-        showLegend: z
-          .boolean()
-          .optional()
-          .describe("Leave out to show it only when there are several series."),
+        showLegend: z.boolean().optional().describe("Leave out to show it only when there are several series."),
         xAxisLabel: z.string().optional(),
         yAxisLabel: z.string().optional(),
       }),
@@ -603,8 +506,7 @@ export function createAgentTools(
     }),
 
     change_chart_type: tool({
-      description:
-        "Switch a chart to another chart type. Its data stays the same.",
+      description: "Switch a chart to another chart type. Its data stays the same.",
       inputSchema: z.object({
         elementId: elementIdInput,
         chartType: chartTypeInput,
@@ -618,20 +520,13 @@ export function createAgentTools(
     }),
 
     add_table: tool({
-      description:
-        "Add a table. Every row needs the same number of cells. Returns the new element id.",
+      description: "Add a table. Every row needs the same number of cells. Returns the new element id.",
       inputSchema: z.object({
         slideId: slideIdInput,
         slot: slotInput,
         box: boxInput.optional(),
-        rows: z
-          .array(z.array(z.string()).min(1))
-          .min(1)
-          .describe("Rows of cell text. The first row is the header."),
-        headerRow: z
-          .boolean()
-          .optional()
-          .describe("Style the first row as a header. Leave out for yes."),
+        rows: z.array(z.array(z.string()).min(1)).min(1).describe("Rows of cell text. The first row is the header."),
+        headerRow: z.boolean().optional().describe("Style the first row as a header. Leave out for yes."),
       }),
       execute: ({ slideId, slot, box, rows, headerRow }, { toolCallId }) => {
         const slide = findSlide(workingDeck, slideId)
@@ -646,12 +541,7 @@ export function createAgentTools(
           rows,
           headerRow: headerRow ?? true,
         }
-        return addElementToSlide(
-          slideId,
-          table,
-          `Added a table to ${describeSlide(workingDeck, slideId)}`,
-          toolCallId
-        )
+        return addElementToSlide(slideId, table, `Added a table to ${describeSlide(workingDeck, slideId)}`, toolCallId)
       },
     }),
   }
@@ -673,11 +563,7 @@ function describeElement(deck: Deck, elementId: string) {
   return `the ${location.element.type} on ${describeSlide(deck, location.slide.id)}`
 }
 
-function choosePosition(
-  slide: Slide,
-  slotName: string | undefined,
-  box: Box | undefined
-): Box | string {
+function choosePosition(slide: Slide, slotName: string | undefined, box: Box | undefined): Box | string {
   if (slotName) {
     const slotsOfLayout = slideLayoutSlots[slide.layout]
     const slotBox = slotsOfLayout[slotName]

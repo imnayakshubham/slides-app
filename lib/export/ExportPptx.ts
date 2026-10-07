@@ -1,10 +1,6 @@
 import type PptxGenJS from "pptxgenjs"
 
-import {
-  colorToHex,
-  gradientToPngData,
-  imageToPngData,
-} from "@/lib/export/ExportImages"
+import { colorToHex, gradientToPngData, imageToPngData } from "@/lib/export/ExportImages"
 import { imagePlaceholderSrc } from "@/lib/layouts/ImagePlaceholder"
 import { paragraphRuns } from "@/lib/RichText"
 import {
@@ -79,8 +75,7 @@ function addText(pptxSlide: PptxSlide, element: TextElement, theme: Theme) {
     color: element.color,
     fontSize: element.fontSize,
   }
-  const fontFace =
-    element.font === "heading" ? theme.headingFont : theme.fontFamily
+  const fontFace = element.font === "heading" ? theme.headingFont : theme.fontFamily
   const bullet = BULLET_BY_LIST_STYLE[element.listStyle]
 
   const textRuns = element.paragraphs.flatMap((paragraph, paragraphIndex) => {
@@ -91,10 +86,7 @@ function addText(pptxSlide: PptxSlide, element: TextElement, theme: Theme) {
       options: {
         bold: run.bold ?? box.bold,
         italic: run.italic ?? box.italic,
-        underline:
-          (run.underline ?? box.underline)
-            ? { style: "sng" as const }
-            : undefined,
+        underline: (run.underline ?? box.underline) ? { style: "sng" as const } : undefined,
         color: colorToHex(run.color ?? box.color),
         fontSize: points(run.fontSize ?? box.fontSize),
         fontFace,
@@ -115,15 +107,8 @@ function addText(pptxSlide: PptxSlide, element: TextElement, theme: Theme) {
   })
 }
 
-function addShape(
-  presentation: Presentation,
-  pptxSlide: PptxSlide,
-  element: ShapeElement
-) {
-  const shapeType =
-    element.shape === "ellipse"
-      ? presentation.ShapeType.ellipse
-      : presentation.ShapeType.rect
+function addShape(presentation: Presentation, pptxSlide: PptxSlide, element: ShapeElement) {
+  const shapeType = element.shape === "ellipse" ? presentation.ShapeType.ellipse : presentation.ShapeType.rect
   pptxSlide.addShape(shapeType, {
     ...boxInInches(element),
     fill: { color: colorToHex(element.fill) },
@@ -139,21 +124,12 @@ function addShape(
 
 // An unreadable image (broken link, blocked site) becomes a placeholder
 // rather than failing the whole export.
-async function addImage(
-  pptxSlide: PptxSlide,
-  element: ImageElement,
-  theme: Theme
-) {
+async function addImage(pptxSlide: PptxSlide, element: ImageElement, theme: Theme) {
   let data: string
   try {
     data = await imageToPngData(element.src, element.w, element.h, element.fit)
   } catch {
-    data = await imageToPngData(
-      imagePlaceholderSrc(element.alt || "Image", theme),
-      element.w,
-      element.h,
-      "cover"
-    )
+    data = await imageToPngData(imagePlaceholderSrc(element.alt || "Image", theme), element.w, element.h, "cover")
   }
   pptxSlide.addImage({
     data,
@@ -194,12 +170,7 @@ function addTable(pptxSlide: PptxSlide, element: TableElement, theme: Theme) {
   })
 }
 
-function addChart(
-  presentation: Presentation,
-  pptxSlide: PptxSlide,
-  element: ChartElement,
-  theme: Theme
-) {
+function addChart(presentation: Presentation, pptxSlide: PptxSlide, element: ChartElement, theme: Theme) {
   const textColor = colorToHex(theme.colors.text)
   const isPie = element.chartType === "pie"
   // The canvas pie shows only the first series.
@@ -210,12 +181,8 @@ function addChart(
     values: oneSeries.data,
   }))
   const chartColors = isPie
-    ? element.categories.map((_, sliceIndex) =>
-        colorToHex(seriesColorFor(theme, sliceIndex))
-      )
-    : series.map((oneSeries, seriesIndex) =>
-        colorToHex(oneSeries.color ?? seriesColorFor(theme, seriesIndex))
-      )
+    ? element.categories.map((_, sliceIndex) => colorToHex(seriesColorFor(theme, sliceIndex)))
+    : series.map((oneSeries, seriesIndex) => colorToHex(oneSeries.color ?? seriesColorFor(theme, seriesIndex)))
 
   const chartNameByType = {
     bar: "bar",
@@ -260,10 +227,7 @@ function addChart(
   })
 }
 
-async function slideBackground(
-  slide: Slide,
-  theme: Theme
-): Promise<PptxGenJS.BackgroundProps> {
+async function slideBackground(slide: Slide, theme: Theme): Promise<PptxGenJS.BackgroundProps> {
   const background = slide.background
   if (!background) return { color: colorToHex(theme.colors.background) }
   if (background.type === "color") {
@@ -271,33 +235,19 @@ async function slideBackground(
   }
   if (background.type === "gradient") {
     return {
-      data: gradientToPngData(
-        background.from,
-        background.to,
-        background.angle,
-        ARTBOARD_WIDTH,
-        ARTBOARD_HEIGHT
-      ),
+      data: gradientToPngData(background.from, background.to, background.angle, ARTBOARD_WIDTH, ARTBOARD_HEIGHT),
     }
   }
   try {
     return {
-      data: await imageToPngData(
-        background.src,
-        ARTBOARD_WIDTH,
-        ARTBOARD_HEIGHT,
-        "cover"
-      ),
+      data: await imageToPngData(background.src, ARTBOARD_WIDTH, ARTBOARD_HEIGHT, "cover"),
     }
   } catch {
     return { color: colorToHex(theme.colors.background) }
   }
 }
 
-export async function buildPresentation(
-  deck: Deck,
-  presentation: Presentation
-) {
+async function buildPresentation(deck: Deck, presentation: Presentation) {
   presentation.layout = "LAYOUT_WIDE"
   presentation.title = deck.title
 

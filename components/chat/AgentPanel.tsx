@@ -45,12 +45,8 @@ export function AgentPanel({
 }: AgentPanelProps) {
   const hasMessages = useEditorStore((state) => state.chatMessages.length > 0)
   const agentRunKind = useDeckAgent((agent) => agent.run?.kind)
-  const isDeckEmpty = useDeckStore(
-    (state) => (state.deck?.slides.length ?? 0) === 0
-  )
-  const examplePrompts = isDeckEmpty
-    ? GENERATE_EXAMPLE_PROMPTS
-    : EDIT_EXAMPLE_PROMPTS
+  const isDeckEmpty = useDeckStore((state) => (state.deck?.slides.length ?? 0) === 0)
+  const examplePrompts = isDeckEmpty ? GENERATE_EXAMPLE_PROMPTS : EDIT_EXAMPLE_PROMPTS
 
   return (
     <section aria-label="Agent" className={cn("flex-col gap-3", className)}>
@@ -66,18 +62,8 @@ export function AgentPanel({
         >
           <HouseIcon />
         </Button>
-        <DeckTitleInput
-          title={deckTitle}
-          onRename={onRenameDeck}
-          className="flex-1"
-        />
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Close agent panel"
-          title="Close agent panel"
-          onClick={onClose}
-        >
+        <DeckTitleInput title={deckTitle} onRename={onRenameDeck} className="flex-1" />
+        <Button variant="ghost" size="icon" aria-label="Close agent panel" title="Close agent panel" onClick={onClose}>
           <PanelLeftCloseIcon />
         </Button>
       </header>
@@ -87,11 +73,7 @@ export function AgentPanel({
       ) : (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
           <SparklesIcon className="size-6 text-muted-foreground" />
-          <p className="font-medium">
-            {isDeckEmpty
-              ? "Describe the deck you want"
-              : "Ask the agent to change slides"}
-          </p>
+          <p className="font-medium">{isDeckEmpty ? "Describe the deck you want" : "Ask the agent to change slides"}</p>
           <p className="text-sm text-muted-foreground">
             {isDeckEmpty
               ? "The agent plans an outline for you to review, then writes each slide."
@@ -124,10 +106,7 @@ export function AgentPanel({
 }
 
 // While the agent works, the input says what it is doing on this deck.
-function messagePlaceholder(
-  agentRunKind: AgentRunKind | undefined,
-  isDeckEmpty: boolean
-) {
+function messagePlaceholder(agentRunKind: AgentRunKind | undefined, isDeckEmpty: boolean) {
   if (agentRunKind === "planning") return "Planning your deck…"
   if (agentRunKind === "generating") return "Writing your slides…"
   if (agentRunKind === "chat") return "Editing your deck…"

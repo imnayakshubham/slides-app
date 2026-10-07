@@ -1,12 +1,7 @@
 "use client"
 
 import { useLayoutEffect, useRef } from "react"
-import {
-  BringToFrontIcon,
-  CopyIcon,
-  SendToBackIcon,
-  Trash2Icon,
-} from "lucide-react"
+import { BringToFrontIcon, CopyIcon, SendToBackIcon, Trash2Icon } from "lucide-react"
 import { useShallow } from "zustand/react/shallow"
 
 import { ChartControls } from "@/components/canvas/toolbar/ChartControls"
@@ -14,10 +9,7 @@ import { ImageControls } from "@/components/canvas/toolbar/ImageControls"
 import { ShapeControls } from "@/components/canvas/toolbar/ShapeControls"
 import { TableControls } from "@/components/canvas/toolbar/TableControls"
 import { TextControls } from "@/components/canvas/toolbar/TextControls"
-import {
-  ToolbarDivider,
-  ToolbarToggle,
-} from "@/components/canvas/toolbar/ToolbarInputs"
+import { ToolbarDivider, ToolbarToggle } from "@/components/canvas/toolbar/ToolbarInputs"
 import {
   deleteSelectedElements,
   duplicateSelectedElements,
@@ -36,9 +28,7 @@ function getSelectedElementNodes() {
   return useEditorStore
     .getState()
     .selectedElementIds.map((elementId) =>
-      document.querySelector<HTMLElement>(
-        `[data-canvas-slide-id] [data-element-id="${elementId}"]`
-      )
+      document.querySelector<HTMLElement>(`[data-canvas-slide-id] [data-element-id="${elementId}"]`)
     )
     .filter((node) => node !== null)
 }
@@ -53,11 +43,7 @@ export function SelectionToolbar() {
   const selectedElements = useDeckStore(
     useShallow((state) =>
       selectedElementIds
-        .map((elementId) =>
-          state.deck
-            ? findElementLocation(state.deck, elementId)?.element
-            : undefined
-        )
+        .map((elementId) => (state.deck ? findElementLocation(state.deck, elementId)?.element : undefined))
         .filter((element) => element !== undefined)
     )
   )
@@ -67,39 +53,23 @@ export function SelectionToolbar() {
     function placeToolbar() {
       const toolbar = toolbarRef.current
       const canvas = toolbar?.closest<HTMLElement>("[data-slide-canvas]")
-      const selectionRects = getSelectedElementNodes().map((node) =>
-        node.getBoundingClientRect()
-      )
+      const selectionRects = getSelectedElementNodes().map((node) => node.getBoundingClientRect())
       if (!toolbar || !canvas || selectionRects.length === 0) return
 
       const canvasRect = canvas.getBoundingClientRect()
       const selectionTop = Math.min(...selectionRects.map((rect) => rect.top))
-      const selectionBottom = Math.max(
-        ...selectionRects.map((rect) => rect.bottom)
-      )
+      const selectionBottom = Math.max(...selectionRects.map((rect) => rect.bottom))
       const selectionLeft = Math.min(...selectionRects.map((rect) => rect.left))
-      const selectionRight = Math.max(
-        ...selectionRects.map((rect) => rect.right)
-      )
+      const selectionRight = Math.max(...selectionRects.map((rect) => rect.right))
 
-      const fitsAbove =
-        selectionTop - canvasRect.top >=
-        toolbar.offsetHeight + GAP_TO_SELECTION_PX
+      const fitsAbove = selectionTop - canvasRect.top >= toolbar.offsetHeight + GAP_TO_SELECTION_PX
       const top = fitsAbove
         ? selectionTop - toolbar.offsetHeight - GAP_TO_SELECTION_PX
         : selectionBottom + GAP_TO_SELECTION_PX
 
-      const centeredLeft =
-        (selectionLeft + selectionRight) / 2 - toolbar.offsetWidth / 2
-      const maxLeft =
-        canvasRect.left +
-        canvas.clientWidth -
-        toolbar.offsetWidth -
-        GAP_TO_EDGE_PX
-      const left = Math.max(
-        canvasRect.left + GAP_TO_EDGE_PX,
-        Math.min(centeredLeft, maxLeft)
-      )
+      const centeredLeft = (selectionLeft + selectionRight) / 2 - toolbar.offsetWidth / 2
+      const maxLeft = canvasRect.left + canvas.clientWidth - toolbar.offsetWidth - GAP_TO_EDGE_PX
+      const left = Math.max(canvasRect.left + GAP_TO_EDGE_PX, Math.min(centeredLeft, maxLeft))
 
       toolbar.style.top = `${top - canvasRect.top + canvas.scrollTop}px`
       toolbar.style.left = `${left - canvasRect.left + canvas.scrollLeft}px`
@@ -113,8 +83,7 @@ export function SelectionToolbar() {
 
   if (selectedElements.length === 0 || isGestureActive) return null
 
-  const singleElement =
-    selectedElements.length === 1 ? selectedElements[0] : null
+  const singleElement = selectedElements.length === 1 ? selectedElements[0] : null
 
   return (
     <div
@@ -133,16 +102,10 @@ export function SelectionToolbar() {
         <>
           <ElementTypeControls element={singleElement} />
           <ToolbarDivider />
-          <ToolbarToggle
-            label="Bring forward"
-            onClick={() => moveSelectedElementInStack("forward")}
-          >
+          <ToolbarToggle label="Bring forward" onClick={() => moveSelectedElementInStack("forward")}>
             <BringToFrontIcon />
           </ToolbarToggle>
-          <ToolbarToggle
-            label="Send backward"
-            onClick={() => moveSelectedElementInStack("backward")}
-          >
+          <ToolbarToggle label="Send backward" onClick={() => moveSelectedElementInStack("backward")}>
             <SendToBackIcon />
           </ToolbarToggle>
         </>

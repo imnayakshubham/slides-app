@@ -1,9 +1,4 @@
-import {
-  ARTBOARD_HEIGHT,
-  ARTBOARD_WIDTH,
-  MIN_ELEMENT_SIZE,
-  type Slide,
-} from "@/lib/schema/Deck"
+import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, MIN_ELEMENT_SIZE, type Slide } from "@/lib/schema/Deck"
 
 export type Box = { x: number; y: number; w: number; h: number }
 
@@ -17,11 +12,7 @@ export function clampBox(box: Box): Box {
   let w = Math.max(box.w, MIN_ELEMENT_SIZE)
   let h = Math.max(box.h, MIN_ELEMENT_SIZE)
 
-  const shrinkToFitArtboard = Math.min(
-    1,
-    ARTBOARD_WIDTH / w,
-    ARTBOARD_HEIGHT / h
-  )
+  const shrinkToFitArtboard = Math.min(1, ARTBOARD_WIDTH / w, ARTBOARD_HEIGHT / h)
   w = Math.round(w * shrinkToFitArtboard)
   h = Math.round(h * shrinkToFitArtboard)
 
@@ -34,35 +25,20 @@ export function clampBox(box: Box): Box {
 }
 
 export function boxesOverlap(a: Box, b: Box) {
-  return (
-    a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
-  )
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
 }
 
 // Nearest spot of the same size that covers no other element. Falls back
 // to the requested (clamped) box when the slide has no room for it.
-export function findFreeSpot(
-  slide: Slide,
-  box: Box,
-  ignoreElementId?: string
-): Box {
+export function findFreeSpot(slide: Slide, box: Box, ignoreElementId?: string): Box {
   const requestedBox = clampBox(box)
-  const isFree = (candidate: Box) =>
-    overlappingElementIds(slide, candidate, ignoreElementId).length === 0
+  const isFree = (candidate: Box) => overlappingElementIds(slide, candidate, ignoreElementId).length === 0
 
   if (isFree(requestedBox)) return requestedBox
 
   const candidates: Box[] = []
-  for (
-    let y = 0;
-    y + requestedBox.h <= ARTBOARD_HEIGHT;
-    y += FREE_SPOT_GRID_STEP
-  ) {
-    for (
-      let x = 0;
-      x + requestedBox.w <= ARTBOARD_WIDTH;
-      x += FREE_SPOT_GRID_STEP
-    ) {
+  for (let y = 0; y + requestedBox.h <= ARTBOARD_HEIGHT; y += FREE_SPOT_GRID_STEP) {
+    for (let x = 0; x + requestedBox.w <= ARTBOARD_WIDTH; x += FREE_SPOT_GRID_STEP) {
       candidates.push({ ...requestedBox, x, y })
     }
   }
@@ -77,11 +53,7 @@ export function findFreeSpot(
   return nearestFreeSpot ?? requestedBox
 }
 
-export function overlappingElementIds(
-  slide: Slide,
-  box: Box,
-  ignoreElementId?: string
-) {
+export function overlappingElementIds(slide: Slide, box: Box, ignoreElementId?: string) {
   return slide.elements
     .filter((element) => element.id !== ignoreElementId)
     .filter((element) => boxesOverlap(box, element))
@@ -135,13 +107,10 @@ export function estimateTextHeight(
   const textWidth = width - (isList ? LIST_INDENT * fontSize : 0)
   const charactersPerLine = Math.max(
     1,
-    Math.floor(
-      (textWidth / (AVERAGE_CHARACTER_WIDTH * fontSize)) * WORD_WRAP_ALLOWANCE
-    )
+    Math.floor((textWidth / (AVERAGE_CHARACTER_WIDTH * fontSize)) * WORD_WRAP_ALLOWANCE)
   )
   const lineCount = paragraphs.reduce(
-    (total, paragraph) =>
-      total + Math.max(1, Math.ceil(paragraph.length / charactersPerLine)),
+    (total, paragraph) => total + Math.max(1, Math.ceil(paragraph.length / charactersPerLine)),
     0
   )
   const listGaps = isList ? paragraphs.length * LIST_ITEM_GAP * fontSize : 0
@@ -215,11 +184,7 @@ function alignmentLines(start: number, size: number) {
   return [start, start + size / 2, start + size]
 }
 
-function findClosestSnap(
-  movingLines: number[],
-  targetLines: number[],
-  threshold: number
-) {
+function findClosestSnap(movingLines: number[], targetLines: number[], threshold: number) {
   let closest: { offset: number; position: number } | null = null
   for (const movingLine of movingLines) {
     for (const targetLine of targetLines) {
@@ -234,32 +199,15 @@ function findClosestSnap(
 }
 
 // Lines a moving box up with the edges and centers of the targets.
-export function snapBox(
-  box: Box,
-  snapTargets: Box[],
-  threshold: number
-): { box: Box; guides: SnapGuide[] } {
-  const verticalTargetLines = snapTargets.flatMap((target) =>
-    alignmentLines(target.x, target.w)
-  )
-  const horizontalTargetLines = snapTargets.flatMap((target) =>
-    alignmentLines(target.y, target.h)
-  )
-  const xSnap = findClosestSnap(
-    alignmentLines(box.x, box.w),
-    verticalTargetLines,
-    threshold
-  )
-  const ySnap = findClosestSnap(
-    alignmentLines(box.y, box.h),
-    horizontalTargetLines,
-    threshold
-  )
+export function snapBox(box: Box, snapTargets: Box[], threshold: number): { box: Box; guides: SnapGuide[] } {
+  const verticalTargetLines = snapTargets.flatMap((target) => alignmentLines(target.x, target.w))
+  const horizontalTargetLines = snapTargets.flatMap((target) => alignmentLines(target.y, target.h))
+  const xSnap = findClosestSnap(alignmentLines(box.x, box.w), verticalTargetLines, threshold)
+  const ySnap = findClosestSnap(alignmentLines(box.y, box.h), horizontalTargetLines, threshold)
 
   const guides: SnapGuide[] = []
   if (xSnap) guides.push({ orientation: "vertical", position: xSnap.position })
-  if (ySnap)
-    guides.push({ orientation: "horizontal", position: ySnap.position })
+  if (ySnap) guides.push({ orientation: "horizontal", position: ySnap.position })
 
   return {
     box: {

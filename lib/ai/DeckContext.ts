@@ -12,11 +12,7 @@ export type AgentHistoryMessage = {
   content: string
 }
 
-export function buildDeckContext(
-  deck: Deck,
-  currentSlideId: string | null,
-  selectedElementIds: string[]
-) {
+export function buildDeckContext(deck: Deck, currentSlideId: string | null, selectedElementIds: string[]) {
   const { colors, fontFamily } = deck.theme
   const lines = [
     `Deck "${deck.title}", ${deck.slides.length} slides. Element boxes are [x, y, w, h] on a 1920x1080 artboard.`,
@@ -47,9 +43,7 @@ export function buildDeckContext(
 
     for (const element of slide.elements) {
       const box = `[${element.x}, ${element.y}, ${element.w}, ${element.h}]`
-      lines.push(
-        `  - ${element.id} ${element.type} ${box} ${describeElementContent(element)}`
-      )
+      lines.push(`  - ${element.id} ${element.type} ${box} ${describeElementContent(element)}`)
     }
   })
 
@@ -63,9 +57,7 @@ export function recentMessages(messages: AgentHistoryMessage[]) {
 function describeElementContent(element: SlideElement) {
   switch (element.type) {
     case "text": {
-      const text = shortenText(
-        element.paragraphs.map(paragraphText).join(" / ")
-      )
+      const text = shortenText(element.paragraphs.map(paragraphText).join(" / "))
       if (element.listStyle === "none") return `"${text}"`
       return `${element.listStyle} list "${text}"`
     }
@@ -75,9 +67,7 @@ function describeElementContent(element: SlideElement) {
 
     case "chart": {
       const categories = element.categories.join(", ")
-      const seriesValues = element.series
-        .map((series) => `${series.name}=[${series.data.join(", ")}]`)
-        .join("; ")
+      const seriesValues = element.series.map((series) => `${series.name}=[${series.data.join(", ")}]`).join("; ")
       return `${element.chartType} chart "${element.title}" categories=[${categories}] ${seriesValues}`
     }
 

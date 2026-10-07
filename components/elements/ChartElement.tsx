@@ -36,32 +36,18 @@ type ChartElementProps = {
 
 export function ChartElement({ element, theme, animate }: ChartElementProps) {
   return (
-    <figure
-      className="flex size-full flex-col"
-      style={{ color: theme.colors.text }}
-    >
+    <figure className="flex size-full flex-col" style={{ color: theme.colors.text }}>
       {element.title && (
-        <figcaption
-          className="shrink-0 pb-4 text-center font-semibold"
-          style={{ fontSize: TITLE_FONT_SIZE }}
-        >
+        <figcaption className="shrink-0 pb-4 text-center font-semibold" style={{ fontSize: TITLE_FONT_SIZE }}>
           {element.title}
         </figcaption>
       )}
       <div className="min-h-0 flex-1">
         <ResponsiveContainer width="100%" height="100%">
           {element.chartType === "pie" ? (
-            <PieChartContent
-              element={element}
-              theme={theme}
-              animate={animate}
-            />
+            <PieChartContent element={element} theme={theme} animate={animate} />
           ) : (
-            <AxisChartContent
-              element={element}
-              theme={theme}
-              animate={animate}
-            />
+            <AxisChartContent element={element} theme={theme} animate={animate} />
           )}
         </ResponsiveContainer>
       </div>
@@ -88,9 +74,7 @@ function AxisChartContent({ element, theme, animate }: ChartElementProps) {
   const rows = buildChartRows(element)
   const textColor = theme.colors.text
   const labelStyle = { fill: textColor, fontSize: LABEL_FONT_SIZE }
-  const seriesColors = element.series.map(
-    (series, seriesIndex) => series.color ?? seriesColorFor(theme, seriesIndex)
-  )
+  const seriesColors = element.series.map((series, seriesIndex) => series.color ?? seriesColorFor(theme, seriesIndex))
 
   let xAxisLabel = undefined
   let xAxisHeight = undefined
@@ -118,12 +102,7 @@ function AxisChartContent({ element, theme, animate }: ChartElementProps) {
 
   // An array, not a component: Recharts needs them as direct chart children.
   const gridAxesAndLegend = [
-    <CartesianGrid
-      key="grid"
-      vertical={false}
-      stroke={textColor}
-      strokeOpacity={0.12}
-    />,
+    <CartesianGrid key="grid" vertical={false} stroke={textColor} strokeOpacity={0.12} />,
     <XAxis
       key="x-axis"
       dataKey="category"
@@ -143,12 +122,7 @@ function AxisChartContent({ element, theme, animate }: ChartElementProps) {
     />,
   ]
   if (element.showLegend) {
-    gridAxesAndLegend.push(
-      <Legend
-        key="legend"
-        wrapperStyle={{ fontSize: LABEL_FONT_SIZE, color: textColor }}
-      />
-    )
+    gridAxesAndLegend.push(<Legend key="legend" wrapperStyle={{ fontSize: LABEL_FONT_SIZE, color: textColor }} />)
   }
 
   if (element.chartType === "line") {
@@ -231,11 +205,7 @@ function PieChartContent({ element, theme, animate }: ChartElementProps) {
           <Cell key={sliceIndex} fill={seriesColorFor(theme, sliceIndex)} />
         ))}
       </Pie>
-      {element.showLegend && (
-        <Legend
-          wrapperStyle={{ fontSize: LABEL_FONT_SIZE, color: theme.colors.text }}
-        />
-      )}
+      {element.showLegend && <Legend wrapperStyle={{ fontSize: LABEL_FONT_SIZE, color: theme.colors.text }} />}
     </PieChart>
   )
 }

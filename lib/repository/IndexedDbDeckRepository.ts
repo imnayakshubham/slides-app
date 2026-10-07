@@ -1,21 +1,10 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb"
 import { z } from "zod"
 
-import type {
-  DeckRepository,
-  UploadedImage,
-} from "@/lib/repository/DeckRepository"
-import {
-  conversationRecordSchema,
-  type ChatMessage,
-  type ConversationRecord,
-} from "@/lib/schema/Conversation"
+import type { DeckRepository, UploadedImage } from "@/lib/repository/DeckRepository"
+import { conversationRecordSchema, type ChatMessage, type ConversationRecord } from "@/lib/schema/Conversation"
 import type { Deck } from "@/lib/schema/Deck"
-import {
-  deckRecordSchema,
-  type DeckRecord,
-  type DeckSummary,
-} from "@/lib/schema/DeckRecord"
+import { deckRecordSchema, type DeckRecord, type DeckSummary } from "@/lib/schema/DeckRecord"
 
 const DATABASE_NAME = "ai-slides"
 const DATABASE_VERSION = 2
@@ -47,24 +36,20 @@ export class IndexedDbDeckRepository implements DeckRepository {
   // Opened lazily: this module is also evaluated during server rendering,
   // where IndexedDB does not exist.
   private openDatabase() {
-    this.databasePromise ??= openDB<SlidesDatabase>(
-      DATABASE_NAME,
-      DATABASE_VERSION,
-      {
-        upgrade(database, oldVersion) {
-          if (oldVersion < 1) {
-            database.createObjectStore("decks", { keyPath: "deck.id" })
-            const deckIndex = database.createObjectStore("deckIndex", {
-              keyPath: "id",
-            })
-            deckIndex.createIndex("updatedAt", "updatedAt")
-          }
-          if (oldVersion < 2) {
-            database.createObjectStore("conversations", { keyPath: "deckId" })
-          }
-        },
-      }
-    )
+    this.databasePromise ??= openDB<SlidesDatabase>(DATABASE_NAME, DATABASE_VERSION, {
+      upgrade(database, oldVersion) {
+        if (oldVersion < 1) {
+          database.createObjectStore("decks", { keyPath: "deck.id" })
+          const deckIndex = database.createObjectStore("deckIndex", {
+            keyPath: "id",
+          })
+          deckIndex.createIndex("updatedAt", "updatedAt")
+        }
+        if (oldVersion < 2) {
+          database.createObjectStore("conversations", { keyPath: "deckId" })
+        }
+      },
+    })
     return this.databasePromise
   }
 
@@ -81,19 +66,14 @@ export class IndexedDbDeckRepository implements DeckRepository {
 
     const parsedRecord = deckRecordSchema.safeParse(storedRecord)
     if (!parsedRecord.success) {
-      throw new Error(
-        `Saved data for deck "${deckId}" is invalid: ${z.prettifyError(parsedRecord.error)}`
-      )
+      throw new Error(`Saved data for deck "${deckId}" is invalid: ${z.prettifyError(parsedRecord.error)}`)
     }
     return parsedRecord.data
   }
 
   async saveDeck(deck: Deck) {
     const database = await this.openDatabase()
-    const transaction = database.transaction(
-      ["decks", "deckIndex"],
-      "readwrite"
-    )
+    const transaction = database.transaction(["decks", "deckIndex"], "readwrite")
     const existingRecord = await transaction.objectStore("decks").get(deck.id)
     const now = new Date().toISOString()
 
@@ -114,10 +94,7 @@ export class IndexedDbDeckRepository implements DeckRepository {
 
   async deleteDeck(deckId: string) {
     const database = await this.openDatabase()
-    const transaction = database.transaction(
-      ["decks", "deckIndex", "conversations"],
-      "readwrite"
-    )
+    const transaction = database.transaction(["decks", "deckIndex", "conversations"], "readwrite")
     await Promise.all([
       transaction.objectStore("decks").delete(deckId),
       transaction.objectStore("deckIndex").delete(deckId),
@@ -134,10 +111,7 @@ export class IndexedDbDeckRepository implements DeckRepository {
     // A broken chat history should not stop the deck from opening.
     const parsedRecord = conversationRecordSchema.safeParse(storedRecord)
     if (!parsedRecord.success) {
-      console.error(
-        `Saved chat for deck "${deckId}" is invalid`,
-        parsedRecord.error
-      )
+      console.error(`Saved chat for deck "${deckId}" is invalid`, parsedRecord.error)
       return []
     }
     return parsedRecord.data.messages
@@ -158,10 +132,7 @@ export class IndexedDbDeckRepository implements DeckRepository {
   // the deck as a data URL.
   async uploadImage(file: File): Promise<UploadedImage> {
     const bitmap = await createImageBitmap(file)
-    const scale = Math.min(
-      1,
-      MAX_IMAGE_SIDE_PX / Math.max(bitmap.width, bitmap.height)
-    )
+    const scale = Math.min(1, MAX_IMAGE_SIDE_PX / Math.max(bitmap.width, bitmap.height))
     const width = Math.round(bitmap.width * scale)
     const height = Math.round(bitmap.height * scale)
 
@@ -172,10 +143,7 @@ export class IndexedDbDeckRepository implements DeckRepository {
     bitmap.close()
 
     // PNG keeps transparency; everything else becomes a smaller JPEG.
-    const src =
-      file.type === "image/png"
-        ? canvas.toDataURL("image/png")
-        : canvas.toDataURL("image/jpeg", JPEG_QUALITY)
+    const src = file.type === "image/png" ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", JPEG_QUALITY)
     return { src, width, height }
   }
 }

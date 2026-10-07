@@ -39,8 +39,7 @@ export const useDragPreviewStore = create<DragPreviewStore>()((set, get) => ({
   marqueeBox: null,
   dropTarget: null,
 
-  setPreview: (previewBoxes, guides) =>
-    set({ isActive: true, previewBoxes, guides }),
+  setPreview: (previewBoxes, guides) => set({ isActive: true, previewBoxes, guides }),
 
   setMarquee: (marqueeBox) => set({ isActive: true, marqueeBox }),
 

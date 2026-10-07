@@ -5,11 +5,7 @@ import type { useSortable } from "@dnd-kit/sortable"
 import { ArrowUpIcon, GripVerticalIcon, SparklesIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Textarea } from "@/components/ui/textarea"
 import { useDeckAgent } from "@/hooks/UseDeckAgent"
 import { sendAgentMessage } from "@/lib/client/AgentActions"
@@ -30,13 +26,7 @@ const RAIL_BUTTON_CLASS = "rounded-xl bg-card shadow-sm"
 
 // The buttons beside a slide on the canvas: drag to reorder, ask the AI
 // about this slide.
-export function SlideRail({
-  slideId,
-  slideNumber,
-  dragHandleListeners,
-  setDragHandleRef,
-  className,
-}: SlideRailProps) {
+export function SlideRail({ slideId, slideNumber, dragHandleListeners, setDragHandleRef, className }: SlideRailProps) {
   return (
     <div className={cn("flex gap-2 sm:flex-col", className)}>
       <Button
@@ -57,13 +47,7 @@ export function SlideRail({
 
 // The chat already treats the current slide as "this slide", so the
 // request is sent as a normal chat message right after opening the slide.
-function EditWithAgentPopover({
-  slideId,
-  slideNumber,
-}: {
-  slideId: string
-  slideNumber: number
-}) {
+function EditWithAgentPopover({ slideId, slideNumber }: { slideId: string; slideNumber: number }) {
   const isAgentBusy = useDeckAgent((agent) => agent.run !== null)
   const [isOpen, setIsOpen] = useState(false)
   const [request, setRequest] = useState("")
@@ -117,12 +101,7 @@ function EditWithAgentPopover({
           onKeyDown={sendOnEnter}
           className="max-h-40"
         />
-        <Button
-          size="sm"
-          className="self-end"
-          disabled={!request.trim() || isAgentBusy}
-          onClick={send}
-        >
+        <Button size="sm" className="self-end" disabled={!request.trim() || isAgentBusy} onClick={send}>
           <ArrowUpIcon />
           Send
         </Button>

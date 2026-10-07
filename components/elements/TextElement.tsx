@@ -1,13 +1,6 @@
 "use client"
 
-import {
-  useEffect,
-  useEffectEvent,
-  useRef,
-  type CSSProperties,
-  type FocusEvent,
-  type KeyboardEvent,
-} from "react"
+import { useEffect, useEffectEvent, useRef, type CSSProperties, type FocusEvent, type KeyboardEvent } from "react"
 
 import {
   readBoxStyle,
@@ -35,11 +28,7 @@ function isInsideSelectionToolbar(node: EventTarget | null) {
   return node instanceof Element && node.closest("[data-selection-toolbar]")
 }
 
-export function TextElement({
-  element,
-  isEditing = false,
-  onFinishEditing,
-}: TextElementProps) {
+export function TextElement({ element, isEditing = false, onFinishEditing }: TextElementProps) {
   const rootRef = useRef<HTMLElement | null>(null)
   const hasFinishedRef = useRef(false)
   const box: TextBoxStyle = {
@@ -55,8 +44,7 @@ export function TextElement({
     fontStyle: element.italic ? "italic" : "normal",
     color: element.color,
     textAlign: element.align,
-    fontFamily:
-      element.font === "heading" ? "var(--slide-heading-font)" : undefined,
+    fontFamily: element.font === "heading" ? "var(--slide-heading-font)" : undefined,
   }
 
   // Ends the edit exactly once, however it ends (blur, Escape, a press
@@ -66,10 +54,7 @@ export function TextElement({
     if (!root || hasFinishedRef.current) return
     hasFinishedRef.current = true
     setHighlightedRange(null)
-    const paragraphs = readParagraphsFromEditor(
-      root,
-      readBoxStyle(root, box.underline)
-    )
+    const paragraphs = readParagraphsFromEditor(root, readBoxStyle(root, box.underline))
     onFinishEditing?.(paragraphs, root.offsetHeight)
   }
   const finishEditingFromListener = useEffectEvent(finishEditing)
@@ -89,9 +74,7 @@ export function TextElement({
       return
     }
     setHighlightedRange(range.cloneRange())
-    setHighlightedTextStyle(
-      readHighlightStyle(range, root, readBoxStyle(root, box.underline))
-    )
+    setHighlightedTextStyle(readHighlightStyle(range, root, readBoxStyle(root, box.underline)))
   })
 
   useEffect(() => {
@@ -107,11 +90,7 @@ export function TextElement({
     return () => {
       setActiveTextEditFinisher(null)
       document.removeEventListener("selectionchange", rememberHighlight)
-      document.removeEventListener(
-        "pointerdown",
-        finishWhenPressingOutside,
-        true
-      )
+      document.removeEventListener("pointerdown", finishWhenPressingOutside, true)
     }
   }, [isEditing])
 
@@ -151,10 +130,7 @@ export function TextElement({
         // A fresh node per edit session, so React never has to reconcile
         // paragraphs the browser added while typing.
         key={isEditing ? "editing" : "viewing"}
-        className={cn(
-          "leading-tight wrap-anywhere outline-none",
-          isEditing && "select-text"
-        )}
+        className={cn("leading-tight wrap-anywhere outline-none", isEditing && "select-text")}
         style={textStyle}
         {...editingProps}
       >
@@ -171,10 +147,7 @@ export function TextElement({
   return (
     <ListTag
       key={isEditing ? "editing" : "viewing"}
-      className={cn(
-        "ps-[1.25em] leading-tight wrap-anywhere outline-none",
-        isEditing && "select-text"
-      )}
+      className={cn("ps-[1.25em] leading-tight wrap-anywhere outline-none", isEditing && "select-text")}
       style={{
         ...textStyle,
         listStyleType: element.listStyle === "bullet" ? "disc" : "decimal",

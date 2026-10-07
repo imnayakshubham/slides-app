@@ -2,17 +2,9 @@
 
 import { PlusIcon, SlidersHorizontalIcon, XIcon } from "lucide-react"
 
-import {
-  ColorInput,
-  NumberInput,
-  TextInput,
-} from "@/components/canvas/toolbar/ToolbarInputs"
+import { ColorInput, NumberInput, TextInput } from "@/components/canvas/toolbar/ToolbarInputs"
 import { Button } from "@/components/ui/button"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
 import type { SlideElement } from "@/lib/schema/Deck"
 import { seriesColorFor } from "@/lib/themes/Themes"
@@ -30,9 +22,7 @@ export function ChartDataEditor({ element }: { element: ChartElementData }) {
 
   function renameCategory(categoryIndex: number, name: string) {
     updateSelectedElement({
-      categories: categories.map((category, index) =>
-        index === categoryIndex ? name : category
-      ),
+      categories: categories.map((category, index) => (index === categoryIndex ? name : category)),
     })
   }
 
@@ -56,31 +46,21 @@ export function ChartDataEditor({ element }: { element: ChartElementData }) {
     })
   }
 
-  function updateSeries(
-    seriesIndex: number,
-    changes: Partial<ChartElementData["series"][number]>
-  ) {
+  function updateSeries(seriesIndex: number, changes: Partial<ChartElementData["series"][number]>) {
     updateSelectedElement({
-      series: series.map((oneSeries, index) =>
-        index === seriesIndex ? { ...oneSeries, ...changes } : oneSeries
-      ),
+      series: series.map((oneSeries, index) => (index === seriesIndex ? { ...oneSeries, ...changes } : oneSeries)),
     })
   }
 
   function setValue(seriesIndex: number, categoryIndex: number, value: number) {
     updateSeries(seriesIndex, {
-      data: series[seriesIndex].data.map((oldValue, index) =>
-        index === categoryIndex ? value : oldValue
-      ),
+      data: series[seriesIndex].data.map((oldValue, index) => (index === categoryIndex ? value : oldValue)),
     })
   }
 
   function addSeries() {
     updateSelectedElement({
-      series: [
-        ...series,
-        { name: `Series ${series.length + 1}`, data: categories.map(() => 0) },
-      ],
+      series: [...series, { name: `Series ${series.length + 1}`, data: categories.map(() => 0) }],
     })
   }
 
@@ -92,16 +72,7 @@ export function ChartDataEditor({ element }: { element: ChartElementData }) {
 
   return (
     <Popover>
-      <PopoverTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label="Edit chart"
-            title="Edit chart"
-          />
-        }
-      >
+      <PopoverTrigger render={<Button variant="ghost" size="sm" aria-label="Edit chart" title="Edit chart" />}>
         <SlidersHorizontalIcon />
         Edit
       </PopoverTrigger>
@@ -149,20 +120,13 @@ export function ChartDataEditor({ element }: { element: ChartElementData }) {
                       <div className="flex items-center">
                         <ColorInput
                           label={`Color of ${oneSeries.name}`}
-                          color={
-                            oneSeries.color ??
-                            (theme ? seriesColorFor(theme, seriesIndex) : "")
-                          }
-                          onChange={(color) =>
-                            updateSeries(seriesIndex, { color })
-                          }
+                          color={oneSeries.color ?? (theme ? seriesColorFor(theme, seriesIndex) : "")}
+                          onChange={(color) => updateSeries(seriesIndex, { color })}
                         />
                         <TextInput
                           label={`Series ${seriesIndex + 1} name`}
                           value={oneSeries.name}
-                          onChange={(name) =>
-                            updateSeries(seriesIndex, { name })
-                          }
+                          onChange={(name) => updateSeries(seriesIndex, { name })}
                           className="w-24"
                         />
                         <Button
@@ -198,9 +162,7 @@ export function ChartDataEditor({ element }: { element: ChartElementData }) {
                         <TextInput
                           label={`Category ${categoryIndex + 1} name`}
                           value={category}
-                          onChange={(name) =>
-                            renameCategory(categoryIndex, name)
-                          }
+                          onChange={(name) => renameCategory(categoryIndex, name)}
                           className="w-24"
                         />
                       </div>
@@ -210,9 +172,7 @@ export function ChartDataEditor({ element }: { element: ChartElementData }) {
                         <NumberInput
                           label={`${oneSeries.name}, ${category}`}
                           value={oneSeries.data[categoryIndex]}
-                          onChange={(value) =>
-                            setValue(seriesIndex, categoryIndex, value)
-                          }
+                          onChange={(value) => setValue(seriesIndex, categoryIndex, value)}
                           className="w-full min-w-16"
                         />
                       </td>

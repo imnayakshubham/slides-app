@@ -50,9 +50,7 @@ function canvasSizeFor(boxWidth: number, boxHeight: number) {
 // directly would taint the canvas and block reading it back.
 async function loadImage(src: string) {
   const isRemote = /^https?:/i.test(src)
-  const objectUrl = isRemote
-    ? URL.createObjectURL(await (await fetch(src)).blob())
-    : null
+  const objectUrl = isRemote ? URL.createObjectURL(await (await fetch(src)).blob()) : null
   try {
     const image = new Image()
     image.src = objectUrl ?? src
@@ -63,12 +61,7 @@ async function loadImage(src: string) {
   }
 }
 
-export async function imageToPngData(
-  src: string,
-  boxWidth: number,
-  boxHeight: number,
-  fit: "cover" | "contain"
-) {
+export async function imageToPngData(src: string, boxWidth: number, boxHeight: number, fit: "cover" | "contain") {
   const image = await loadImage(src)
   const { width, height } = canvasSizeFor(boxWidth, boxHeight)
   const canvas = createCanvas(width, height)
@@ -83,24 +76,12 @@ export async function imageToPngData(
       : Math.min(canvas.width / imageWidth, canvas.height / imageHeight)
   const drawnWidth = imageWidth * scale
   const drawnHeight = imageHeight * scale
-  context.drawImage(
-    image,
-    (canvas.width - drawnWidth) / 2,
-    (canvas.height - drawnHeight) / 2,
-    drawnWidth,
-    drawnHeight
-  )
+  context.drawImage(image, (canvas.width - drawnWidth) / 2, (canvas.height - drawnHeight) / 2, drawnWidth, drawnHeight)
   return canvasToPngData(canvas)
 }
 
 // Same geometry as CSS linear-gradient(angle): the line reaches the corners.
-export function gradientToPngData(
-  from: string,
-  to: string,
-  angleDegrees: number,
-  boxWidth: number,
-  boxHeight: number
-) {
+export function gradientToPngData(from: string, to: string, angleDegrees: number, boxWidth: number, boxHeight: number) {
   const { width, height } = canvasSizeFor(boxWidth, boxHeight)
   const canvas = createCanvas(width, height)
   const context = canvas.getContext("2d")
@@ -109,9 +90,7 @@ export function gradientToPngData(
   const angle = (angleDegrees * Math.PI) / 180
   const directionX = Math.sin(angle)
   const directionY = -Math.cos(angle)
-  const halfLength =
-    Math.abs((canvas.width / 2) * directionX) +
-    Math.abs((canvas.height / 2) * directionY)
+  const halfLength = Math.abs((canvas.width / 2) * directionX) + Math.abs((canvas.height / 2) * directionY)
   const centerX = canvas.width / 2
   const centerY = canvas.height / 2
   const gradient = context.createLinearGradient(

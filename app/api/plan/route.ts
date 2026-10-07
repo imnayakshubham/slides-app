@@ -19,18 +19,14 @@ export async function POST(request: Request) {
   const requestBody = await request.json().catch(() => null)
   const parsedRequest = planRequestSchema.safeParse(requestBody)
   if (!parsedRequest.success) {
-    return Response.json(
-      { error: z.prettifyError(parsedRequest.error) },
-      { status: 400 }
-    )
+    return Response.json({ error: z.prettifyError(parsedRequest.error) }, { status: 400 })
   }
 
   const { response, sendEvent, closeStream } = createEventStream()
 
   const tools = {
     create_outline: tool({
-      description:
-        "Submit the outline of the deck: its title and every slide in order.",
+      description: "Submit the outline of the deck: its title and every slide in order.",
       inputSchema: outlineSchema,
       execute: (outline) => {
         sendEvent({ event: "outline", data: { outline } })

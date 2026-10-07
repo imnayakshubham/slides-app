@@ -24,11 +24,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useAgentSlideActivity } from "@/hooks/UseAgentSlideActivity"
 import {
   createChartBlock,
@@ -117,8 +113,7 @@ const BLOCKS: Block[] = [
     label: "Stacked bar",
     category: "data",
     Icon: ChartColumnStackedIcon,
-    insert: (at) =>
-      insertElement(createChartBlock("stackedBar", getTheme()), at),
+    insert: (at) => insertElement(createChartBlock("stackedBar", getTheme()), at),
   },
   {
     label: "Table",
@@ -149,9 +144,7 @@ const BLOCKS: Block[] = [
 export function AddBlockMenu() {
   const currentSlideId = useEditorStore((state) => state.currentSlideId)
   const isCurrentSlideLocked = useAgentSlideActivity(currentSlideId) !== null
-  const hasSlides = useDeckStore(
-    (state) => (state.deck?.slides.length ?? 0) > 0
-  )
+  const hasSlides = useDeckStore((state) => (state.deck?.slides.length ?? 0) > 0)
   const { addBlock, imageInput, uploadError } = useBlockAdder()
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState("")
@@ -161,9 +154,7 @@ export function AddBlockMenu() {
   const searchText = search.trim().toLowerCase()
   const visibleBlocks = searchText
     ? BLOCKS.filter((block) => block.label.toLowerCase().includes(searchText))
-    : BLOCKS.filter(
-        (block) => category === "all" || block.category === category
-      )
+    : BLOCKS.filter((block) => category === "all" || block.category === category)
 
   function openOrClose(open: boolean) {
     setIsOpen(open)
@@ -189,20 +180,12 @@ export function AddBlockMenu() {
     <>
       <Popover open={isOpen} onOpenChange={openOrClose}>
         <PopoverTrigger
-          render={
-            <Button
-              variant={isOpen ? "secondary" : "ghost"}
-              disabled={!hasSlides || isCurrentSlideLocked}
-            />
-          }
+          render={<Button variant={isOpen ? "secondary" : "ghost"} disabled={!hasSlides || isCurrentSlideLocked} />}
         >
           <LayoutGridIcon />
           Add block
         </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          className="w-[min(40rem,calc(100vw-2rem))] gap-0 overflow-hidden rounded-2xl p-0"
-        >
+        <PopoverContent align="start" className="w-[min(40rem,calc(100vw-2rem))] gap-0 overflow-hidden rounded-2xl p-0">
           <div className="border-b p-3">
             <label className="flex items-center gap-2 rounded-xl border bg-background px-3 focus-within:ring-3 focus-within:ring-ring/50">
               <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
@@ -248,14 +231,9 @@ export function AddBlockMenu() {
 
             <div className="min-h-0 flex-1 overflow-y-auto p-3">
               {visibleBlocks.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  No blocks match “{search.trim()}”.
-                </p>
+                <p className="py-8 text-center text-sm text-muted-foreground">No blocks match “{search.trim()}”.</p>
               ) : (
-                <BlockGroups
-                  blocks={visibleBlocks}
-                  onAddBlock={addBlockAndClose}
-                />
+                <BlockGroups blocks={visibleBlocks} onAddBlock={addBlockAndClose} />
               )}
             </div>
           </div>
@@ -389,15 +367,8 @@ function BlockGroups({
         if (blocksInCategory.length === 0) return null
         return (
           <section key={id} className="flex flex-col gap-2">
-            <h3 className="text-xs font-medium text-muted-foreground">
-              {label}
-            </h3>
-            <div
-              className={cn(
-                "grid gap-2",
-                isCompact ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-3"
-              )}
-            >
+            <h3 className="text-xs font-medium text-muted-foreground">{label}</h3>
+            <div className={cn("grid gap-2", isCompact ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-3")}>
               {blocksInCategory.map((block) => (
                 <button
                   key={block.label}
@@ -408,12 +379,7 @@ function BlockGroups({
                     isCompact ? "py-2.5 text-xs" : "py-4 text-sm"
                   )}
                 >
-                  <block.Icon
-                    className={cn(
-                      "text-primary",
-                      isCompact ? "size-5" : "size-7"
-                    )}
-                  />
+                  <block.Icon className={cn("text-primary", isCompact ? "size-5" : "size-7")} />
                   {block.label}
                 </button>
               ))}

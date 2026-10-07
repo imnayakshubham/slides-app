@@ -2,13 +2,7 @@ import { clampBox, findFreeSpot } from "@/lib/edits/Geometry"
 import { createId } from "@/lib/Ids"
 import { TEXT_PRESETS, type TextPresetName } from "@/lib/layouts/TextPresets"
 import type { UploadedImage } from "@/lib/repository/DeckRepository"
-import {
-  ARTBOARD_HEIGHT,
-  ARTBOARD_WIDTH,
-  MIN_ELEMENT_SIZE,
-  type Deck,
-  type SlideElement,
-} from "@/lib/schema/Deck"
+import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, MIN_ELEMENT_SIZE, type Deck, type SlideElement } from "@/lib/schema/Deck"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
@@ -31,10 +25,7 @@ function centeredBox(width: number, height: number) {
   }
 }
 
-export function createTextBlock(
-  presetName: TextPresetName,
-  theme: Theme
-): SlideElement {
+export function createTextBlock(presetName: TextPresetName, theme: Theme): SlideElement {
   const preset = TEXT_PRESETS[presetName]
   return {
     id: createId(),
@@ -53,13 +44,8 @@ export function createTextBlock(
 
 type ChartElement = Extract<SlideElement, { type: "chart" }>
 
-export function createChartBlock(
-  chartType: ChartElement["chartType"],
-  theme: Theme
-): SlideElement {
-  const series: ChartElement["series"] = [
-    { name: "Value", data: [10, 14, 19, 24], color: theme.colors.accent },
-  ]
+export function createChartBlock(chartType: ChartElement["chartType"], theme: Theme): SlideElement {
+  const series: ChartElement["series"] = [{ name: "Value", data: [10, 14, 19, 24], color: theme.colors.accent }]
   // A stacked bar with one series looks like a plain bar chart. The second
   // series has no color, so the chart picks one that differs from the first.
   if (chartType === "stackedBar") {
@@ -91,10 +77,7 @@ export function createTableBlock(): SlideElement {
   }
 }
 
-export function createShapeBlock(
-  shape: "rect" | "ellipse",
-  theme: Theme
-): SlideElement {
+export function createShapeBlock(shape: "rect" | "ellipse", theme: Theme): SlideElement {
   return {
     id: createId(),
     type: "shape",
@@ -107,14 +90,8 @@ export function createShapeBlock(
 }
 
 export function createImageBlock(image: UploadedImage): SlideElement {
-  const width = Math.max(
-    MIN_ELEMENT_SIZE,
-    Math.min(image.width, MAX_IMAGE_WIDTH)
-  )
-  const height = Math.max(
-    MIN_ELEMENT_SIZE,
-    (width / image.width) * image.height
-  )
+  const width = Math.max(MIN_ELEMENT_SIZE, Math.min(image.width, MAX_IMAGE_WIDTH))
+  const height = Math.max(MIN_ELEMENT_SIZE, (width / image.width) * image.height)
   return {
     id: createId(),
     type: "image",
@@ -134,9 +111,7 @@ export function insertElement(element: SlideElement, at?: Point) {
   const currentSlide = deck?.slides.find((slide) => slide.id === currentSlideId)
   if (!currentSlide) return
 
-  const box = at
-    ? clampBox({ x: at.x, y: at.y, w: element.w, h: element.h })
-    : findFreeSpot(currentSlide, element)
+  const box = at ? clampBox({ x: at.x, y: at.y, w: element.w, h: element.h }) : findFreeSpot(currentSlide, element)
   const result = applyEdit({
     type: "addElement",
     slideId: currentSlide.id,

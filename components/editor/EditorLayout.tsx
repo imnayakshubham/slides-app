@@ -24,9 +24,7 @@ type EditorLayoutProps = {
 
 export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
   const deckTitle = useDeckStore((state) => state.deck?.title ?? "")
-  const hasSlides = useDeckStore(
-    (state) => (state.deck?.slides.length ?? 0) > 0
-  )
+  const hasSlides = useDeckStore((state) => (state.deck?.slides.length ?? 0) > 0)
   const applyEdit = useDeckStore((state) => state.applyEdit)
   useSlideKeyboardNavigation()
   useCanvasShortcuts()
@@ -88,10 +86,7 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
       useEditorStore.subscribe((state, previousState) => {
         const deckId = useDeckStore.getState().deck?.id
         const hasReview = deckAgentOf(state.agentByDeckId, deckId).outlineReview
-        const hadReview = deckAgentOf(
-          previousState.agentByDeckId,
-          deckId
-        ).outlineReview
+        const hadReview = deckAgentOf(previousState.agentByDeckId, deckId).outlineReview
         if (hasReview && !hadReview) showAgentForReview()
       }),
     []
@@ -141,25 +136,17 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
         >
           <EditorToolbar
             isSlideNavigatorOpen={isSlideNavigatorOpen}
-            onToggleSlideNavigator={() =>
-              setIsSlideNavigatorOpen((isOpen) => !isOpen)
-            }
+            onToggleSlideNavigator={() => setIsSlideNavigatorOpen((isOpen) => !isOpen)}
           />
           <div className="flex min-h-0 flex-1 bg-muted">
-            {isSlideNavigatorOpen && (
-              <SlideNavigator onClose={() => setIsSlideNavigatorOpen(false)} />
-            )}
+            {isSlideNavigatorOpen && <SlideNavigator onClose={() => setIsSlideNavigatorOpen(false)} />}
             <SlideCanvas onOpenAgent={openAgent} />
           </div>
         </section>
       </div>
 
       <Sheet open={isMobileAgentOpen} onOpenChange={setIsMobileAgentOpen}>
-        <SheetContent
-          side="left"
-          showCloseButton={false}
-          className="w-full p-3 sm:max-w-sm"
-        >
+        <SheetContent side="left" showCloseButton={false} className="w-full p-3 sm:max-w-sm">
           <SheetTitle className="sr-only">Agent</SheetTitle>
           <AgentPanel
             deckTitle={deckTitle}

@@ -58,23 +58,18 @@ export function OutlineReview({ messageId }: { messageId: string }) {
 
   const { outline, slideKeys } = outlineReview
   const hasUntitledSlide = outline.slides.some((slide) => !slide.title.trim())
-  const canGenerate =
-    !isAgentRunning && outline.slides.length > 0 && !hasUntitledSlide
+  const canGenerate = !isAgentRunning && outline.slides.length > 0 && !hasUntitledSlide
 
   function moveDraggedSlide({ active, over }: DragEndEvent) {
     if (!over || active.id === over.id) return
-    moveOutlineSlide(
-      slideKeys.indexOf(String(active.id)),
-      slideKeys.indexOf(String(over.id))
-    )
+    moveOutlineSlide(slideKeys.indexOf(String(active.id)), slideKeys.indexOf(String(over.id)))
   }
 
   return (
     <section
       aria-label="Outline review"
       onKeyDown={(event) => {
-        const isGenerateShortcut =
-          event.key === "Enter" && (event.metaKey || event.ctrlKey)
+        const isGenerateShortcut = event.key === "Enter" && (event.metaKey || event.ctrlKey)
         if (isGenerateShortcut && canGenerate) void generateApprovedOutline()
       }}
       className="flex flex-col gap-2 rounded-xl border bg-card p-2"
@@ -85,15 +80,8 @@ export function OutlineReview({ messageId }: { messageId: string }) {
           Theme: {THEMES[outline.themeId].name} · you can change it later
         </div>
       )}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={moveDraggedSlide}
-      >
-        <SortableContext
-          items={slideKeys}
-          strategy={verticalListSortingStrategy}
-        >
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={moveDraggedSlide}>
+        <SortableContext items={slideKeys} strategy={verticalListSortingStrategy}>
           <ol className="flex flex-col gap-1">
             {outline.slides.map((slide, slideIndex) => (
               <OutlineSlideRow
@@ -117,19 +105,10 @@ export function OutlineReview({ messageId }: { messageId: string }) {
           <SparklesIcon />
           Generate {outline.slides.length} slides
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={isAgentRunning}
-          onClick={discardOutline}
-        >
+        <Button variant="ghost" size="sm" disabled={isAgentRunning} onClick={discardOutline}>
           Cancel
         </Button>
-        {hasUntitledSlide && (
-          <span className="text-xs text-muted-foreground">
-            Every slide needs a title.
-          </span>
-        )}
+        {hasUntitledSlide && <span className="text-xs text-muted-foreground">Every slide needs a title.</span>}
       </div>
     </section>
   )
@@ -146,23 +125,13 @@ function OutlineSlideRow({
   slideIndex: number
   canRemove: boolean
 }) {
-  const {
-    setNodeRef,
-    attributes,
-    listeners,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: rowKey })
+  const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: rowKey })
 
   return (
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      className={cn(
-        "flex items-start gap-1 rounded-lg bg-card py-1 pe-1",
-        isDragging && "relative z-10 shadow-md"
-      )}
+      className={cn("flex items-start gap-1 rounded-lg bg-card py-1 pe-1", isDragging && "relative z-10 shadow-md")}
     >
       <button
         type="button"
@@ -174,16 +143,12 @@ function OutlineSlideRow({
       >
         <GripVerticalIcon className="size-4" />
       </button>
-      <span className="mt-1 w-4 shrink-0 text-xs text-muted-foreground tabular-nums">
-        {slideIndex + 1}
-      </span>
+      <span className="mt-1 w-4 shrink-0 text-xs text-muted-foreground tabular-nums">{slideIndex + 1}</span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <input
           aria-label={`Slide ${slideIndex + 1} title`}
           value={slide.title}
-          onChange={(event) =>
-            renameOutlineSlide(slideIndex, event.target.value)
-          }
+          onChange={(event) => renameOutlineSlide(slideIndex, event.target.value)}
           className="w-full rounded-md bg-transparent px-1 py-0.5 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
         />
         <span className="flex flex-wrap gap-1 px-1 text-xs text-muted-foreground">
@@ -207,9 +172,5 @@ function OutlineSlideRow({
 }
 
 function OutlineBadge({ children }: { children: string }) {
-  return (
-    <span className="rounded-full bg-muted px-1.5 text-[0.7rem] text-foreground">
-      {children}
-    </span>
-  )
+  return <span className="rounded-full bg-muted px-1.5 text-[0.7rem] text-foreground">{children}</span>
 }

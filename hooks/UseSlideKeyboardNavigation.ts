@@ -19,14 +19,11 @@ export function useSlideKeyboardNavigation() {
       if (NEXT_SLIDE_KEYS.includes(event.key)) direction = 1
       if (direction === 0) return
 
-      const { currentSlideId, selectedElementIds, goToSlide } =
-        useEditorStore.getState()
+      const { currentSlideId, selectedElementIds, goToSlide } = useEditorStore.getState()
       if (selectedElementIds.length > 0) return
 
       const slides = useDeckStore.getState().deck?.slides ?? []
-      const currentIndex = slides.findIndex(
-        (slide) => slide.id === currentSlideId
-      )
+      const currentIndex = slides.findIndex((slide) => slide.id === currentSlideId)
       const neighborSlide = slides[currentIndex + direction]
       if (!neighborSlide) return
 

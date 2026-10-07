@@ -2,8 +2,7 @@ import type { SlideElement } from "@/lib/schema/Deck"
 
 type TextElement = Extract<SlideElement, { type: "text" }>
 
-export type TextPresetName =
-  "title" | "subtitle" | "body" | "bullets" | "numbers"
+export type TextPresetName = "title" | "subtitle" | "body" | "bullets" | "numbers"
 
 export type TextPreset = {
   label: string
@@ -74,9 +73,7 @@ export function findTextPreset(element: TextElement) {
   return TEXT_PRESET_NAMES.find((presetName) => {
     const preset = TEXT_PRESETS[presetName]
     return (
-      preset.fontSize === element.fontSize &&
-      preset.bold === element.bold &&
-      preset.listStyle === element.listStyle
+      preset.fontSize === element.fontSize && preset.bold === element.bold && preset.listStyle === element.listStyle
     )
   })
 }

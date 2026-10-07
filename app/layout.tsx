@@ -1,11 +1,4 @@
-import {
-  Fredoka,
-  Geist_Mono,
-  Inter,
-  Outfit,
-  Playfair_Display,
-  Space_Grotesk,
-} from "next/font/google"
+import { Fredoka, Geist_Mono, Inter, Outfit, Playfair_Display, Space_Grotesk } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/ThemeProvider"

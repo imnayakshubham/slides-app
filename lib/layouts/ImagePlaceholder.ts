@@ -10,11 +10,7 @@ const CHARACTERS_PER_LINE = 34
 const MAX_LINES = 3
 
 function escapeXml(text: string) {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
+  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;")
 }
 
 // Word-wrapped, at most MAX_LINES lines; the last line ends in "…" when

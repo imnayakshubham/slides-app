@@ -27,10 +27,7 @@ const populateRequestSchema = z.object({
 })
 
 // The whole story, so each slide is written to fit the deck around it.
-function describeOutline(
-  outline: Pick<Outline, "title" | "slides">,
-  targetIndex: number
-) {
+function describeOutline(outline: Pick<Outline, "title" | "slides">, targetIndex: number) {
   const slideLines = outline.slides.map((slide, slideIndex) => {
     const marker = slideIndex === targetIndex ? "  <- write this one" : ""
     return `${slideIndex + 1}. ${slide.title} (${slide.layout})${marker}`
@@ -52,20 +49,14 @@ export async function POST(request: Request) {
   const requestBody = await request.json().catch(() => null)
   const parsedRequest = populateRequestSchema.safeParse(requestBody)
   if (!parsedRequest.success) {
-    return Response.json(
-      { error: z.prettifyError(parsedRequest.error) },
-      { status: 400 }
-    )
+    return Response.json({ error: z.prettifyError(parsedRequest.error) }, { status: 400 })
   }
 
   const { deck, outline, slideId, outlineSlideIndex } = parsedRequest.data
   const outlineSlide = outline.slides[outlineSlideIndex]
   const slide = deck.slides.find((deckSlide) => deckSlide.id === slideId)
   if (!outlineSlide || !slide) {
-    return Response.json(
-      { error: "That slide is not in the deck or the outline." },
-      { status: 400 }
-    )
+    return Response.json({ error: "That slide is not in the deck or the outline." }, { status: 400 })
   }
 
   const { response, sendEvent, closeStream } = createEventStream()

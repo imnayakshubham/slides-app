@@ -19,10 +19,6 @@ import { useEditorStore } from "@/store/EditorStore"
 // selection away from the text.
 let highlightedRange: Range | null = null
 
-export function getHighlightedRange() {
-  return highlightedRange
-}
-
 export function setHighlightedRange(range: Range | null) {
   highlightedRange = range
 }
@@ -46,9 +42,7 @@ function toHexColor(cssColor: string) {
     "#" +
     channels
       .slice(0, 3)
-      .map((channel) =>
-        Math.round(Number(channel)).toString(16).padStart(2, "0")
-      )
+      .map((channel) => Math.round(Number(channel)).toString(16).padStart(2, "0"))
       .join("")
       .toUpperCase()
   )
@@ -57,11 +51,7 @@ function toHexColor(cssColor: string) {
 // Our own spans always set text-decoration-line; <u> comes from Cmd+U.
 // Without either, the text follows the box.
 function isUnderlined(textNode: Node, block: Element, box: TextBoxStyle) {
-  for (
-    let element = textNode.parentElement;
-    element && element !== block;
-    element = element.parentElement
-  ) {
+  for (let element = textNode.parentElement; element && element !== block; element = element.parentElement) {
     if (element.tagName === "U") return true
     if (element instanceof HTMLElement && element.style.textDecorationLine) {
       return element.style.textDecorationLine.includes("underline")
@@ -112,28 +102,18 @@ function getBlocks(root: HTMLElement) {
   return Array.from(root.children)
 }
 
-export function readParagraphsFromEditor(
-  root: HTMLElement,
-  box: TextBoxStyle
-): Paragraph[] {
+export function readParagraphsFromEditor(root: HTMLElement, box: TextBoxStyle): Paragraph[] {
   const blocks = getBlocks(root)
   if (blocks.length === 0) return [root.textContent ?? ""]
   return blocks.map((block) => normalizeRuns(readBlockRuns(block, box), box))
 }
 
 // Style of the first highlighted character, for the toolbar buttons.
-export function readHighlightStyle(
-  range: Range,
-  root: HTMLElement,
-  box: TextBoxStyle
-) {
+export function readHighlightStyle(range: Range, root: HTMLElement, box: TextBoxStyle) {
   const startNode = range.startContainer
-  const block = getBlocks(root).find((candidate) =>
-    candidate.contains(startNode)
-  )
+  const block = getBlocks(root).find((candidate) => candidate.contains(startNode))
   if (!block) return null
-  const textNode =
-    startNode.nodeType === Node.TEXT_NODE ? startNode : getTextNodes(block)[0]
+  const textNode = startNode.nodeType === Node.TEXT_NODE ? startNode : getTextNodes(block)[0]
   if (!textNode) return null
   return readTextStyle(textNode, block, box)
 }
@@ -149,18 +129,13 @@ function pointAtCharacter(block: Element, characterIndex: number) {
   let remaining = characterIndex
   const textNodes = getTextNodes(block)
   for (const textNode of textNodes) {
-    if (remaining <= textNode.data.length)
-      return { node: textNode, offset: remaining }
+    if (remaining <= textNode.data.length) return { node: textNode, offset: remaining }
     remaining -= textNode.data.length
   }
   return { node: block, offset: block.childNodes.length }
 }
 
-function renderBlockRuns(
-  block: Element,
-  paragraph: Paragraph,
-  box: TextBoxStyle
-) {
+function renderBlockRuns(block: Element, paragraph: Paragraph, box: TextBoxStyle) {
   block.replaceChildren(
     ...paragraphRuns(paragraph).map((run) => {
       const style = runStyle(run, box)
@@ -179,17 +154,11 @@ function renderBlockRuns(
 // Restyles the highlighted characters of every paragraph the highlight
 // touches, then highlights the same characters again so repeated presses
 // (e.g. "+" on font size) keep working on them.
-export function styleHighlightedText(
-  root: HTMLElement,
-  changes: TextStyleChanges,
-  box: TextBoxStyle
-) {
+function styleHighlightedText(root: HTMLElement, changes: TextStyleChanges, box: TextBoxStyle) {
   const range = highlightedRange
   if (!range || range.collapsed) return
 
-  const touchedBlocks = getBlocks(root).filter((block) =>
-    range.intersectsNode(block)
-  )
+  const touchedBlocks = getBlocks(root).filter((block) => range.intersectsNode(block))
   const restyledParts = touchedBlocks.map((block) => {
     const start = block.contains(range.startContainer)
       ? characterOffset(block, range.startContainer, range.startOffset)
@@ -198,11 +167,7 @@ export function styleHighlightedText(
       ? characterOffset(block, range.endContainer, range.endOffset)
       : (block.textContent ?? "").length
     const runs = normalizeRuns(readBlockRuns(block, box), box)
-    renderBlockRuns(
-      block,
-      styleRunRange(paragraphRuns(runs), start, end, changes, box),
-      box
-    )
+    renderBlockRuns(block, styleRunRange(paragraphRuns(runs), start, end, changes, box), box)
     return { block, start, end }
   })
 
@@ -225,11 +190,7 @@ export function styleHighlightedText(
 
 // Styles the highlighted words of the text box being edited and refreshes
 // the toolbar's view of them.
-export function styleHighlightedWordsOf(
-  elementId: string,
-  changes: TextStyleChanges,
-  boxUnderline: boolean
-) {
+export function styleHighlightedWordsOf(elementId: string, changes: TextStyleChanges, boxUnderline: boolean) {
   const root = document.querySelector<HTMLElement>(
     `[data-canvas-slide-id] [data-element-id="${elementId}"] [contenteditable="true"]`
   )
@@ -237,9 +198,5 @@ export function styleHighlightedWordsOf(
   const box = readBoxStyle(root, boxUnderline)
   styleHighlightedText(root, changes, box)
   const range = highlightedRange
-  useEditorStore
-    .getState()
-    .setHighlightedTextStyle(
-      range ? readHighlightStyle(range, root, box) : null
-    )
+  useEditorStore.getState().setHighlightedTextStyle(range ? readHighlightStyle(range, root, box) : null)
 }

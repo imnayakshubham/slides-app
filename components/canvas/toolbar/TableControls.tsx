@@ -1,9 +1,6 @@
 import { PanelTopIcon } from "lucide-react"
 
-import {
-  ToolbarDivider,
-  ToolbarToggle,
-} from "@/components/canvas/toolbar/ToolbarInputs"
+import { ToolbarDivider, ToolbarToggle } from "@/components/canvas/toolbar/ToolbarInputs"
 import { Button } from "@/components/ui/button"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
 import type { SlideElement } from "@/lib/schema/Deck"
@@ -47,17 +44,13 @@ export function TableControls({ element }: { element: TableElementData }) {
       <TableSizeButton
         label="Remove last column"
         disabled={columnCount === 1}
-        onClick={() =>
-          updateSelectedElement({ rows: rows.map((row) => row.slice(0, -1)) })
-        }
+        onClick={() => updateSelectedElement({ rows: rows.map((row) => row.slice(0, -1)) })}
       >
         − Column
       </TableSizeButton>
       <TableSizeButton
         label="Add column"
-        onClick={() =>
-          updateSelectedElement({ rows: rows.map((row) => [...row, ""]) })
-        }
+        onClick={() => updateSelectedElement({ rows: rows.map((row) => [...row, ""]) })}
       >
         + Column
       </TableSizeButton>
@@ -77,14 +70,7 @@ function TableSizeButton({
   children: string
 }) {
   return (
-    <Button
-      variant="ghost"
-      size="xs"
-      aria-label={label}
-      title={label}
-      disabled={disabled}
-      onClick={onClick}
-    >
+    <Button variant="ghost" size="xs" aria-label={label} title={label} disabled={disabled} onClick={onClick}>
       {children}
     </Button>
   )

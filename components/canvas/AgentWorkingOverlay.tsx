@@ -19,17 +19,11 @@ type AgentWorkingOverlayProps = {
 
 // Sits on top of a slide the agent is working on. The slide stays visible
 // underneath while the agent works.
-export function AgentWorkingOverlay({
-  size,
-  label,
-  isLocked = false,
-}: AgentWorkingOverlayProps) {
+export function AgentWorkingOverlay({ size, label, isLocked = false }: AgentWorkingOverlayProps) {
   return (
     <div
       aria-hidden
-      title={
-        isLocked ? "Locked while the agent works on this slide" : undefined
-      }
+      title={isLocked ? "Locked while the agent works on this slide" : undefined}
       className={cn(
         "absolute inset-0 overflow-hidden rounded-[inherit] bg-primary/10",
         isLocked ? "cursor-not-allowed" : "pointer-events-none"

@@ -31,10 +31,7 @@ import {
 } from "@/components/editor/SlideInsertionLine"
 import { Button } from "@/components/ui/button"
 import { useCanvasGestures } from "@/hooks/UseCanvasGestures"
-import {
-  addBlankSlideAfterCurrent,
-  addBlankSlideAt,
-} from "@/lib/client/SlideActions"
+import { addBlankSlideAfterCurrent, addBlankSlideAt } from "@/lib/client/SlideActions"
 import { cn } from "@/lib/utils"
 import { selectSlideIds, useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
@@ -72,9 +69,7 @@ export function SlideCanvas({ onOpenAgent }: { onOpenAgent: () => void }) {
 
   useEffect(() => {
     if (!currentSlideId) return
-    document
-      .querySelector(`[data-canvas-slide-id="${currentSlideId}"]`)
-      ?.scrollIntoView({ block: "nearest" })
+    document.querySelector(`[data-canvas-slide-id="${currentSlideId}"]`)?.scrollIntoView({ block: "nearest" })
   }, [currentSlideId])
 
   // Set while the rail's handle drags a slide, so the element gesture
@@ -94,10 +89,7 @@ export function SlideCanvas({ onOpenAgent }: { onOpenAgent: () => void }) {
     if (!draggedSlide) return
     setInsertion(
       targetSlide
-        ? slideInsertionFor(
-            slideIds.indexOf(draggedSlide.slideId),
-            slideIds.indexOf(targetSlide.slideId)
-          )
+        ? slideInsertionFor(slideIds.indexOf(draggedSlide.slideId), slideIds.indexOf(targetSlide.slideId))
         : null
     )
   }
@@ -126,8 +118,8 @@ export function SlideCanvas({ onOpenAgent }: { onOpenAgent: () => void }) {
           <div className="flex flex-col gap-1">
             <p className="font-medium">No slides yet</p>
             <p className="text-sm text-muted-foreground">
-              Describe your deck to the agent and it will plan the slides for
-              you to review, or start from a blank slide.
+              Describe your deck to the agent and it will plan the slides for you to review, or start from a blank
+              slide.
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-2">
@@ -161,29 +153,18 @@ export function SlideCanvas({ onOpenAgent }: { onOpenAgent: () => void }) {
         data-slide-canvas
         className="relative flex min-w-0 flex-1 flex-col items-center gap-8 overflow-y-auto p-4 md:p-8"
       >
-        <SortableContext
-          items={slideIds.map(slideOrderId)}
-          strategy={keepSlidesInPlace}
-        >
+        <SortableContext items={slideIds.map(slideOrderId)} strategy={keepSlidesInPlace}>
           {slideIds.map((slideId, slideIndex) => (
             <SortableSlideRow
               key={slideId}
               slideId={slideId}
               slideNumber={slideIndex + 1}
-              insertionLine={insertionLineFor(
-                insertion,
-                slideIndex,
-                slideIds.length
-              )}
+              insertionLine={insertionLineFor(insertion, slideIndex, slideIds.length)}
               prepareGesture={gestures.prepareGesture}
             />
           ))}
         </SortableContext>
-        <Button
-          variant="outline"
-          className="shrink-0 rounded-full"
-          onClick={() => addBlankSlideAt(slideIds.length)}
-        >
+        <Button variant="outline" className="shrink-0 rounded-full" onClick={() => addBlankSlideAt(slideIds.length)}>
           <PlusIcon />
           Add slide
         </Button>
@@ -208,17 +189,8 @@ function SortableSlideRow({
   insertionLine: InsertionLine | null
   prepareGesture: ComponentProps<typeof EditableSlide>["prepareGesture"]
 }) {
-  const isCurrentSlide = useEditorStore(
-    (state) => state.currentSlideId === slideId
-  )
-  const {
-    setNodeRef,
-    setActivatorNodeRef,
-    listeners,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
+  const isCurrentSlide = useEditorStore((state) => state.currentSlideId === slideId)
+  const { setNodeRef, setActivatorNodeRef, listeners, transform, transition, isDragging } = useSortable({
     id: slideOrderId(slideId),
     data: { kind: "slideOrder", slideId } satisfies SlideOrderData,
   })
@@ -232,9 +204,7 @@ function SortableSlideRow({
         isDragging && "z-10 opacity-60"
       )}
     >
-      {insertionLine && (
-        <SlideInsertionLine line={insertionLine} gapPx={SLIDE_GAP_PX} />
-      )}
+      {insertionLine && <SlideInsertionLine line={insertionLine} gapPx={SLIDE_GAP_PX} />}
       <SlideRail
         slideId={slideId}
         slideNumber={slideNumber}
@@ -242,17 +212,11 @@ function SortableSlideRow({
         setDragHandleRef={setActivatorNodeRef}
         className={cn(
           "shrink-0 transition-opacity",
-          !isCurrentSlide &&
-            !isDragging &&
-            "lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100"
+          !isCurrentSlide && !isDragging && "lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100"
         )}
       />
       <div className="flex min-w-0 flex-1">
-        <EditableSlide
-          slideId={slideId}
-          slideNumber={slideNumber}
-          prepareGesture={prepareGesture}
-        />
+        <EditableSlide slideId={slideId} slideNumber={slideNumber} prepareGesture={prepareGesture} />
       </div>
     </div>
   )

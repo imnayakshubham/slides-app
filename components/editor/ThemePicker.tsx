@@ -3,19 +3,9 @@
 import { PaletteIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useDeckAgent } from "@/hooks/UseDeckAgent"
-import {
-  THEME_IDS,
-  THEMES,
-  deckThemeFor,
-  fontStack,
-  type ThemeId,
-} from "@/lib/themes/Themes"
+import { THEME_IDS, THEMES, deckThemeFor, fontStack, type ThemeId } from "@/lib/themes/Themes"
 import { cn } from "@/lib/utils"
 import { useDeckStore } from "@/store/DeckStore"
 
@@ -27,9 +17,7 @@ export function ThemePicker() {
 
   function applyTheme(themeId: ThemeId) {
     if (themeId === currentThemeId) return
-    useDeckStore
-      .getState()
-      .applyEdit({ type: "setTheme", theme: deckThemeFor(themeId) })
+    useDeckStore.getState().applyEdit({ type: "setTheme", theme: deckThemeFor(themeId) })
   }
 
   return (
@@ -72,13 +60,7 @@ export function ThemePicker() {
 
 // A tiny slide: the background, "Aa" in the heading font and color, and
 // the card colors.
-export function ThemePreview({
-  themeId,
-  className,
-}: {
-  themeId: ThemeId
-  className?: string
-}) {
+export function ThemePreview({ themeId, className }: { themeId: ThemeId; className?: string }) {
   const { colors, headingFont } = THEMES[themeId]
   return (
     <span
@@ -97,11 +79,7 @@ export function ThemePreview({
       </span>
       <span className="flex gap-1">
         {colors.card.map((cardColor) => (
-          <span
-            key={cardColor}
-            className="size-3 rounded-full"
-            style={{ background: cardColor }}
-          />
+          <span key={cardColor} className="size-3 rounded-full" style={{ background: cardColor }} />
         ))}
       </span>
     </span>

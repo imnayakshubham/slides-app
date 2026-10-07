@@ -15,11 +15,7 @@ type ElementRendererProps = {
 
 // memo: moving an element changes only its wrapper's position, so its
 // content (e.g. a chart) doesn't need to render again.
-export const ElementRenderer = memo(function ElementRenderer({
-  element,
-  theme,
-  animate,
-}: ElementRendererProps) {
+export const ElementRenderer = memo(function ElementRenderer({ element, theme, animate }: ElementRendererProps) {
   switch (element.type) {
     case "text":
       return <TextElement element={element} />

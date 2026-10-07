@@ -15,13 +15,7 @@ export type TextBoxStyle = {
 
 export type TextStyleChanges = Partial<TextBoxStyle>
 
-const TEXT_MARKS: TextMark[] = [
-  "bold",
-  "italic",
-  "underline",
-  "color",
-  "fontSize",
-]
+const TEXT_MARKS: TextMark[] = ["bold", "italic", "underline", "color", "fontSize"]
 
 export function paragraphText(paragraph: Paragraph) {
   if (typeof paragraph === "string") return paragraph
@@ -61,8 +55,7 @@ export function normalizeRuns(runs: TextRun[], box: TextBoxStyle): Paragraph {
       mergedRuns.push(cleanRun)
     }
   }
-  if (!mergedRuns.some(hasMarks))
-    return mergedRuns.map((run) => run.text).join("")
+  if (!mergedRuns.some(hasMarks)) return mergedRuns.map((run) => run.text).join("")
   return mergedRuns
 }
 
@@ -79,10 +72,7 @@ export function styleRunRange(
   let runStart = 0
   for (const run of runs) {
     const runEnd = runStart + run.text.length
-    const highlightStart = Math.min(
-      Math.max(start - runStart, 0),
-      run.text.length
-    )
+    const highlightStart = Math.min(Math.max(start - runStart, 0), run.text.length)
     const highlightEnd = Math.min(Math.max(end - runStart, 0), run.text.length)
     styledRuns.push(
       { ...run, text: run.text.slice(0, highlightStart) },

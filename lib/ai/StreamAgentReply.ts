@@ -44,8 +44,7 @@ export async function streamAgentReply({
     sendEvent({
       event: "error",
       data: {
-        message:
-          "The AI isn't set up: GROQ_API_KEY is missing on the server (see .env.example).",
+        message: "The AI isn't set up: GROQ_API_KEY is missing on the server (see .env.example).",
         code: "missing_api_key",
       },
     })

@@ -25,21 +25,13 @@ type EditableSlideProps = {
 // One slide on the canvas. The whole slide is a single dnd-kit draggable:
 // prepareGesture picks what the drag does (move, resize or selection box)
 // before dnd-kit starts tracking the pointer.
-export function EditableSlide({
-  slideId,
-  slideNumber,
-  prepareGesture,
-}: EditableSlideProps) {
-  const isCurrentSlide = useEditorStore(
-    (state) => state.currentSlideId === slideId
-  )
+export function EditableSlide({ slideId, slideNumber, prepareGesture }: EditableSlideProps) {
+  const isCurrentSlide = useEditorStore((state) => state.currentSlideId === slideId)
   const { setNodeRef, listeners } = useDraggable({ id: slideId })
   const agentActivity = useAgentSlideActivity(slideId)
   // Locked while the agent changes this slide, so edits can't collide.
   const isLockedByAgent = agentActivity !== null
-  const dropTarget = useDragPreviewStore((state) =>
-    state.dropTarget?.slideId === slideId ? state.dropTarget : null
-  )
+  const dropTarget = useDragPreviewStore((state) => (state.dropTarget?.slideId === slideId ? state.dropTarget : null))
   // Where the last press started, and whether it may open "Add here":
   // only on the current slide with nothing selected or being edited, so
   // a click that deselects or ends an edit stays just that.
@@ -67,15 +59,11 @@ export function EditableSlide({
     const press = pressRef.current
     pressRef.current = null
     if (!press?.canOpenAddHere || isLockedByAgent) return
-    const movedDistance = Math.hypot(
-      event.clientX - press.x,
-      event.clientY - press.y
-    )
+    const movedDistance = Math.hypot(event.clientX - press.x, event.clientY - press.y)
     if (movedDistance > CLICK_MOVE_TOLERANCE_PX) return
     const target = event.target as HTMLElement
     if (target.closest("[data-element-id], [data-handle]")) return
-    const artboard =
-      event.currentTarget.querySelector<HTMLElement>("[data-artboard]")
+    const artboard = event.currentTarget.querySelector<HTMLElement>("[data-artboard]")
     if (!artboard) return
 
     const artboardRect = artboard.getBoundingClientRect()
@@ -92,16 +80,13 @@ export function EditableSlide({
   // Text boxes and tables are typed into in place.
   function startEditingInPlace(event: MouseEvent<HTMLElement>) {
     if (isLockedByAgent) return
-    const elementNode = (event.target as HTMLElement).closest<HTMLElement>(
-      "[data-element-id]"
-    )
+    const elementNode = (event.target as HTMLElement).closest<HTMLElement>("[data-element-id]")
     const elementId = elementNode?.dataset.elementId
     const elementType = elementNode?.dataset.elementType
     if (!elementId || (elementType !== "text" && elementType !== "table")) {
       return
     }
-    const { setSelectedElementIds, setEditingElementId } =
-      useEditorStore.getState()
+    const { setSelectedElementIds, setEditingElementId } = useEditorStore.getState()
     setSelectedElementIds([elementId])
     setEditingElementId(elementId)
   }
@@ -128,17 +113,14 @@ export function EditableSlide({
       <Artboard slideId={slideId} className="rounded-lg">
         {isCurrentSlide && <SelectionFrame />}
       </Artboard>
-      {agentActivity && (
-        <AgentWorkingOverlay size="slide" label={agentActivity} isLocked />
-      )}
+      {agentActivity && <AgentWorkingOverlay size="slide" label={agentActivity} isLocked />}
       {dropTarget && (
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 grid place-items-center rounded-lg bg-primary/10"
         >
           <span className="rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-md">
-            {dropTarget.isCopy ? "Copy" : "Move"} to slide{" "}
-            {dropTarget.slideNumber}
+            {dropTarget.isCopy ? "Copy" : "Move"} to slide {dropTarget.slideNumber}
           </span>
         </div>
       )}

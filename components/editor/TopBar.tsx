@@ -1,10 +1,5 @@
 import Link from "next/link"
-import {
-  HouseIcon,
-  Loader2Icon,
-  PanelLeftOpenIcon,
-  UploadIcon,
-} from "lucide-react"
+import { HouseIcon, Loader2Icon, PanelLeftOpenIcon, UploadIcon } from "lucide-react"
 
 import { DeckTitleInput } from "@/components/editor/DeckTitleInput"
 import { Button } from "@/components/ui/button"
@@ -39,12 +34,7 @@ export function TopBar({
   return (
     <header className="flex h-10 shrink-0 items-center gap-2">
       {/* Below lg the agent lives in a sheet, so these always show there. */}
-      <div
-        className={cn(
-          "flex min-w-0 items-center gap-2",
-          isAgentPanelOpen && "lg:hidden"
-        )}
-      >
+      <div className={cn("flex min-w-0 items-center gap-2", isAgentPanelOpen && "lg:hidden")}>
         <Button
           variant="outline"
           size="icon"
@@ -56,43 +46,22 @@ export function TopBar({
         >
           <HouseIcon />
         </Button>
-        <Button
-          variant="outline"
-          className="rounded-full"
-          onClick={onOpenAgentPanel}
-        >
+        <Button variant="outline" className="rounded-full" onClick={onOpenAgentPanel}>
           <PanelLeftOpenIcon />
           Agent
         </Button>
-        <DeckTitleInput
-          title={deckTitle}
-          onRename={onRenameDeck}
-          className="field-sizing-content max-w-full"
-        />
+        <DeckTitleInput title={deckTitle} onRename={onRenameDeck} className="field-sizing-content max-w-full" />
       </div>
 
       <div className="ms-auto flex items-center gap-2">
-        <SaveStatusIndicator
-          saveStatus={saveStatus}
-          onRetrySave={onRetrySave}
-        />
-        <ExportButton
-          canExport={canExport}
-          exportStatus={exportStatus}
-          onExport={onExport}
-        />
+        <SaveStatusIndicator saveStatus={saveStatus} onRetrySave={onRetrySave} />
+        <ExportButton canExport={canExport} exportStatus={exportStatus} onExport={onExport} />
       </div>
     </header>
   )
 }
 
-function SaveStatusIndicator({
-  saveStatus,
-  onRetrySave,
-}: {
-  saveStatus: SaveStatus
-  onRetrySave: () => void
-}) {
+function SaveStatusIndicator({ saveStatus, onRetrySave }: { saveStatus: SaveStatus; onRetrySave: () => void }) {
   if (saveStatus === "error") {
     return (
       <Button variant="destructive" size="sm" onClick={onRetrySave}>
@@ -135,9 +104,7 @@ function ExportButton({
       onClick={onExport}
     >
       {isExporting ? <Loader2Icon className="animate-spin" /> : <UploadIcon />}
-      <span className="max-sm:sr-only">
-        {isExporting ? "Exporting…" : "Export"}
-      </span>
+      <span className="max-sm:sr-only">{isExporting ? "Exporting…" : "Export"}</span>
     </Button>
   )
 }

@@ -53,8 +53,7 @@ export type DeckEdit =
   | { type: "setTheme"; theme: Theme }
   | { type: "batch"; edits: DeckEdit[] }
 
-export type DeckEditResult =
-  { ok: true; deck: Deck } | { ok: false; error: string }
+export type DeckEditResult = { ok: true; deck: Deck } | { ok: false; error: string }
 
 // Pure: never mutates `deck`, never throws. Unchanged slides and elements keep
 // their references so undo snapshots stay cheap and untouched UI does not re-render.
@@ -74,23 +73,12 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
     case "addSlide": {
       const parsedSlide = slideSchema.safeParse(edit.slide)
       if (!parsedSlide.success) {
-        return fail(
-          `Slide "${edit.slide.id}" is invalid: ${z.prettifyError(parsedSlide.error)}`
-        )
+        return fail(`Slide "${edit.slide.id}" is invalid: ${z.prettifyError(parsedSlide.error)}`)
       }
-      const duplicateId = findDuplicateId(deck, [
-        edit.slide.id,
-        ...edit.slide.elements.map((element) => element.id),
-      ])
-      if (duplicateId)
-        return fail(
-          `Id "${duplicateId}" is already used in this deck. Use a new id.`
-        )
+      const duplicateId = findDuplicateId(deck, [edit.slide.id, ...edit.slide.elements.map((element) => element.id)])
+      if (duplicateId) return fail(`Id "${duplicateId}" is already used in this deck. Use a new id.`)
 
-      const insertIndex = clampIndex(
-        edit.index ?? deck.slides.length,
-        deck.slides.length
-      )
+      const insertIndex = clampIndex(edit.index ?? deck.slides.length, deck.slides.length)
       return succeed({
         ...deck,
         slides: insertAt(deck.slides, insertIndex, parsedSlide.data),
@@ -103,18 +91,13 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
 
       const parsedSlide = slideSchema.safeParse({ ...slide, ...edit.changes })
       if (!parsedSlide.success) {
-        return fail(
-          `Slide "${edit.slideId}" update is invalid: ${z.prettifyError(parsedSlide.error)}`
-        )
+        return fail(`Slide "${edit.slideId}" update is invalid: ${z.prettifyError(parsedSlide.error)}`)
       }
-      return succeed(
-        updateSlideInDeck(deck, edit.slideId, () => parsedSlide.data)
-      )
+      return succeed(updateSlideInDeck(deck, edit.slideId, () => parsedSlide.data))
     }
 
     case "deleteSlide": {
-      if (!findSlide(deck, edit.slideId))
-        return fail(slideNotFoundMessage(deck, edit.slideId))
+      if (!findSlide(deck, edit.slideId)) return fail(slideNotFoundMessage(deck, edit.slideId))
       return succeed({
         ...deck,
         slides: deck.slides.filter((slide) => slide.id !== edit.slideId),
@@ -122,11 +105,8 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
     }
 
     case "moveSlide": {
-      const fromIndex = deck.slides.findIndex(
-        (slide) => slide.id === edit.slideId
-      )
-      if (fromIndex === -1)
-        return fail(slideNotFoundMessage(deck, edit.slideId))
+      const fromIndex = deck.slides.findIndex((slide) => slide.id === edit.slideId)
+      if (fromIndex === -1) return fail(slideNotFoundMessage(deck, edit.slideId))
 
       const toIndex = clampIndex(edit.toIndex, deck.slides.length - 1)
       return succeed({
@@ -136,12 +116,9 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
     }
 
     case "addElement": {
-      if (!findSlide(deck, edit.slideId))
-        return fail(slideNotFoundMessage(deck, edit.slideId))
+      if (!findSlide(deck, edit.slideId)) return fail(slideNotFoundMessage(deck, edit.slideId))
       if (findDuplicateId(deck, [edit.element.id])) {
-        return fail(
-          `Id "${edit.element.id}" is already used in this deck. Use a new id.`
-        )
+        return fail(`Id "${edit.element.id}" is already used in this deck. Use a new id.`)
       }
 
       const validated = fitAndValidateElement(edit.element)
@@ -169,11 +146,7 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
       if (!validated.ok) return validated
       return succeed(
         updateSlideInDeck(deck, slide.id, (currentSlide) =>
-          updateElementOnSlide(
-            currentSlide,
-            element.id,
-            () => validated.element
-          )
+          updateElementOnSlide(currentSlide, element.id, () => validated.element)
         )
       )
     }
@@ -185,9 +158,7 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
       return succeed(
         updateSlideInDeck(deck, location.slide.id, (slide) => ({
           ...slide,
-          elements: slide.elements.filter(
-            (element) => element.id !== edit.elementId
-          ),
+          elements: slide.elements.filter((element) => element.id !== edit.elementId),
         }))
       )
     }
@@ -198,9 +169,7 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
       const targetSlide = findSlide(deck, edit.toSlideId)
       if (!targetSlide) return fail(slideNotFoundMessage(deck, edit.toSlideId))
       if (findDuplicateId(deck, [edit.newElementId])) {
-        return fail(
-          `Id "${edit.newElementId}" is already used in this deck. Use a new id.`
-        )
+        return fail(`Id "${edit.newElementId}" is already used in this deck. Use a new id.`)
       }
 
       const { element } = location
@@ -250,16 +219,10 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
         ...element,
         ...placeWithoutOverlap(targetSlide, requestedBox).box,
       }
-      const deckWithoutElement = updateSlideInDeck(
-        deck,
-        sourceSlide.id,
-        (slide) => ({
-          ...slide,
-          elements: slide.elements.filter(
-            (candidate) => candidate.id !== element.id
-          ),
-        })
-      )
+      const deckWithoutElement = updateSlideInDeck(deck, sourceSlide.id, (slide) => ({
+        ...slide,
+        elements: slide.elements.filter((candidate) => candidate.id !== element.id),
+      }))
       return succeed(
         updateSlideInDeck(deckWithoutElement, targetSlide.id, (slide) => ({
           ...slide,
@@ -273,9 +236,7 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
       if (!location) return fail(elementNotFoundMessage(edit.elementId))
 
       const { slide } = location
-      const fromIndex = slide.elements.findIndex(
-        (element) => element.id === edit.elementId
-      )
+      const fromIndex = slide.elements.findIndex((element) => element.id === edit.elementId)
       const topIndex = slide.elements.length - 1
       const toIndexByDirection = {
         forward: Math.min(fromIndex + 1, topIndex),
@@ -286,11 +247,7 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
       return succeed(
         updateSlideInDeck(deck, slide.id, (currentSlide) => ({
           ...currentSlide,
-          elements: moveItem(
-            currentSlide.elements,
-            fromIndex,
-            toIndexByDirection[edit.direction]
-          ),
+          elements: moveItem(currentSlide.elements, fromIndex, toIndexByDirection[edit.direction]),
         }))
       )
     }
@@ -341,47 +298,28 @@ function findSlide(deck: Deck, slideId: string) {
 
 export function findElementLocation(deck: Deck, elementId: string) {
   for (const slide of deck.slides) {
-    const element = slide.elements.find(
-      (candidate) => candidate.id === elementId
-    )
+    const element = slide.elements.find((candidate) => candidate.id === elementId)
     if (element) return { slide, element }
   }
   return undefined
 }
 
 function findDuplicateId(deck: Deck, newIds: string[]) {
-  const usedIds = new Set(
-    deck.slides.flatMap((slide) => [
-      slide.id,
-      ...slide.elements.map((element) => element.id),
-    ])
-  )
+  const usedIds = new Set(deck.slides.flatMap((slide) => [slide.id, ...slide.elements.map((element) => element.id)]))
   return newIds.find((id) => usedIds.has(id))
 }
 
-function updateSlideInDeck(
-  deck: Deck,
-  slideId: string,
-  update: (slide: Slide) => Slide
-): Deck {
+function updateSlideInDeck(deck: Deck, slideId: string, update: (slide: Slide) => Slide): Deck {
   return {
     ...deck,
-    slides: deck.slides.map((slide) =>
-      slide.id === slideId ? update(slide) : slide
-    ),
+    slides: deck.slides.map((slide) => (slide.id === slideId ? update(slide) : slide)),
   }
 }
 
-function updateElementOnSlide(
-  slide: Slide,
-  elementId: string,
-  update: (element: SlideElement) => SlideElement
-): Slide {
+function updateElementOnSlide(slide: Slide, elementId: string, update: (element: SlideElement) => SlideElement): Slide {
   return {
     ...slide,
-    elements: slide.elements.map((element) =>
-      element.id === elementId ? update(element) : element
-    ),
+    elements: slide.elements.map((element) => (element.id === elementId ? update(element) : element)),
   }
 }
 
@@ -399,8 +337,7 @@ function clampIndex(index: number, maxIndex: number) {
 }
 
 function slideNotFoundMessage(deck: Deck, slideId: string) {
-  const existingSlideIds =
-    deck.slides.map((slide) => slide.id).join(", ") || "none"
+  const existingSlideIds = deck.slides.map((slide) => slide.id).join(", ") || "none"
   return `Slide "${slideId}" does not exist. Existing slides: ${existingSlideIds}.`
 }
 

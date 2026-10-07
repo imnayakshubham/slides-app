@@ -10,10 +10,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-  continueStoppedGeneration,
-  retrySlideBuild,
-} from "@/lib/client/AgentActions"
+import { continueStoppedGeneration, retrySlideBuild } from "@/lib/client/AgentActions"
 import { cn } from "@/lib/utils"
 import { useDeckAgent } from "@/hooks/UseDeckAgent"
 import type { SlideBuildStatus } from "@/store/EditorStore"
@@ -29,17 +26,13 @@ const STATUS_LABELS: Record<SlideBuildStatus, string> = {
 // proposed the outline. Failed slides can be retried, and a stopped build
 // can continue with the slides that are left.
 export function GenerationProgress({ messageId }: { messageId: string }) {
-  const generation = useDeckAgent((agent) =>
-    agent.generation?.messageId === messageId ? agent.generation : null
-  )
+  const generation = useDeckAgent((agent) => (agent.generation?.messageId === messageId ? agent.generation : null))
   const isAgentRunning = useDeckAgent((agent) => agent.run !== null)
   if (!generation) return null
 
   const { slides, isStopped, outline } = generation
   const doneCount = slides.filter((build) => build.status === "done").length
-  const waitingCount = slides.filter(
-    (build) => build.status === "waiting"
-  ).length
+  const waitingCount = slides.filter((build) => build.status === "waiting").length
   const fillingIndex = slides.findIndex((build) => build.status === "filling")
 
   let heading = `Built “${outline.title}”: ${doneCount} of ${slides.length} slides`
@@ -50,10 +43,7 @@ export function GenerationProgress({ messageId }: { messageId: string }) {
   }
 
   return (
-    <section
-      aria-label="Deck generation"
-      className="flex flex-col gap-2 rounded-xl border bg-card p-2"
-    >
+    <section aria-label="Deck generation" className="flex flex-col gap-2 rounded-xl border bg-card p-2">
       <p aria-live="polite" className="px-1 text-sm font-medium">
         {heading}
       </p>
@@ -67,15 +57,8 @@ export function GenerationProgress({ messageId }: { messageId: string }) {
             )}
           >
             <SlideBuildIcon status={slideBuild.status} />
-            <span className="w-4 shrink-0 text-xs text-muted-foreground tabular-nums">
-              {slideIndex + 1}
-            </span>
-            <span
-              className={cn(
-                "min-w-0 flex-1 truncate",
-                slideBuild.status === "waiting" && "text-muted-foreground"
-              )}
-            >
+            <span className="w-4 shrink-0 text-xs text-muted-foreground tabular-nums">{slideIndex + 1}</span>
+            <span className={cn("min-w-0 flex-1 truncate", slideBuild.status === "waiting" && "text-muted-foreground")}>
               {slideBuild.title}
             </span>
             {slideBuild.status === "failed" ? (
@@ -89,9 +72,7 @@ export function GenerationProgress({ messageId }: { messageId: string }) {
                 Retry
               </Button>
             ) : (
-              <span className="text-xs text-muted-foreground">
-                {STATUS_LABELS[slideBuild.status]}
-              </span>
+              <span className="text-xs text-muted-foreground">{STATUS_LABELS[slideBuild.status]}</span>
             )}
           </li>
         ))}
@@ -115,33 +96,13 @@ export function GenerationProgress({ messageId }: { messageId: string }) {
 function SlideBuildIcon({ status }: { status: SlideBuildStatus }) {
   const iconClassName = "size-4 shrink-0"
   if (status === "done") {
-    return (
-      <CircleCheckIcon
-        className={cn(iconClassName, "text-primary")}
-        aria-label="Done"
-      />
-    )
+    return <CircleCheckIcon className={cn(iconClassName, "text-primary")} aria-label="Done" />
   }
   if (status === "filling") {
-    return (
-      <LoaderCircleIcon
-        className={cn(iconClassName, "animate-spin")}
-        aria-label="Writing"
-      />
-    )
+    return <LoaderCircleIcon className={cn(iconClassName, "animate-spin")} aria-label="Writing" />
   }
   if (status === "failed") {
-    return (
-      <CircleAlertIcon
-        className={cn(iconClassName, "text-destructive")}
-        aria-label="Failed"
-      />
-    )
+    return <CircleAlertIcon className={cn(iconClassName, "text-destructive")} aria-label="Failed" />
   }
-  return (
-    <CircleDashedIcon
-      className={cn(iconClassName, "text-muted-foreground")}
-      aria-label="Waiting"
-    />
-  )
+  return <CircleDashedIcon className={cn(iconClassName, "text-muted-foreground")} aria-label="Waiting" />
 }

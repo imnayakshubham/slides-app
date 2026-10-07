@@ -3,11 +3,7 @@
 import { useRef, useState, type ChangeEvent } from "react"
 import { ImageUpIcon, Maximize2Icon, Minimize2Icon } from "lucide-react"
 
-import {
-  TextInput,
-  ToolbarDivider,
-  ToolbarToggle,
-} from "@/components/canvas/toolbar/ToolbarInputs"
+import { TextInput, ToolbarDivider, ToolbarToggle } from "@/components/canvas/toolbar/ToolbarInputs"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
 import { deckRepository } from "@/lib/repository"
 import type { SlideElement } from "@/lib/schema/Deck"
@@ -50,10 +46,7 @@ export function ImageControls({ element }: { element: ImageElementData }) {
         <Minimize2Icon />
       </ToolbarToggle>
       <ToolbarDivider />
-      <ToolbarToggle
-        label="Replace image"
-        onClick={() => fileInputRef.current?.click()}
-      >
+      <ToolbarToggle label="Replace image" onClick={() => fileInputRef.current?.click()}>
         <ImageUpIcon />
       </ToolbarToggle>
       <input

@@ -9,29 +9,12 @@ import {
   UnderlineIcon,
 } from "lucide-react"
 
-import {
-  ColorInput,
-  NumberInput,
-  ToolbarDivider,
-  ToolbarToggle,
-} from "@/components/canvas/toolbar/ToolbarInputs"
-import {
-  endActiveTextEdit,
-  styleHighlightedWordsOf,
-} from "@/lib/client/RichTextEditing"
+import { ColorInput, NumberInput, ToolbarDivider, ToolbarToggle } from "@/components/canvas/toolbar/ToolbarInputs"
+import { endActiveTextEdit, styleHighlightedWordsOf } from "@/lib/client/RichTextEditing"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
 import { findElementLocation } from "@/lib/edits/DeckEdits"
-import {
-  TEXT_PRESET_NAMES,
-  TEXT_PRESETS,
-  findTextPreset,
-  type TextPresetName,
-} from "@/lib/layouts/TextPresets"
-import {
-  clearRunMark,
-  type TextMark,
-  type TextStyleChanges,
-} from "@/lib/RichText"
+import { TEXT_PRESET_NAMES, TEXT_PRESETS, findTextPreset, type TextPresetName } from "@/lib/layouts/TextPresets"
+import { clearRunMark, type TextMark, type TextStyleChanges } from "@/lib/RichText"
 import type { ElementChanges, SlideElement } from "@/lib/schema/Deck"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
@@ -49,16 +32,10 @@ const ALIGN_OPTIONS = [
 
 // Saves any edit in progress, then changes the whole box. A style mark
 // (bold, color…) also replaces the words that overrode it.
-function updateWholeTextBox(
-  elementId: string,
-  changes: ElementChanges,
-  markToClear?: TextMark
-) {
+function updateWholeTextBox(elementId: string, changes: ElementChanges, markToClear?: TextMark) {
   endActiveTextEdit()
   const deck = useDeckStore.getState().deck
-  const savedElement = deck
-    ? findElementLocation(deck, elementId)?.element
-    : undefined
+  const savedElement = deck ? findElementLocation(deck, elementId)?.element : undefined
   if (!markToClear || savedElement?.type !== "text") {
     updateSelectedElement(changes)
     return
@@ -152,9 +129,7 @@ export function TextControls({ element }: { element: TextElementData }) {
       <ToolbarToggle
         label="Underline"
         isActive={shownStyle.underline}
-        onClick={() =>
-          applyTextStyle({ underline: !shownStyle.underline }, "underline")
-        }
+        onClick={() => applyTextStyle({ underline: !shownStyle.underline }, "underline")}
       >
         <UnderlineIcon />
       </ToolbarToggle>

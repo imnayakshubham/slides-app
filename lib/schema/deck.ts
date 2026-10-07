@@ -68,16 +68,10 @@ const chartElementSchema = z
     xAxisLabel: z.string().optional(),
     yAxisLabel: z.string().optional(),
   })
-  .refine(
-    (chart) =>
-      chart.series.every(
-        (series) => series.data.length === chart.categories.length
-      ),
-    {
-      message:
-        "Every chart series needs exactly one value per category (series data length must equal categories length).",
-    }
-  )
+  .refine((chart) => chart.series.every((series) => series.data.length === chart.categories.length), {
+    message:
+      "Every chart series needs exactly one value per category (series data length must equal categories length).",
+  })
 
 const tableElementSchema = z
   .strictObject({
@@ -86,10 +80,9 @@ const tableElementSchema = z
     rows: z.array(z.array(z.string()).min(1)).min(1),
     headerRow: z.boolean(),
   })
-  .refine(
-    (table) => table.rows.every((row) => row.length === table.rows[0].length),
-    { message: "Every table row needs the same number of cells." }
-  )
+  .refine((table) => table.rows.every((row) => row.length === table.rows[0].length), {
+    message: "Every table row needs the same number of cells.",
+  })
 
 const shapeElementSchema = z.strictObject({
   ...boxFields,
@@ -118,7 +111,7 @@ export const slideLayoutSchema = z.enum([
   "blank",
 ])
 
-export const slideBackgroundSchema = z.discriminatedUnion("type", [
+const slideBackgroundSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("color"), color: z.string().min(1) }),
   z.strictObject({
     type: z.literal("gradient"),
@@ -134,8 +127,7 @@ export const slideBackgroundSchema = z.discriminatedUnion("type", [
 // where "" meant the theme background.
 function upgradeColorStringBackground(background: unknown) {
   if (background === "") return undefined
-  if (typeof background === "string")
-    return { type: "color", color: background }
+  if (typeof background === "string") return { type: "color", color: background }
   return background
 }
 
@@ -144,10 +136,7 @@ export const slideSchema = z.strictObject({
   title: z.string(),
   layout: slideLayoutSchema,
   // Left out = the theme background.
-  background: z.preprocess(
-    upgradeColorStringBackground,
-    slideBackgroundSchema.optional()
-  ),
+  background: z.preprocess(upgradeColorStringBackground, slideBackgroundSchema.optional()),
   notes: z.string(),
   elements: z.array(slideElementSchema),
 })
@@ -212,8 +201,6 @@ export type TextRun = z.infer<typeof textRunSchema>
 export type Paragraph = z.infer<typeof paragraphSchema>
 export type SlideElement = z.infer<typeof slideElementSchema>
 
-type FieldsExceptIdAndType<Element> = Element extends SlideElement
-  ? Partial<Omit<Element, "id" | "type">>
-  : never
+type FieldsExceptIdAndType<Element> = Element extends SlideElement ? Partial<Omit<Element, "id" | "type">> : never
 
 export type ElementChanges = FieldsExceptIdAndType<SlideElement>

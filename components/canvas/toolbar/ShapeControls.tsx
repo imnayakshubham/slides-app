@@ -1,12 +1,7 @@
 import { useState } from "react"
 import { CircleIcon, LinkIcon, SquareIcon, UnlinkIcon } from "lucide-react"
 
-import {
-  ColorInput,
-  NumberInput,
-  ToolbarDivider,
-  ToolbarToggle,
-} from "@/components/canvas/toolbar/ToolbarInputs"
+import { ColorInput, NumberInput, ToolbarDivider, ToolbarToggle } from "@/components/canvas/toolbar/ToolbarInputs"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
 import { MIN_ELEMENT_SIZE, type SlideElement } from "@/lib/schema/Deck"
 
@@ -36,11 +31,7 @@ export function ShapeControls({ element }: { element: ShapeElementData }) {
         <CircleIcon />
       </ToolbarToggle>
       <ToolbarDivider />
-      <ColorInput
-        label="Fill color"
-        color={element.fill}
-        onChange={(fill) => updateSelectedElement({ fill })}
-      />
+      <ColorInput label="Fill color" color={element.fill} onChange={(fill) => updateSelectedElement({ fill })} />
       <ColorInput
         label="Outline color"
         color={element.stroke}
@@ -70,19 +61,11 @@ function ShapeSizeInputs({ element }: { element: ShapeElementData }) {
   const [lockedRatio, setLockedRatio] = useState<number | null>(null)
 
   function changeWidth(width: number) {
-    updateSelectedElement(
-      lockedRatio
-        ? { w: width, h: Math.round(width / lockedRatio) }
-        : { w: width }
-    )
+    updateSelectedElement(lockedRatio ? { w: width, h: Math.round(width / lockedRatio) } : { w: width })
   }
 
   function changeHeight(height: number) {
-    updateSelectedElement(
-      lockedRatio
-        ? { w: Math.round(height * lockedRatio), h: height }
-        : { h: height }
-    )
+    updateSelectedElement(lockedRatio ? { w: Math.round(height * lockedRatio), h: height } : { h: height })
   }
 
   return (
@@ -106,9 +89,7 @@ function ShapeSizeInputs({ element }: { element: ShapeElementData }) {
       <ToolbarToggle
         label={lockedRatio ? "Unlock proportions" : "Lock proportions"}
         isActive={lockedRatio !== null}
-        onClick={() =>
-          setLockedRatio(lockedRatio ? null : element.w / element.h)
-        }
+        onClick={() => setLockedRatio(lockedRatio ? null : element.w / element.h)}
       >
         {lockedRatio ? <LinkIcon /> : <UnlinkIcon />}
       </ToolbarToggle>

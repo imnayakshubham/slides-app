@@ -1,10 +1,6 @@
 import { create } from "zustand"
 
-import {
-  applyDeckEdit,
-  type DeckEditResult,
-  type DeckEdit,
-} from "@/lib/edits/DeckEdits"
+import { applyDeckEdit, type DeckEditResult, type DeckEdit } from "@/lib/edits/DeckEdits"
 import type { Deck } from "@/lib/schema/Deck"
 
 const MAX_UNDO_STEPS = 100
@@ -44,8 +40,7 @@ export const useDeckStore = create<DeckStore>()((set, get) => ({
     const result = applyDeckEdit(deck, edit)
     if (process.env.NODE_ENV === "development") {
       if (result.ok) console.log(`[deck edit] ${edit.type}`, edit)
-      else
-        console.log(`[deck edit] ${edit.type} rejected: ${result.error}`, edit)
+      else console.log(`[deck edit] ${edit.type} rejected: ${result.error}`, edit)
     }
     if (!result.ok) return result
 

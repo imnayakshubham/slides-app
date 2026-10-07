@@ -41,8 +41,7 @@ export function useCanvasShortcuts() {
         return
       }
 
-      const { selectedElementIds, setSelectedElementIds } =
-        useEditorStore.getState()
+      const { selectedElementIds, setSelectedElementIds } = useEditorStore.getState()
       if (selectedElementIds.length === 0) return
 
       // During a drag, Escape cancels the drag instead (handled by dnd-kit).
@@ -66,10 +65,7 @@ export function useCanvasShortcuts() {
       if (arrowDirection && !isCommand && !event.altKey) {
         event.preventDefault()
         const step = event.shiftKey ? LARGE_NUDGE_STEP : NUDGE_STEP
-        nudgeSelectedElements(
-          arrowDirection[0] * step,
-          arrowDirection[1] * step
-        )
+        nudgeSelectedElements(arrowDirection[0] * step, arrowDirection[1] * step)
       }
     }
 

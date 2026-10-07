@@ -15,9 +15,7 @@ export function ImageElement({ element }: { element: ImageElementData }) {
     return (
       <div className="flex size-full flex-col items-center justify-center gap-4 bg-current/5 p-8 text-center text-[28px]">
         <ImageOffIcon className="size-16 opacity-50" aria-hidden />
-        <span className="opacity-60">
-          {element.alt || "Image could not be loaded"}
-        </span>
+        <span className="opacity-60">{element.alt || "Image could not be loaded"}</span>
       </div>
     )
   }

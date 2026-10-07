@@ -40,11 +40,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { useAgentSlideActivity } from "@/hooks/UseAgentSlideActivity"
-import {
-  addBlankSlideAfterCurrent,
-  addBlankSlideAt,
-  duplicateSlideAfterItself,
-} from "@/lib/client/SlideActions"
+import { addBlankSlideAfterCurrent, addBlankSlideAt, duplicateSlideAfterItself } from "@/lib/client/SlideActions"
 import { cn } from "@/lib/utils"
 import { selectSlideIds, useDeckStore } from "@/store/DeckStore"
 import { useDragPreviewStore } from "@/store/DragPreviewStore"
@@ -78,12 +74,7 @@ export function SlideNavigator({ onClose }: { onClose: () => void }) {
   // Runs only when the thumbnail under the pointer changes.
   function showInsertionLine({ active, over }: DragOverEvent) {
     setInsertion(
-      over
-        ? slideInsertionFor(
-            slideIds.indexOf(String(active.id)),
-            slideIds.indexOf(String(over.id))
-          )
-        : null
+      over ? slideInsertionFor(slideIds.indexOf(String(active.id)), slideIds.indexOf(String(over.id))) : null
     )
   }
 
@@ -98,10 +89,7 @@ export function SlideNavigator({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <nav
-      aria-label="Slides"
-      className="m-2 flex w-40 shrink-0 flex-col gap-2 rounded-xl border bg-card p-2 shadow-sm"
-    >
+    <nav aria-label="Slides" className="m-2 flex w-40 shrink-0 flex-col gap-2 rounded-xl border bg-card p-2 shadow-sm">
       <div className="flex items-center gap-1">
         <Button
           variant="outline"
@@ -113,13 +101,7 @@ export function SlideNavigator({ onClose }: { onClose: () => void }) {
           <PlusIcon />
           Add
         </Button>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Close slides"
-          title="Close slides"
-          onClick={onClose}
-        >
+        <Button variant="ghost" size="icon-sm" aria-label="Close slides" title="Close slides" onClick={onClose}>
           <XIcon />
         </Button>
       </div>
@@ -140,11 +122,7 @@ export function SlideNavigator({ onClose }: { onClose: () => void }) {
                   key={slideId}
                   slideId={slideId}
                   slideNumber={slideIndex + 1}
-                  insertionLine={insertionLineFor(
-                    insertion,
-                    slideIndex,
-                    slideIds.length
-                  )}
+                  insertionLine={insertionLineFor(insertion, slideIndex, slideIds.length)}
                   canInsertAfter={slideIndex < slideIds.length - 1}
                 />
               ))}
@@ -179,23 +157,16 @@ function SlideThumbnail({
   // False for the last slide: "Add slide" below the list covers the end.
   canInsertAfter: boolean
 }) {
-  const slideTitle = useDeckStore(
-    (state) => state.deck?.slides.find((slide) => slide.id === slideId)?.title
-  )
-  const isCurrentSlide = useEditorStore(
-    (state) => state.currentSlideId === slideId
-  )
+  const slideTitle = useDeckStore((state) => state.deck?.slides.find((slide) => slide.id === slideId)?.title)
+  const isCurrentSlide = useEditorStore((state) => state.currentSlideId === slideId)
   const goToSlide = useEditorStore((state) => state.goToSlide)
   const agentActivity = useAgentSlideActivity(slideId)
   // The agent is changing this slide: no rename, duplicate or delete.
   const isLockedByAgent = agentActivity !== null
-  const dropTarget = useDragPreviewStore((state) =>
-    state.dropTarget?.slideId === slideId ? state.dropTarget : null
-  )
+  const dropTarget = useDragPreviewStore((state) => (state.dropTarget?.slideId === slideId ? state.dropTarget : null))
   const thumbnailRef = useRef<HTMLButtonElement>(null)
   const [isRenaming, setIsRenaming] = useState(false)
-  const { setNodeRef, listeners, transform, transition, isDragging } =
-    useSortable({ id: slideId })
+  const { setNodeRef, listeners, transform, transition, isDragging } = useSortable({ id: slideId })
 
   useEffect(() => {
     if (isCurrentSlide) {
@@ -211,9 +182,7 @@ function SlideThumbnail({
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={cn("group relative", isDragging && "z-10 opacity-60")}
     >
-      {insertionLine && (
-        <SlideInsertionLine line={insertionLine} gapPx={THUMBNAIL_GAP_PX} />
-      )}
+      {insertionLine && <SlideInsertionLine line={insertionLine} gapPx={THUMBNAIL_GAP_PX} />}
       <button
         ref={thumbnailRef}
         {...listeners}
@@ -245,9 +214,7 @@ function SlideThumbnail({
         )}
       </button>
       <div className="mt-1 flex min-w-0 items-center gap-1.5 px-0.5 text-xs">
-        <span className="shrink-0 text-muted-foreground tabular-nums">
-          {slideNumber}
-        </span>
+        <span className="shrink-0 text-muted-foreground tabular-nums">{slideNumber}</span>
         {isRenaming ? (
           <DeckTitleInput
             title={slideTitle ?? ""}
@@ -321,19 +288,13 @@ function SlideThumbnail({
               <AlertDialogTitle>
                 Delete slide {slideNumber}, “{slideName}”?
               </AlertDialogTitle>
-              <AlertDialogDescription>
-                You can bring it back with Undo.
-              </AlertDialogDescription>
+              <AlertDialogDescription>You can bring it back with Undo.</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 variant="destructive"
-                onClick={() =>
-                  useDeckStore
-                    .getState()
-                    .applyEdit({ type: "deleteSlide", slideId })
-                }
+                onClick={() => useDeckStore.getState().applyEdit({ type: "deleteSlide", slideId })}
               >
                 Delete
               </AlertDialogAction>

@@ -61,11 +61,7 @@ export const sampleDeck = deckSchema.parse({
           y: 260,
           w: 880,
           h: 740,
-          paragraphs: [
-            "Ship the new editor",
-            "Grow paid seats 20%",
-            "Cut onboarding time in half",
-          ],
+          paragraphs: ["Ship the new editor", "Grow paid seats 20%", "Cut onboarding time in half"],
           fontSize: 40,
           bold: false,
           italic: false,

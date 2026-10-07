@@ -4,27 +4,13 @@ import { useEffect, useState, type CSSProperties } from "react"
 import { useShallow } from "zustand/react/shallow"
 
 import { findElementLocation } from "@/lib/edits/DeckEdits"
-import {
-  unionBox,
-  type Box,
-  type ResizeHandle,
-  type SnapGuide,
-} from "@/lib/edits/Geometry"
+import { unionBox, type Box, type ResizeHandle, type SnapGuide } from "@/lib/edits/Geometry"
 import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH } from "@/lib/schema/Deck"
 import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
-const RESIZE_HANDLES: ResizeHandle[] = [
-  "nw",
-  "n",
-  "ne",
-  "e",
-  "se",
-  "s",
-  "sw",
-  "w",
-]
+const RESIZE_HANDLES: ResizeHandle[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"]
 // A text box's height follows its text, so it has no top or bottom handle.
 const TEXT_RESIZE_HANDLES: ResizeHandle[] = ["nw", "ne", "e", "se", "sw", "w"]
 
@@ -56,24 +42,17 @@ export function SelectionFrame() {
   const selectedElements = useDeckStore(
     useShallow((state) =>
       selectedElementIds
-        .map((elementId) =>
-          state.deck
-            ? findElementLocation(state.deck, elementId)?.element
-            : undefined
-        )
+        .map((elementId) => (state.deck ? findElementLocation(state.deck, elementId)?.element : undefined))
         .filter((element) => element !== undefined)
     )
   )
   const textHeights = useTextHeights(
-    selectedElements
-      .filter((element) => element.type === "text")
-      .map((element) => element.id)
+    selectedElements.filter((element) => element.type === "text").map((element) => element.id)
   )
 
   const selectedBoxes = selectedElements.map((element) => {
     const box = previewBoxes[element.id] ?? element
-    const h =
-      element.type === "text" ? (textHeights[element.id] ?? box.h) : box.h
+    const h = element.type === "text" ? (textHeights[element.id] ?? box.h) : box.h
     return {
       elementId: element.id,
       isText: element.type === "text",
@@ -107,23 +86,17 @@ export function SelectionFrame() {
       )}
 
       {showHandles &&
-        (singleSelection.isText ? TEXT_RESIZE_HANDLES : RESIZE_HANDLES).map(
-          (handle) => (
-            <ResizeHandleDot
-              key={handle}
-              handle={handle}
-              elementId={singleSelection.elementId}
-              box={singleSelection.box}
-            />
-          )
-        )}
+        (singleSelection.isText ? TEXT_RESIZE_HANDLES : RESIZE_HANDLES).map((handle) => (
+          <ResizeHandleDot
+            key={handle}
+            handle={handle}
+            elementId={singleSelection.elementId}
+            box={singleSelection.box}
+          />
+        ))}
 
       {guides.map((guide, guideIndex) => (
-        <div
-          key={guideIndex}
-          className="absolute bg-primary"
-          style={guideStyle(guide)}
-        />
+        <div key={guideIndex} className="absolute bg-primary" style={guideStyle(guide)} />
       ))}
 
       {marqueeBox && (
@@ -139,15 +112,7 @@ export function SelectionFrame() {
   )
 }
 
-function ResizeHandleDot({
-  handle,
-  elementId,
-  box,
-}: {
-  handle: ResizeHandle
-  elementId: string
-  box: Box
-}) {
+function ResizeHandleDot({ handle, elementId, box }: { handle: ResizeHandle; elementId: string; box: Box }) {
   let left = box.x + box.w / 2
   if (handle.includes("w")) left = box.x
   if (handle.includes("e")) left = box.x + box.w
@@ -221,9 +186,7 @@ function useTextHeights(textElementIds: string[]) {
       })
     })
     for (const elementId of idsKey.split(",")) {
-      const node = document.querySelector(
-        `[data-canvas-slide-id] [data-element-id="${elementId}"]`
-      )
+      const node = document.querySelector(`[data-canvas-slide-id] [data-element-id="${elementId}"]`)
       if (node) resizeObserver.observe(node)
     }
     return () => resizeObserver.disconnect()

@@ -4,15 +4,7 @@ import { CLASSIC_CARD_COLORS, type Theme } from "@/lib/schema/Deck"
 // theme picker switches between them. Card colors double as chart series
 // colors, and cardText must read well on every card.
 
-export const THEME_IDS = [
-  "classic",
-  "sunrise",
-  "midnight",
-  "editorial",
-  "forest",
-  "electric",
-  "graphite",
-] as const
+export const THEME_IDS = ["classic", "sunrise", "midnight", "editorial", "forest", "electric", "graphite"] as const
 
 export type ThemeId = (typeof THEME_IDS)[number]
 

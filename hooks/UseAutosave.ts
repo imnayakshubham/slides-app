@@ -29,10 +29,7 @@ export function useAutosave() {
       const savedRecord = await deckRepository.saveDeck(deckToSave)
       if (process.env.NODE_ENV === "development") {
         // The exact record now stored in IndexedDB ("ai-slides" → "decks").
-        console.log(
-          `[deck saved] ${savedRecord.deck.title} v${savedRecord.version}`,
-          savedRecord
-        )
+        console.log(`[deck saved] ${savedRecord.deck.title} v${savedRecord.version}`, savedRecord)
       }
       const changedWhileSaving = unsavedDeckRef.current !== null
       setSaveStatus(changedWhileSaving ? "saving" : "saved")
@@ -46,9 +43,7 @@ export function useAutosave() {
     const unsubscribe = useDeckStore.subscribe((state, previousState) => {
       const changedDeck = state.deck
       const isEditOfSameDeck =
-        changedDeck !== null &&
-        changedDeck !== previousState.deck &&
-        changedDeck.id === previousState.deck?.id
+        changedDeck !== null && changedDeck !== previousState.deck && changedDeck.id === previousState.deck?.id
       if (!isEditOfSameDeck) return
 
       unsavedDeckRef.current = changedDeck
@@ -59,14 +54,12 @@ export function useAutosave() {
     })
 
     // Saves once when the open deck's agent run ends.
-    const unsubscribeFromAgent = useEditorStore.subscribe(
-      (state, previousState) => {
-        const deckId = useDeckStore.getState().deck?.id
-        const wasRunning = deckAgentOf(previousState.agentByDeckId, deckId).run
-        const isRunning = deckAgentOf(state.agentByDeckId, deckId).run
-        if (wasRunning && !isRunning) void saveUnsavedDeck()
-      }
-    )
+    const unsubscribeFromAgent = useEditorStore.subscribe((state, previousState) => {
+      const deckId = useDeckStore.getState().deck?.id
+      const wasRunning = deckAgentOf(previousState.agentByDeckId, deckId).run
+      const isRunning = deckAgentOf(state.agentByDeckId, deckId).run
+      if (wasRunning && !isRunning) void saveUnsavedDeck()
+    })
 
     const saveWhenTabHidden = () => {
       if (document.visibilityState === "hidden") void saveUnsavedDeck()

@@ -1,24 +1,12 @@
 "use client"
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from "react"
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react"
 import { useShallow } from "zustand/react/shallow"
 
 import { ElementRenderer } from "@/components/elements/ElementRenderer"
 import { TableElement } from "@/components/elements/TableElement"
 import { TextElement } from "@/components/elements/TextElement"
-import {
-  ARTBOARD_HEIGHT,
-  ARTBOARD_WIDTH,
-  type Deck,
-  type Paragraph,
-  type SlideBackground,
-} from "@/lib/schema/Deck"
+import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, type Deck, type Paragraph, type SlideBackground } from "@/lib/schema/Deck"
 import { fontStack } from "@/lib/themes/Themes"
 import { cn } from "@/lib/utils"
 import { useDragPreviewStore } from "@/store/DragPreviewStore"
@@ -33,27 +21,15 @@ type ArtboardProps = {
   children?: ReactNode
 }
 
-export function Artboard({
-  slideId,
-  isThumbnail = false,
-  className,
-  children,
-}: ArtboardProps) {
+export function Artboard({ slideId, isThumbnail = false, className, children }: ArtboardProps) {
   const { containerRef, scale } = useArtboardScale()
   const theme = useDeckStore((state) => state.deck?.theme)
-  const background = useDeckStore(
-    (state) => findSlide(state.deck, slideId)?.background
-  )
+  const background = useDeckStore((state) => findSlide(state.deck, slideId)?.background)
   // useShallow: the list is rebuilt each time, so compare it by contents.
-  const elementIds = useDeckStore(
-    useShallow((state) => getElementIds(state.deck, slideId))
-  )
+  const elementIds = useDeckStore(useShallow((state) => getElementIds(state.deck, slideId)))
 
   return (
-    <div
-      ref={containerRef}
-      className={cn("relative aspect-video overflow-hidden", className)}
-    >
+    <div ref={containerRef} className={cn("relative aspect-video overflow-hidden", className)}>
       {theme && (
         <div
           data-artboard
@@ -105,28 +81,16 @@ function PositionedElement({
   isThumbnail: boolean
 }) {
   const element = useDeckStore((state) =>
-    findSlide(state.deck, slideId)?.elements.find(
-      (slideElement) => slideElement.id === elementId
-    )
+    findSlide(state.deck, slideId)?.elements.find((slideElement) => slideElement.id === elementId)
   )
-  const isEditing = useEditorStore(
-    (state) => !isThumbnail && state.editingElementId === elementId
-  )
-  const isAgentTouched = useEditorStore(
-    (state) => !isThumbnail && state.agentTouchedElementIds.includes(elementId)
-  )
+  const isEditing = useEditorStore((state) => !isThumbnail && state.editingElementId === elementId)
+  const isAgentTouched = useEditorStore((state) => !isThumbnail && state.agentTouchedElementIds.includes(elementId))
   // During a drag or resize the live box comes from the gesture store.
   // Dimmed while a drag would move it to another slide.
   const isBeingMovedAway = useDragPreviewStore(
-    (state) =>
-      !isThumbnail &&
-      state.dropTarget !== null &&
-      !state.dropTarget.isCopy &&
-      elementId in state.previewBoxes
+    (state) => !isThumbnail && state.dropTarget !== null && !state.dropTarget.isCopy && elementId in state.previewBoxes
   )
-  const previewBox = useDragPreviewStore((state) =>
-    isThumbnail ? undefined : state.previewBoxes[elementId]
-  )
+  const previewBox = useDragPreviewStore((state) => (isThumbnail ? undefined : state.previewBoxes[elementId]))
   if (!element) return null
   const box = previewBox ?? element
 
@@ -177,27 +141,15 @@ function PositionedElement({
       }}
     >
       {element.type === "text" ? (
-        <TextElement
-          element={element}
-          isEditing={isEditing}
-          onFinishEditing={finishEditingText}
-        />
+        <TextElement element={element} isEditing={isEditing} onFinishEditing={finishEditingText} />
       ) : element.type === "table" && isEditing ? (
-        <TableElement
-          element={element}
-          isEditing
-          onFinishEditing={finishEditingTable}
-        />
+        <TableElement element={element} isEditing onFinishEditing={finishEditingTable} />
       ) : (
         // A shape's SVG is drawn at the live size during a resize, so its
         // outline doesn't stretch. Other types keep the stored element, so
         // the memoized renderer skips them on every pointer move.
         <ElementRenderer
-          element={
-            previewBox && element.type === "shape"
-              ? { ...element, ...previewBox }
-              : element
-          }
+          element={previewBox && element.type === "shape" ? { ...element, ...previewBox } : element}
           theme={theme}
           animate={!isThumbnail}
         />
@@ -215,10 +167,7 @@ function sameText(paragraphs: Paragraph[], otherParagraphs: Paragraph[]) {
   return JSON.stringify(paragraphs) === JSON.stringify(otherParagraphs)
 }
 
-function slideBackgroundStyle(
-  background: SlideBackground | undefined,
-  theme: Deck["theme"]
-): CSSProperties {
+function slideBackgroundStyle(background: SlideBackground | undefined, theme: Deck["theme"]): CSSProperties {
   if (!background) return { background: theme.colors.background }
   if (background.type === "color") return { background: background.color }
   if (background.type === "gradient") {

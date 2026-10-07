@@ -41,8 +41,7 @@ export function DeckTitleInput({
       }}
       onBlur={(event) => {
         const trimmedTitle = event.currentTarget.value.trim()
-        const shouldRename =
-          !isCancellingRef.current && trimmedTitle && trimmedTitle !== title
+        const shouldRename = !isCancellingRef.current && trimmedTitle && trimmedTitle !== title
         if (shouldRename) onRename(trimmedTitle)
         isCancellingRef.current = false
         setDraftTitle(null)

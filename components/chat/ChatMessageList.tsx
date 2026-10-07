@@ -49,11 +49,7 @@ export function ChatMessageList({ onRetry, className }: ChatMessageListProps) {
 
   return (
     <div ref={scrollContainerRef} className={cn("overflow-y-auto", className)}>
-      <ol
-        aria-label="Messages"
-        className="relative w-full"
-        style={{ height: virtualizer.getTotalSize() }}
-      >
+      <ol aria-label="Messages" className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((virtualItem) => {
           const message = chatMessages[virtualItem.index]
           return (
@@ -64,10 +60,7 @@ export function ChatMessageList({ onRetry, className }: ChatMessageListProps) {
               className="absolute top-0 left-0 w-full"
               style={{ transform: `translateY(${virtualItem.start}px)` }}
             >
-              <ChatMessageItem
-                message={message}
-                onRetry={message === lastMessage ? onRetry : undefined}
-              />
+              <ChatMessageItem message={message} onRetry={message === lastMessage ? onRetry : undefined} />
             </li>
           )
         })}
@@ -87,9 +80,7 @@ const ChatMessageItem = memo(function ChatMessageItem({
   if (message.role === "user") {
     return (
       <div className="flex justify-end ps-8">
-        <p className="rounded-2xl bg-muted px-3.5 py-2 text-sm whitespace-pre-wrap">
-          {message.content}
-        </p>
+        <p className="rounded-2xl bg-muted px-3.5 py-2 text-sm whitespace-pre-wrap">{message.content}</p>
       </div>
     )
   }
@@ -98,12 +89,8 @@ const ChatMessageItem = memo(function ChatMessageItem({
 
   return (
     <div className="flex flex-col gap-2 text-sm">
-      {isWaitingForText && (
-        <p className="animate-pulse text-muted-foreground">Thinking…</p>
-      )}
-      {message.content && (
-        <p className="whitespace-pre-wrap">{message.content}</p>
-      )}
+      {isWaitingForText && <p className="animate-pulse text-muted-foreground">Thinking…</p>}
+      {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
       <OutlineReview messageId={message.id} />
       <GenerationProgress messageId={message.id} />
 
@@ -112,19 +99,11 @@ const ChatMessageItem = memo(function ChatMessageItem({
           {message.actions.map((action, actionIndex) => (
             <li key={actionIndex} className="flex items-start gap-1.5">
               {action.failed ? (
-                <CircleAlertIcon
-                  className="mt-px size-3.5 shrink-0"
-                  aria-label="Failed"
-                />
+                <CircleAlertIcon className="mt-px size-3.5 shrink-0" aria-label="Failed" />
               ) : (
-                <CheckIcon
-                  className="mt-px size-3.5 shrink-0"
-                  aria-label="Done"
-                />
+                <CheckIcon className="mt-px size-3.5 shrink-0" aria-label="Done" />
               )}
-              <span className={cn(action.failed && "opacity-70")}>
-                {action.label}
-              </span>
+              <span className={cn(action.failed && "opacity-70")}>{action.label}</span>
             </li>
           ))}
         </ul>

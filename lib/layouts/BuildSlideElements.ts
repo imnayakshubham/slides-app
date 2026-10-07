@@ -1,17 +1,7 @@
-import {
-  estimateTextHeight,
-  findFreeSpot,
-  type Box,
-} from "@/lib/edits/Geometry"
+import { estimateTextHeight, findFreeSpot, type Box } from "@/lib/edits/Geometry"
 import { createId } from "@/lib/Ids"
 import { slideLayoutSlots } from "@/lib/layouts/SlideLayouts"
-import {
-  ARTBOARD_HEIGHT,
-  MIN_ELEMENT_SIZE,
-  type Deck,
-  type Slide,
-  type SlideElement,
-} from "@/lib/schema/Deck"
+import { ARTBOARD_HEIGHT, MIN_ELEMENT_SIZE, type Deck, type Slide, type SlideElement } from "@/lib/schema/Deck"
 import type { SlideContent } from "@/lib/schema/SlideContent"
 
 // Turns the AI's content for one slide into finished, placed elements.
@@ -47,18 +37,10 @@ type TextStyle = {
 
 // Starts at the wanted size and steps down until the text fits the area;
 // the box is as tall as the text actually needs.
-function fittedText(
-  paragraphs: string[],
-  area: Box,
-  style: TextStyle,
-  theme: Theme
-): SlideElement {
+function fittedText(paragraphs: string[], area: Box, style: TextStyle, theme: Theme): SlideElement {
   const listStyle = style.listStyle ?? "none"
   let fontSize = style.fontSize
-  while (
-    fontSize > MIN_FONT_SIZE &&
-    estimateTextHeight(paragraphs, fontSize, area.w, listStyle) > area.h
-  ) {
+  while (fontSize > MIN_FONT_SIZE && estimateTextHeight(paragraphs, fontSize, area.w, listStyle) > area.h) {
     fontSize -= FONT_SIZE_STEP
   }
   const height = estimateTextHeight(paragraphs, fontSize, area.w, listStyle)
@@ -73,19 +55,14 @@ function fittedText(
     fontSize,
     bold: style.bold ?? false,
     italic: style.italic ?? false,
-    color:
-      style.color ??
-      (style.isHeading ? theme.colors.heading : theme.colors.text),
+    color: style.color ?? (style.isHeading ? theme.colors.heading : theme.colors.text),
     align: style.align ?? "left",
     listStyle,
     font: style.isHeading ? "heading" : undefined,
   }
 }
 
-function chartElement(
-  chart: NonNullable<SlideContent["chart"]>,
-  area: Box
-): SlideElement {
+function chartElement(chart: NonNullable<SlideContent["chart"]>, area: Box): SlideElement {
   return {
     id: createId(),
     type: "chart",
@@ -99,10 +76,7 @@ function chartElement(
 }
 
 // Only as tall as its rows need, up to the area.
-function tableElement(
-  table: NonNullable<SlideContent["table"]>,
-  area: Box
-): SlideElement {
+function tableElement(table: NonNullable<SlideContent["table"]>, area: Box): SlideElement {
   return {
     id: createId(),
     type: "table",
@@ -124,11 +98,7 @@ function areaBelow(area: Box, element: SlideElement): Box {
 }
 
 // A heading with its bullets right under it, inside one column.
-function column(
-  content: NonNullable<SlideContent["left"]>,
-  area: Box,
-  theme: Theme
-) {
+function column(content: NonNullable<SlideContent["left"]>, area: Box, theme: Theme) {
   const heading = fittedText(
     [content.heading],
     { ...area, h: COLUMN_HEADING_FONT_SIZE * 3 },
@@ -145,18 +115,9 @@ function column(
 }
 
 // A visual with an optional one-line takeaway under it.
-function visualWithTakeaway(
-  content: SlideContent,
-  area: Box,
-  theme: Theme
-): SlideElement[] {
+function visualWithTakeaway(content: SlideContent, area: Box, theme: Theme): SlideElement[] {
   const takeaway = content.takeaway
-    ? fittedText(
-        [content.takeaway],
-        area,
-        { fontSize: TAKEAWAY_FONT_SIZE, italic: true },
-        theme
-      )
+    ? fittedText([content.takeaway], area, { fontSize: TAKEAWAY_FONT_SIZE, italic: true }, theme)
     : null
   const visualArea = takeaway ? { ...area, h: area.h - takeaway.h - GAP } : area
 
@@ -179,9 +140,7 @@ function layoutContent(slide: Slide, content: SlideContent, theme: Theme) {
       if (!content.subtitle) return []
       // Right under the title, however many lines the title took.
       const title = slide.elements.find((element) => element.type === "text")
-      const subtitleArea = title
-        ? { ...slots.subtitle, y: bottomOf(title) + GAP }
-        : slots.subtitle
+      const subtitleArea = title ? { ...slots.subtitle, y: bottomOf(title) + GAP } : slots.subtitle
       return [
         fittedText(
           [content.subtitle],
@@ -195,10 +154,7 @@ function layoutContent(slide: Slide, content: SlideContent, theme: Theme) {
     case "two-column":
     case "comparison":
       if (!content.left || !content.right) return []
-      return [
-        ...column(content.left, slots.left, theme),
-        ...column(content.right, slots.right, theme),
-      ]
+      return [...column(content.left, slots.left, theme), ...column(content.right, slots.right, theme)]
 
     case "chart-forward":
       return visualWithTakeaway(content, slots.chart, theme)
@@ -213,12 +169,7 @@ function layoutContent(slide: Slide, content: SlideContent, theme: Theme) {
       // A chart sits beside the bullets.
       if (content.chart) {
         return [
-          fittedText(
-            bullets,
-            slots.body,
-            { fontSize: BODY_FONT_SIZE, listStyle: "bullet" },
-            theme
-          ),
+          fittedText(bullets, slots.body, { fontSize: BODY_FONT_SIZE, listStyle: "bullet" }, theme),
           chartElement(content.chart, slots.visual),
         ]
       }
@@ -230,20 +181,10 @@ function layoutContent(slide: Slide, content: SlideContent, theme: Theme) {
           { fontSize: BODY_FONT_SIZE, listStyle: "bullet" },
           theme
         )
-        return [
-          bulletText,
-          tableElement(content.table, areaBelow(fullWidth, bulletText)),
-        ]
+        return [bulletText, tableElement(content.table, areaBelow(fullWidth, bulletText))]
       }
       // Text alone uses the whole width.
-      return [
-        fittedText(
-          bullets,
-          fullWidth,
-          { fontSize: BODY_FONT_SIZE, listStyle: "bullet" },
-          theme
-        ),
-      ]
+      return [fittedText(bullets, fullWidth, { fontSize: BODY_FONT_SIZE, listStyle: "bullet" }, theme)]
     }
 
     case "blank":
@@ -252,11 +193,7 @@ function layoutContent(slide: Slide, content: SlideContent, theme: Theme) {
 }
 
 // A small uppercase label in the accent color, just above the title.
-function eyebrowElement(
-  slide: Slide,
-  content: SlideContent,
-  theme: Theme
-): SlideElement[] {
+function eyebrowElement(slide: Slide, content: SlideContent, theme: Theme): SlideElement[] {
   const slot = slideLayoutSlots[slide.layout].eyebrow
   const title = slide.elements.find((element) => element.type === "text")
   if (!content.eyebrow || !slot) return []
@@ -271,18 +208,11 @@ function eyebrowElement(
   ]
 }
 
-export function buildSlideElements(
-  slide: Slide,
-  content: SlideContent,
-  theme: Theme
-): SlideElement[] {
+export function buildSlideElements(slide: Slide, content: SlideContent, theme: Theme): SlideElement[] {
   // Safety net: each piece is checked against everything already on the
   // slide (its title) and the pieces placed before it.
   const placedElements: SlideElement[] = []
-  const elements = [
-    ...eyebrowElement(slide, content, theme),
-    ...layoutContent(slide, content, theme),
-  ]
+  const elements = [...eyebrowElement(slide, content, theme), ...layoutContent(slide, content, theme)]
   for (const element of elements) {
     const slideSoFar = {
       ...slide,

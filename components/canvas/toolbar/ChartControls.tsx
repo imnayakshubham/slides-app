@@ -38,9 +38,7 @@ export function ChartControls({ element }: { element: ChartElementData }) {
       <ToolbarToggle
         label="Show legend"
         isActive={element.showLegend}
-        onClick={() =>
-          updateSelectedElement({ showLegend: !element.showLegend })
-        }
+        onClick={() => updateSelectedElement({ showLegend: !element.showLegend })}
       >
         <ListIcon />
       </ToolbarToggle>

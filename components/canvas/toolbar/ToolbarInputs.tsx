@@ -94,14 +94,8 @@ export function ColorInput({
   })
 
   return (
-    <label
-      title={label}
-      className="relative grid size-8 cursor-pointer place-items-center rounded-md hover:bg-muted"
-    >
-      <span
-        className="size-4.5 rounded-full border shadow-xs"
-        style={{ background: color }}
-      />
+    <label title={label} className="relative grid size-8 cursor-pointer place-items-center rounded-md hover:bg-muted">
+      <span className="size-4.5 rounded-full border shadow-xs" style={{ background: color }} />
       <input
         ref={inputRef}
         type="color"

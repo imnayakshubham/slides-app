@@ -134,8 +134,7 @@
 
 /* Divided by the artboard's scale so the outline stays 1px on screen. */
 [data-canvas-slide-id] [data-element-id]:hover {
-  outline: calc(1px / var(--artboard-scale)) solid
-    color-mix(in oklab, var(--primary) 45%, transparent);
+  outline: calc(1px / var(--artboard-scale)) solid color-mix(in oklab, var(--primary) 45%, transparent);
 }
 
 /* Faint dot grid over the whole slide, with a brighter band of the same
@@ -143,8 +142,7 @@
 .agent-working-overlay {
   --dot-color: var(--primary);
   background-image: radial-gradient(
-    color-mix(in oklab, var(--dot-color) 30%, transparent)
-      var(--dot-size, 2.5px),
+    color-mix(in oklab, var(--dot-color) 30%, transparent) var(--dot-size, 2.5px),
     transparent calc(var(--dot-size, 2.5px) + 0.5px)
   );
   background-size: var(--dot-gap, 10px) var(--dot-gap, 10px);
@@ -155,17 +153,11 @@
   position: absolute;
   inset: 0;
   background-image: radial-gradient(
-    color-mix(in oklab, var(--dot-color) 90%, transparent)
-      var(--dot-size, 2.5px),
+    color-mix(in oklab, var(--dot-color) 90%, transparent) var(--dot-size, 2.5px),
     transparent calc(var(--dot-size, 2.5px) + 0.5px)
   );
   background-size: inherit;
-  mask-image: linear-gradient(
-    110deg,
-    transparent 25%,
-    black 50%,
-    transparent 75%
-  );
+  mask-image: linear-gradient(110deg, transparent 25%, black 50%, transparent 75%);
   mask-size: 250% 100%;
   animation: agent-working-sweep 1.6s linear infinite;
 }

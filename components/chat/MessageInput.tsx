@@ -16,13 +16,7 @@ type MessageInputProps = {
   className?: string
 }
 
-export function MessageInput({
-  placeholder,
-  onSubmitPrompt,
-  isBusy = false,
-  onStop,
-  className,
-}: MessageInputProps) {
+export function MessageInput({ placeholder, onSubmitPrompt, isBusy = false, onStop, className }: MessageInputProps) {
   const promptInputId = useId()
   const [prompt, setPrompt] = useState("")
   const trimmedPrompt = prompt.trim()
@@ -35,10 +29,7 @@ export function MessageInput({
 
   return (
     <form
-      className={cn(
-        "flex w-full flex-col gap-2 rounded-2xl border bg-card p-3 shadow-sm",
-        className
-      )}
+      className={cn("flex w-full flex-col gap-2 rounded-2xl border bg-card p-3 shadow-sm", className)}
       onSubmit={(event) => {
         event.preventDefault()
         submitPrompt()
@@ -62,24 +53,11 @@ export function MessageInput({
         className="max-h-40 resize-none border-0 bg-transparent px-1 shadow-none focus-visible:ring-0 dark:bg-transparent"
       />
       <div className="flex items-center justify-between">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label="Attach"
-          title="Attach"
-        >
+        <Button type="button" variant="ghost" size="icon" aria-label="Attach" title="Attach">
           <PlusIcon />
         </Button>
         {isBusy ? (
-          <Button
-            type="button"
-            size="icon"
-            className="rounded-full"
-            aria-label="Stop"
-            title="Stop"
-            onClick={onStop}
-          >
+          <Button type="button" size="icon" className="rounded-full" aria-label="Stop" title="Stop" onClick={onStop}>
             <SquareIcon className="fill-current" />
           </Button>
         ) : (

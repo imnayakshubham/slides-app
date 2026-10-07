@@ -18,12 +18,8 @@ export function addBlankSlideAt(index: number) {
 export function addBlankSlideAfterCurrent() {
   const deck = useDeckStore.getState().deck
   if (!deck) return
-  const currentSlideIndex = deck.slides.findIndex(
-    (slide) => slide.id === useEditorStore.getState().currentSlideId
-  )
-  addBlankSlideAt(
-    currentSlideIndex === -1 ? deck.slides.length : currentSlideIndex + 1
-  )
+  const currentSlideIndex = deck.slides.findIndex((slide) => slide.id === useEditorStore.getState().currentSlideId)
+  addBlankSlideAt(currentSlideIndex === -1 ? deck.slides.length : currentSlideIndex + 1)
 }
 
 export function duplicateSlideAfterItself(slideId: string) {
