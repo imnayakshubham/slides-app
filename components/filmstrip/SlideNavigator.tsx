@@ -1,17 +1,71 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { PlusIcon, XIcon } from "lucide-react"
+import {
+  DndContext,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import { CopyIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react"
 import { useShallow } from "zustand/react/shallow"
 
 import { Artboard } from "@/components/canvas/Artboard"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { createSlide, duplicateSlide } from "@/lib/layouts/SlideLayouts"
 import { cn } from "@/lib/utils"
 import { selectSlideIds, useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
+// A mouse press only becomes a drag after this many pixels, so clicking a
+// thumbnail still opens the slide. On touch a short hold starts the drag,
+// so a swipe still scrolls the list.
+const DRAG_START_DISTANCE_PX = 3
+const TOUCH_DRAG_HOLD_MS = 250
+const TOUCH_DRAG_TOLERANCE_PX = 5
+
 export function SlideNavigator({ onClose }: { onClose: () => void }) {
   const slideIds = useDeckStore(useShallow(selectSlideIds))
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: DRAG_START_DISTANCE_PX },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: TOUCH_DRAG_HOLD_MS,
+        tolerance: TOUCH_DRAG_TOLERANCE_PX,
+      },
+    })
+  )
+
+  function moveDraggedSlide({ active, over }: DragEndEvent) {
+    if (!over || active.id === over.id) return
+    useDeckStore.getState().applyEdit({
+      type: "moveSlide",
+      slideId: String(active.id),
+      toIndex: slideIds.indexOf(String(over.id)),
+    })
+  }
 
   return (
     <nav
@@ -19,7 +73,13 @@ export function SlideNavigator({ onClose }: { onClose: () => void }) {
       className="m-2 flex w-40 shrink-0 flex-col gap-2 rounded-xl border bg-card p-2 shadow-sm"
     >
       <div className="flex items-center gap-1">
-        <Button variant="outline" size="sm" className="flex-1 rounded-full">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 rounded-full"
+          title="Add a blank slide after the current one"
+          onClick={addBlankSlideAfterCurrent}
+        >
           <PlusIcon />
           Add
         </Button>
@@ -36,13 +96,26 @@ export function SlideNavigator({ onClose }: { onClose: () => void }) {
       {slideIds.length === 0 ? (
         <p className="px-1 py-2 text-xs text-muted-foreground">No slides yet</p>
       ) : (
-        <ol className="-mx-1 flex min-h-0 flex-col gap-3 overflow-y-auto px-1 py-1">
-          {slideIds.map((slideId, slideIndex) => (
-            <li key={slideId}>
-              <SlideThumbnail slideId={slideId} slideNumber={slideIndex + 1} />
-            </li>
-          ))}
-        </ol>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={moveDraggedSlide}
+        >
+          <SortableContext
+            items={slideIds}
+            strategy={verticalListSortingStrategy}
+          >
+            <ol className="-mx-1 flex min-h-0 flex-col gap-3 overflow-y-auto px-1 py-1">
+              {slideIds.map((slideId, slideIndex) => (
+                <SlideThumbnail
+                  key={slideId}
+                  slideId={slideId}
+                  slideNumber={slideIndex + 1}
+                />
+              ))}
+            </ol>
+          </SortableContext>
+        </DndContext>
       )}
     </nav>
   )
@@ -63,6 +136,8 @@ function SlideThumbnail({
   )
   const goToSlide = useEditorStore((state) => state.goToSlide)
   const thumbnailRef = useRef<HTMLButtonElement>(null)
+  const { setNodeRef, listeners, transform, transition, isDragging } =
+    useSortable({ id: slideId })
 
   useEffect(() => {
     if (isCurrentSlide) {
@@ -70,29 +145,116 @@ function SlideThumbnail({
     }
   }, [isCurrentSlide])
 
+  const slideName = slideTitle || "Untitled slide"
+
   return (
-    <button
-      ref={thumbnailRef}
-      type="button"
-      data-slide-drop-id={slideId}
-      aria-current={isCurrentSlide ? "true" : undefined}
-      onClick={() => goToSlide(slideId)}
-      className="group flex w-full flex-col gap-1 rounded-md text-start outline-none"
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={cn("group relative", isDragging && "z-10 opacity-80")}
     >
-      <Artboard
-        slideId={slideId}
-        isThumbnail
-        className={cn(
-          "pointer-events-none w-full rounded-sm border shadow-xs transition-shadow group-hover:shadow-sm group-focus-visible:ring-2 group-focus-visible:ring-ring",
-          isCurrentSlide && "ring-2 ring-primary"
-        )}
-      />
-      <span className="flex min-w-0 gap-1.5 px-0.5 text-xs">
-        <span className="shrink-0 text-muted-foreground tabular-nums">
-          {slideNumber}
+      <button
+        ref={thumbnailRef}
+        {...listeners}
+        type="button"
+        data-slide-drop-id={slideId}
+        aria-current={isCurrentSlide ? "true" : undefined}
+        onClick={() => goToSlide(slideId)}
+        className="flex w-full flex-col gap-1 rounded-md text-start outline-none"
+      >
+        <Artboard
+          slideId={slideId}
+          isThumbnail
+          className={cn(
+            "pointer-events-none w-full rounded-sm border shadow-xs transition-shadow group-hover:shadow-sm group-has-focus-visible:ring-2 group-has-focus-visible:ring-ring",
+            isCurrentSlide && "ring-2 ring-primary"
+          )}
+        />
+        <span className="flex min-w-0 gap-1.5 px-0.5 text-xs">
+          <span className="shrink-0 text-muted-foreground tabular-nums">
+            {slideNumber}
+          </span>
+          <span className="truncate">{slideName}</span>
         </span>
-        <span className="truncate">{slideTitle || "Untitled slide"}</span>
-      </span>
-    </button>
+      </button>
+      <div className="absolute end-1 top-1 flex gap-0.5 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100">
+        <Button
+          variant="secondary"
+          size="icon-xs"
+          aria-label={`Duplicate slide ${slideNumber}`}
+          title="Duplicate"
+          onClick={() => duplicateSlideAfterItself(slideId)}
+        >
+          <CopyIcon />
+        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger
+            render={
+              <Button
+                variant="secondary"
+                size="icon-xs"
+                aria-label={`Delete slide ${slideNumber}`}
+                title="Delete"
+              />
+            }
+          >
+            <Trash2Icon />
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Delete slide {slideNumber}, “{slideName}”?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                You can bring it back with Undo.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={() =>
+                  useDeckStore
+                    .getState()
+                    .applyEdit({ type: "deleteSlide", slideId })
+                }
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </li>
   )
+}
+
+function addBlankSlideAfterCurrent() {
+  const { deck, applyEdit } = useDeckStore.getState()
+  if (!deck) return
+  const currentSlideIndex = deck.slides.findIndex(
+    (slide) => slide.id === useEditorStore.getState().currentSlideId
+  )
+  const newSlide = createSlide("blank", "", deck.theme)
+  const result = applyEdit({
+    type: "addSlide",
+    slide: newSlide,
+    index:
+      currentSlideIndex === -1 ? deck.slides.length : currentSlideIndex + 1,
+  })
+  if (result.ok) useEditorStore.getState().goToSlide(newSlide.id)
+}
+
+function duplicateSlideAfterItself(slideId: string) {
+  const { deck, applyEdit } = useDeckStore.getState()
+  if (!deck) return
+  const slideIndex = deck.slides.findIndex((slide) => slide.id === slideId)
+  if (slideIndex === -1) return
+  const copy = duplicateSlide(deck.slides[slideIndex])
+  const result = applyEdit({
+    type: "addSlide",
+    slide: copy,
+    index: slideIndex + 1,
+  })
+  if (result.ok) useEditorStore.getState().goToSlide(copy.id)
 }
