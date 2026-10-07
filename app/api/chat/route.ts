@@ -1,10 +1,10 @@
 import { z } from "zod"
 
-import { EDITOR_INSTRUCTIONS } from "@/lib/ai/AgentPrompts"
-import { createAgentTools } from "@/lib/ai/AgentTools"
 import { buildDeckContext, recentMessages } from "@/lib/ai/DeckContext"
 import { createEventStream } from "@/lib/ai/EventStream"
-import { runAgent } from "@/lib/ai/RunAgent"
+import { EDITOR_INSTRUCTIONS } from "@/lib/ai/Prompts"
+import { streamAgentReply } from "@/lib/ai/StreamAgentReply"
+import { createAgentTools } from "@/lib/ai/Tools"
 import { deckSchema } from "@/lib/schema/Deck"
 
 export const runtime = "nodejs"
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   const deckContext = buildDeckContext(deck, currentSlideId, selectedIds)
 
   // Not awaited: the response streams while the agent runs.
-  runAgent({
+  streamAgentReply({
     instructions: `${EDITOR_INSTRUCTIONS}\n\n${deckContext}`,
     messages: [
       ...recentMessages(messages),

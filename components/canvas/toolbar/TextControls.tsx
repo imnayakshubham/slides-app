@@ -14,7 +14,7 @@ import {
   NumberInput,
   ToolbarDivider,
   ToolbarToggle,
-} from "@/components/canvas/toolbar/ToolbarParts"
+} from "@/components/canvas/toolbar/ToolbarInputs"
 import {
   endActiveTextEdit,
   styleHighlightedWordsOf,

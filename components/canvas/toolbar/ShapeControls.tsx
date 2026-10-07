@@ -5,7 +5,7 @@ import {
   NumberInput,
   ToolbarDivider,
   ToolbarToggle,
-} from "@/components/canvas/toolbar/ToolbarParts"
+} from "@/components/canvas/toolbar/ToolbarInputs"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
 import type { SlideElement } from "@/lib/schema/Deck"
 

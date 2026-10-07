@@ -39,10 +39,16 @@ export function boxesOverlap(a: Box, b: Box) {
   )
 }
 
-export function findFreeSpot(slide: Slide, box: Box): Box {
+// Nearest spot of the same size that covers no other element. Falls back
+// to the requested (clamped) box when the slide has no room for it.
+export function findFreeSpot(
+  slide: Slide,
+  box: Box,
+  ignoreElementId?: string
+): Box {
   const requestedBox = clampBox(box)
   const isFree = (candidate: Box) =>
-    slide.elements.every((element) => !boxesOverlap(candidate, element))
+    overlappingElementIds(slide, candidate, ignoreElementId).length === 0
 
   if (isFree(requestedBox)) return requestedBox
 
@@ -69,6 +75,77 @@ export function findFreeSpot(slide: Slide, box: Box): Box {
     .sort((a, b) => distanceFromRequested(a) - distanceFromRequested(b))[0]
 
   return nearestFreeSpot ?? requestedBox
+}
+
+export function overlappingElementIds(
+  slide: Slide,
+  box: Box,
+  ignoreElementId?: string
+) {
+  return slide.elements
+    .filter((element) => element.id !== ignoreElementId)
+    .filter((element) => boxesOverlap(box, element))
+    .map((element) => element.id)
+}
+
+// Sizes tried, in order, when the requested size has no free spot.
+const SHRINK_SCALES = [1, 0.75, 0.5]
+
+// Where the agent's new or changed element goes: the requested box if it
+// is free, else the nearest free spot, else the same shape smaller. When
+// nothing fits, the box is kept and the elements it covers are reported.
+export function placeWithoutOverlap(
+  slide: Slide,
+  box: Box,
+  ignoreElementId?: string
+): { box: Box; overlapsWith: string[] } {
+  for (const scale of SHRINK_SCALES) {
+    const scaledBox = { ...box, w: box.w * scale, h: box.h * scale }
+    const spot = findFreeSpot(slide, scaledBox, ignoreElementId)
+    if (overlappingElementIds(slide, spot, ignoreElementId).length === 0) {
+      return { box: spot, overlapsWith: [] }
+    }
+  }
+  const keptBox = clampBox(box)
+  return {
+    box: keptBox,
+    overlapsWith: overlappingElementIds(slide, keptBox, ignoreElementId),
+  }
+}
+
+// Text sizes, matching how TextElement renders: `leading-tight` lines,
+// list items indented 1.25em with a 0.4em gap after each.
+const LINE_HEIGHT = 1.25
+const AVERAGE_CHARACTER_WIDTH = 0.52
+// Words wrap before the line is full, so lines hold a bit less than the
+// average width suggests.
+const WORD_WRAP_ALLOWANCE = 0.9
+const LIST_INDENT = 1.25
+const LIST_ITEM_GAP = 0.4
+
+// A close estimate of a text box's rendered height, for placing text
+// before the browser has laid it out.
+export function estimateTextHeight(
+  paragraphs: string[],
+  fontSize: number,
+  width: number,
+  listStyle: "none" | "bullet" | "number"
+) {
+  const isList = listStyle !== "none"
+  const textWidth = width - (isList ? LIST_INDENT * fontSize : 0)
+  const charactersPerLine = Math.max(
+    1,
+    Math.floor(
+      (textWidth / (AVERAGE_CHARACTER_WIDTH * fontSize)) * WORD_WRAP_ALLOWANCE
+    )
+  )
+  const lineCount = paragraphs.reduce(
+    (total, paragraph) =>
+      total + Math.max(1, Math.ceil(paragraph.length / charactersPerLine)),
+    0
+  )
+  const listGaps = isList ? paragraphs.length * LIST_ITEM_GAP * fontSize : 0
+  return Math.ceil(lineCount * LINE_HEIGHT * fontSize + listGaps)
 }
 
 export type Corner = "nw" | "ne" | "sw" | "se"

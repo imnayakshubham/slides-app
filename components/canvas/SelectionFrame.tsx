@@ -11,7 +11,7 @@ import {
   type SnapGuide,
 } from "@/lib/edits/Geometry"
 import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH } from "@/lib/schema/Deck"
-import { useCanvasGestureStore } from "@/store/CanvasGestureStore"
+import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
@@ -31,12 +31,12 @@ const HANDLE_DOT_SIZE = "calc(10px / var(--artboard-scale))"
 
 // Drawn inside the current slide's artboard, in slide units: selection
 // frames, resize handles, snap guides and the selection box.
-export function SelectionOverlay() {
+export function SelectionFrame() {
   const selectedElementIds = useEditorStore((state) => state.selectedElementIds)
   const editingElementId = useEditorStore((state) => state.editingElementId)
-  const previewBoxes = useCanvasGestureStore((state) => state.previewBoxes)
-  const guides = useCanvasGestureStore((state) => state.guides)
-  const marqueeBox = useCanvasGestureStore((state) => state.marqueeBox)
+  const previewBoxes = useDragPreviewStore((state) => state.previewBoxes)
+  const guides = useDragPreviewStore((state) => state.guides)
+  const marqueeBox = useDragPreviewStore((state) => state.marqueeBox)
   const selectedElements = useDeckStore(
     useShallow((state) =>
       selectedElementIds

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
-type PromptComposerProps = {
+type MessageInputProps = {
   placeholder: string
   onSubmitPrompt?: (prompt: string) => void
   // While busy the input is disabled and Send becomes Stop.
@@ -16,13 +16,13 @@ type PromptComposerProps = {
   className?: string
 }
 
-export function PromptComposer({
+export function MessageInput({
   placeholder,
   onSubmitPrompt,
   isBusy = false,
   onStop,
   className,
-}: PromptComposerProps) {
+}: MessageInputProps) {
   const promptInputId = useId()
   const [prompt, setPrompt] = useState("")
   const trimmedPrompt = prompt.trim()

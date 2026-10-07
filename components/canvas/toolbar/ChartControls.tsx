@@ -1,7 +1,7 @@
 import { ListIcon } from "lucide-react"
 
-import { ChartEditor } from "@/components/canvas/toolbar/ChartEditor"
-import { ToolbarToggle } from "@/components/canvas/toolbar/ToolbarParts"
+import { ChartDataEditor } from "@/components/canvas/toolbar/ChartDataEditor"
+import { ToolbarToggle } from "@/components/canvas/toolbar/ToolbarInputs"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
 import type { SlideElement } from "@/lib/schema/Deck"
 
@@ -44,7 +44,7 @@ export function ChartControls({ element }: { element: ChartElementData }) {
       >
         <ListIcon />
       </ToolbarToggle>
-      <ChartEditor element={element} />
+      <ChartDataEditor element={element} />
     </>
   )
 }

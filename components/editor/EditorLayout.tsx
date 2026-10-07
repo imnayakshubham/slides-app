@@ -1,30 +1,33 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useEffectEvent, useState } from "react"
+import { useRouter } from "next/navigation"
 
 import { SlideCanvas } from "@/components/canvas/SlideCanvas"
 import { AgentPanel } from "@/components/chat/AgentPanel"
 import { EditorToolbar } from "@/components/editor/EditorToolbar"
 import { TopBar } from "@/components/editor/TopBar"
-import { SlideNavigator } from "@/components/filmstrip/SlideNavigator"
+import { SlideNavigator } from "@/components/navigator/SlideNavigator"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { useAgentChat } from "@/hooks/UseAgentChat"
 import { useCanvasShortcuts } from "@/hooks/UseCanvasShortcuts"
 import type { SaveStatus } from "@/hooks/UseAutosave"
 import { useSlideKeyboardNavigation } from "@/hooks/UseSlideKeyboardNavigation"
 import { useDeckStore } from "@/store/DeckStore"
+import { useEditorStore } from "@/store/EditorStore"
 
-type EditorShellProps = {
+type EditorLayoutProps = {
   saveStatus: SaveStatus
   onRetrySave: () => void
 }
 
-export function EditorShell({ saveStatus, onRetrySave }: EditorShellProps) {
+export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
   const deckTitle = useDeckStore((state) => state.deck?.title ?? "")
   const applyEdit = useDeckStore((state) => state.applyEdit)
   useSlideKeyboardNavigation()
   useCanvasShortcuts()
   const agentChat = useAgentChat()
+  const router = useRouter()
   const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(true)
   const [isMobileAgentOpen, setIsMobileAgentOpen] = useState(false)
   // The navigator gives way to the agent panel: hidden while the panel is
@@ -44,6 +47,40 @@ export function EditorShell({ saveStatus, onRetrySave }: EditorShellProps) {
     const isDesktop = window.matchMedia("(min-width: 64rem)").matches
     if (isDesktop) setAgentPanelOpen(true)
     else setIsMobileAgentOpen(true)
+  }
+
+  // A prompt from /new becomes the first chat message. It is removed from
+  // the URL first, so a refresh never runs it twice. Deferred one tick so a
+  // development double mount (React StrictMode) doesn't start it twice.
+  const startPromptFromUrl = useEffectEvent(() => {
+    const prompt = new URLSearchParams(window.location.search).get("prompt")
+    if (!prompt) return
+    router.replace(window.location.pathname)
+    void agentChat.sendMessage(prompt)
+  })
+  useEffect(() => {
+    const timeoutId = setTimeout(startPromptFromUrl, 0)
+    return () => clearTimeout(timeoutId)
+  }, [])
+
+  // The outline review lives in the agent panel, which may be closed (it is
+  // a sheet on small screens), so it opens when there is an outline to approve.
+  const showAgentForReview = useEffectEvent(() => openAgent())
+  useEffect(
+    () =>
+      useEditorStore.subscribe((state, previousState) => {
+        if (state.outlineReview && !previousState.outlineReview) {
+          showAgentForReview()
+        }
+      }),
+    []
+  )
+
+  // Any click or scroll in the editor means the user is driving now, so the
+  // canvas stops jumping to the slide being generated.
+  function stopFollowingGeneration() {
+    const editor = useEditorStore.getState()
+    if (editor.isFollowingGeneration) editor.setIsFollowingGeneration(false)
   }
 
   return (
@@ -70,7 +107,11 @@ export function EditorShell({ saveStatus, onRetrySave }: EditorShellProps) {
           onRetrySave={onRetrySave}
         />
 
-        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border bg-card shadow-sm">
+        <section
+          onPointerDownCapture={stopFollowingGeneration}
+          onWheelCapture={stopFollowingGeneration}
+          className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border bg-card shadow-sm"
+        >
           <EditorToolbar
             isSlideNavigatorOpen={isSlideNavigatorOpen}
             onToggleSlideNavigator={() =>
@@ -81,7 +122,7 @@ export function EditorShell({ saveStatus, onRetrySave }: EditorShellProps) {
             {isSlideNavigatorOpen && (
               <SlideNavigator onClose={() => setIsSlideNavigatorOpen(false)} />
             )}
-            <SlideCanvas />
+            <SlideCanvas onOpenAgent={openAgent} />
           </div>
         </section>
       </div>

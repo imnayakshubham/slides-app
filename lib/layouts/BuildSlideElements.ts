@@ -1,0 +1,256 @@
+import {
+  estimateTextHeight,
+  findFreeSpot,
+  type Box,
+} from "@/lib/edits/Geometry"
+import { createId } from "@/lib/Ids"
+import { slideLayoutSlots } from "@/lib/layouts/SlideLayouts"
+import {
+  MIN_ELEMENT_SIZE,
+  type Deck,
+  type Slide,
+  type SlideElement,
+} from "@/lib/schema/Deck"
+import type { SlideContent } from "@/lib/schema/SlideContent"
+
+// Turns the AI's content for one slide into finished, placed elements.
+// Pieces are laid out relative to each other inside the layout's slots
+// (a heading's height decides where its bullets start, a takeaway line
+// shrinks the chart above it), text shrinks until it fits, and a final
+// pass makes sure nothing overlaps.
+
+type Theme = Deck["theme"]
+
+const SUBTITLE_FONT_SIZE = 36
+const BODY_FONT_SIZE = 32
+const COLUMN_HEADING_FONT_SIZE = 36
+const TAKEAWAY_FONT_SIZE = 28
+const MIN_FONT_SIZE = 20
+const FONT_SIZE_STEP = 2
+// Space between pieces stacked in one slot.
+const GAP = 32
+// A table row at the table's 28px text, with its cell padding.
+const TABLE_ROW_HEIGHT = 64
+
+type TextStyle = {
+  fontSize: number
+  bold?: boolean
+  italic?: boolean
+  listStyle?: "none" | "bullet"
+  align?: "left" | "center"
+}
+
+// Starts at the wanted size and steps down until the text fits the area;
+// the box is as tall as the text actually needs.
+function fittedText(
+  paragraphs: string[],
+  area: Box,
+  style: TextStyle,
+  theme: Theme
+): SlideElement {
+  const listStyle = style.listStyle ?? "none"
+  let fontSize = style.fontSize
+  while (
+    fontSize > MIN_FONT_SIZE &&
+    estimateTextHeight(paragraphs, fontSize, area.w, listStyle) > area.h
+  ) {
+    fontSize -= FONT_SIZE_STEP
+  }
+  const height = estimateTextHeight(paragraphs, fontSize, area.w, listStyle)
+  return {
+    id: createId(),
+    type: "text",
+    x: area.x,
+    y: area.y,
+    w: area.w,
+    h: Math.max(MIN_ELEMENT_SIZE, height),
+    paragraphs,
+    fontSize,
+    bold: style.bold ?? false,
+    italic: style.italic ?? false,
+    color: theme.colors.text,
+    align: style.align ?? "left",
+    listStyle,
+  }
+}
+
+function chartElement(
+  chart: NonNullable<SlideContent["chart"]>,
+  area: Box
+): SlideElement {
+  return {
+    id: createId(),
+    type: "chart",
+    ...area,
+    chartType: chart.chartType,
+    title: chart.title,
+    categories: chart.categories,
+    series: chart.series,
+    showLegend: chart.series.length > 1 || chart.chartType === "pie",
+  }
+}
+
+// Only as tall as its rows need, up to the area.
+function tableElement(
+  table: NonNullable<SlideContent["table"]>,
+  area: Box
+): SlideElement {
+  return {
+    id: createId(),
+    type: "table",
+    ...area,
+    h: Math.min(area.h, table.rows.length * TABLE_ROW_HEIGHT),
+    rows: table.rows,
+    headerRow: true,
+  }
+}
+
+function bottomOf(element: SlideElement) {
+  return element.y + element.h
+}
+
+// The area left in `area` below an element placed at its top.
+function areaBelow(area: Box, element: SlideElement): Box {
+  const top = bottomOf(element) + GAP
+  return { ...area, y: top, h: area.y + area.h - top }
+}
+
+// A heading with its bullets right under it, inside one column.
+function column(
+  content: NonNullable<SlideContent["left"]>,
+  area: Box,
+  theme: Theme
+) {
+  const heading = fittedText(
+    [content.heading],
+    { ...area, h: COLUMN_HEADING_FONT_SIZE * 3 },
+    { fontSize: COLUMN_HEADING_FONT_SIZE, bold: true },
+    theme
+  )
+  const bullets = fittedText(
+    content.bullets,
+    areaBelow(area, heading),
+    { fontSize: BODY_FONT_SIZE, listStyle: "bullet" },
+    theme
+  )
+  return [heading, bullets]
+}
+
+// A visual with an optional one-line takeaway under it.
+function visualWithTakeaway(
+  content: SlideContent,
+  area: Box,
+  theme: Theme
+): SlideElement[] {
+  const takeaway = content.takeaway
+    ? fittedText(
+        [content.takeaway],
+        area,
+        { fontSize: TAKEAWAY_FONT_SIZE, italic: true },
+        theme
+      )
+    : null
+  const visualArea = takeaway ? { ...area, h: area.h - takeaway.h - GAP } : area
+
+  const elements: SlideElement[] = []
+  if (content.chart) elements.push(chartElement(content.chart, visualArea))
+  if (content.table) elements.push(tableElement(content.table, visualArea))
+  if (takeaway) {
+    const visualBottom = Math.max(...elements.map(bottomOf), area.y)
+    elements.push({ ...takeaway, y: visualBottom + GAP })
+  }
+  return elements
+}
+
+function layoutContent(slide: Slide, content: SlideContent, theme: Theme) {
+  const slots = slideLayoutSlots[slide.layout]
+
+  switch (slide.layout) {
+    case "title":
+    case "section":
+      if (!content.subtitle) return []
+      return [
+        fittedText(
+          [content.subtitle],
+          slots.subtitle,
+          { fontSize: SUBTITLE_FONT_SIZE, align: "center" },
+          theme
+        ),
+      ]
+
+    case "two-column":
+    case "comparison":
+      if (!content.left || !content.right) return []
+      return [
+        ...column(content.left, slots.left, theme),
+        ...column(content.right, slots.right, theme),
+      ]
+
+    case "chart-forward":
+      return visualWithTakeaway(content, slots.chart, theme)
+
+    case "content": {
+      const fullWidth: Box = {
+        ...slots.body,
+        w: slots.visual.x + slots.visual.w - slots.body.x,
+      }
+      const bullets = content.bullets ?? []
+
+      // A chart sits beside the bullets.
+      if (content.chart) {
+        return [
+          fittedText(
+            bullets,
+            slots.body,
+            { fontSize: BODY_FONT_SIZE, listStyle: "bullet" },
+            theme
+          ),
+          chartElement(content.chart, slots.visual),
+        ]
+      }
+      // A table needs the width, so it goes under the bullets.
+      if (content.table) {
+        const bulletText = fittedText(
+          bullets,
+          { ...fullWidth, h: fullWidth.h / 3 },
+          { fontSize: BODY_FONT_SIZE, listStyle: "bullet" },
+          theme
+        )
+        return [
+          bulletText,
+          tableElement(content.table, areaBelow(fullWidth, bulletText)),
+        ]
+      }
+      // Text alone uses the whole width.
+      return [
+        fittedText(
+          bullets,
+          fullWidth,
+          { fontSize: BODY_FONT_SIZE, listStyle: "bullet" },
+          theme
+        ),
+      ]
+    }
+
+    case "blank":
+      return []
+  }
+}
+
+export function buildSlideElements(
+  slide: Slide,
+  content: SlideContent,
+  theme: Theme
+): SlideElement[] {
+  // Safety net: each piece is checked against everything already on the
+  // slide (its title) and the pieces placed before it.
+  const placedElements: SlideElement[] = []
+  for (const element of layoutContent(slide, content, theme)) {
+    const slideSoFar = {
+      ...slide,
+      elements: [...slide.elements, ...placedElements],
+    }
+    placedElements.push({ ...element, ...findFreeSpot(slideSoFar, element) })
+  }
+  return placedElements
+}

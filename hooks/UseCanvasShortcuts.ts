@@ -6,7 +6,7 @@ import {
   nudgeSelectedElements,
 } from "@/lib/client/SelectedElementActions"
 import { isTypingTarget } from "@/lib/IsTypingTarget"
-import { useCanvasGestureStore } from "@/store/CanvasGestureStore"
+import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
@@ -47,8 +47,7 @@ export function useCanvasShortcuts() {
 
       // During a drag, Escape cancels the drag instead (handled by dnd-kit).
       if (event.key === "Escape") {
-        if (!useCanvasGestureStore.getState().isActive)
-          setSelectedElementIds([])
+        if (!useDragPreviewStore.getState().isActive) setSelectedElementIds([])
         return
       }
 

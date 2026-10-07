@@ -19,6 +19,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { CopyIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react"
 import { useShallow } from "zustand/react/shallow"
 
+import { AgentWorkingOverlay } from "@/components/canvas/AgentWorkingOverlay"
 import { Artboard } from "@/components/canvas/Artboard"
 import { DeckTitleInput } from "@/components/editor/DeckTitleInput"
 import {
@@ -33,7 +34,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { createSlide, duplicateSlide } from "@/lib/layouts/SlideLayouts"
+import { useAgentSlideActivity } from "@/hooks/UseAgentSlideActivity"
+import {
+  addBlankSlideAfterCurrent,
+  duplicateSlideAfterItself,
+} from "@/lib/client/SlideActions"
 import { cn } from "@/lib/utils"
 import { selectSlideIds, useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
@@ -136,6 +141,7 @@ function SlideThumbnail({
     (state) => state.currentSlideId === slideId
   )
   const goToSlide = useEditorStore((state) => state.goToSlide)
+  const agentActivity = useAgentSlideActivity(slideId)
   const thumbnailRef = useRef<HTMLButtonElement>(null)
   const [isRenaming, setIsRenaming] = useState(false)
   const { setNodeRef, listeners, transform, transition, isDragging } =
@@ -162,7 +168,7 @@ function SlideThumbnail({
         data-slide-drop-id={slideId}
         aria-current={isCurrentSlide ? "true" : undefined}
         onClick={() => goToSlide(slideId)}
-        className="block w-full rounded-md outline-none"
+        className="relative block w-full rounded-md outline-none"
       >
         <Artboard
           slideId={slideId}
@@ -172,6 +178,7 @@ function SlideThumbnail({
             isCurrentSlide && "ring-2 ring-primary"
           )}
         />
+        {agentActivity && <AgentWorkingOverlay size="thumbnail" />}
       </button>
       <div className="mt-1 flex min-w-0 items-center gap-1.5 px-0.5 text-xs">
         <span className="shrink-0 text-muted-foreground tabular-nums">
@@ -257,34 +264,4 @@ function SlideThumbnail({
       </div>
     </li>
   )
-}
-
-function addBlankSlideAfterCurrent() {
-  const { deck, applyEdit } = useDeckStore.getState()
-  if (!deck) return
-  const currentSlideIndex = deck.slides.findIndex(
-    (slide) => slide.id === useEditorStore.getState().currentSlideId
-  )
-  const newSlide = createSlide("blank", "", deck.theme)
-  const result = applyEdit({
-    type: "addSlide",
-    slide: newSlide,
-    index:
-      currentSlideIndex === -1 ? deck.slides.length : currentSlideIndex + 1,
-  })
-  if (result.ok) useEditorStore.getState().goToSlide(newSlide.id)
-}
-
-function duplicateSlideAfterItself(slideId: string) {
-  const { deck, applyEdit } = useDeckStore.getState()
-  if (!deck) return
-  const slideIndex = deck.slides.findIndex((slide) => slide.id === slideId)
-  if (slideIndex === -1) return
-  const copy = duplicateSlide(deck.slides[slideIndex])
-  const result = applyEdit({
-    type: "addSlide",
-    slide: copy,
-    index: slideIndex + 1,
-  })
-  if (result.ok) useEditorStore.getState().goToSlide(copy.id)
 }

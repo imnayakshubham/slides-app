@@ -2,11 +2,14 @@
 
 import { useEffect } from "react"
 import { DndContext, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
+import { PlusIcon, SparklesIcon } from "lucide-react"
 import { useShallow } from "zustand/react/shallow"
 
 import { EditableSlide } from "@/components/canvas/EditableSlide"
 import { SelectionToolbar } from "@/components/canvas/SelectionToolbar"
+import { Button } from "@/components/ui/button"
 import { useCanvasGestures } from "@/hooks/UseCanvasGestures"
+import { addBlankSlideAfterCurrent } from "@/lib/client/SlideActions"
 import { selectSlideIds, useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
@@ -14,7 +17,7 @@ import { useEditorStore } from "@/store/EditorStore"
 // never nudge anything.
 const DRAG_START_DISTANCE_PX = 3
 
-export function SlideCanvas() {
+export function SlideCanvas({ onOpenAgent }: { onOpenAgent: () => void }) {
   const slideIds = useDeckStore(useShallow(selectSlideIds))
   const currentSlideId = useEditorStore((state) => state.currentSlideId)
   const gestures = useCanvasGestures()
@@ -34,11 +37,24 @@ export function SlideCanvas() {
   if (slideIds.length === 0) {
     return (
       <div className="grid flex-1 place-items-center p-6 text-center">
-        <div className="flex max-w-sm flex-col gap-1">
-          <p className="font-medium">No slides yet</p>
-          <p className="text-sm text-muted-foreground">
-            Ask the agent to build the deck, or add a blank slide.
-          </p>
+        <div className="flex max-w-sm flex-col items-center gap-3">
+          <div className="flex flex-col gap-1">
+            <p className="font-medium">No slides yet</p>
+            <p className="text-sm text-muted-foreground">
+              Describe your deck to the agent and it will plan the slides for
+              you to review, or start from a blank slide.
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button onClick={onOpenAgent}>
+              <SparklesIcon />
+              Describe your deck
+            </Button>
+            <Button variant="outline" onClick={addBlankSlideAfterCurrent}>
+              <PlusIcon />
+              Blank slide
+            </Button>
+          </div>
         </div>
       </div>
     )

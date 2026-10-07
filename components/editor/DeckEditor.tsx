@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 
-import { EditorShell } from "@/components/editor/EditorShell"
+import { EditorLayout } from "@/components/editor/EditorLayout"
 import { buttonVariants } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAutosave } from "@/hooks/UseAutosave"
@@ -80,7 +80,7 @@ export function DeckEditor({ deckId }: { deckId: string }) {
 // Mounted only after hydrate, so autosave never sees the initial load as an edit.
 function LoadedDeckEditor() {
   const { saveStatus, retrySave } = useAutosave()
-  return <EditorShell saveStatus={saveStatus} onRetrySave={retrySave} />
+  return <EditorLayout saveStatus={saveStatus} onRetrySave={retrySave} />
 }
 
 function DeckLoadProblem({

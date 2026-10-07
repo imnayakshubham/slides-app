@@ -11,7 +11,7 @@ import {
   Trash2Icon,
 } from "lucide-react"
 
-import { PromptComposer } from "@/components/chat/PromptComposer"
+import { MessageInput } from "@/components/chat/MessageInput"
 import { DeckTitleInput } from "@/components/editor/DeckTitleInput"
 import {
   AlertDialog,
@@ -102,7 +102,7 @@ export function NewDeckPage() {
           <h1 className="text-center text-3xl font-medium tracking-tight">
             What do you want to present?
           </h1>
-          <PromptComposer
+          <MessageInput
             placeholder="Describe your deck, e.g. a 6-slide Q3 roadmap with a revenue chart"
             onSubmitPrompt={(prompt) => void createDeckAndOpen(prompt)}
           />

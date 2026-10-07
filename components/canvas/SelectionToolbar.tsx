@@ -17,7 +17,7 @@ import { TextControls } from "@/components/canvas/toolbar/TextControls"
 import {
   ToolbarDivider,
   ToolbarToggle,
-} from "@/components/canvas/toolbar/ToolbarParts"
+} from "@/components/canvas/toolbar/ToolbarInputs"
 import {
   deleteSelectedElements,
   duplicateSelectedElements,
@@ -25,7 +25,7 @@ import {
 } from "@/lib/client/SelectedElementActions"
 import { findElementLocation } from "@/lib/edits/DeckEdits"
 import type { SlideElement } from "@/lib/schema/Deck"
-import { useCanvasGestureStore } from "@/store/CanvasGestureStore"
+import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
@@ -47,7 +47,7 @@ function getSelectedElementNodes() {
 // controls for that element type. It lives inside the canvas scroll area,
 // so it scrolls with the slide without listening to scroll events.
 export function SelectionToolbar() {
-  const isGestureActive = useCanvasGestureStore((state) => state.isActive)
+  const isGestureActive = useDragPreviewStore((state) => state.isActive)
   const toolbarRef = useRef<HTMLDivElement>(null)
   const selectedElementIds = useEditorStore((state) => state.selectedElementIds)
   const selectedElements = useDeckStore(

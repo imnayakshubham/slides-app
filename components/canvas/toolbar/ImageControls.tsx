@@ -7,7 +7,7 @@ import {
   TextInput,
   ToolbarDivider,
   ToolbarToggle,
-} from "@/components/canvas/toolbar/ToolbarParts"
+} from "@/components/canvas/toolbar/ToolbarInputs"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
 import { deckRepository } from "@/lib/repository"
 import type { SlideElement } from "@/lib/schema/Deck"

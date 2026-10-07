@@ -8,7 +8,13 @@ import {
   findElementLocation,
   type DeckEdit,
 } from "@/lib/edits/DeckEdits"
-import { findFreeSpot, type Box } from "@/lib/edits/Geometry"
+import {
+  estimateTextHeight,
+  findFreeSpot,
+  overlappingElementIds,
+  placeWithoutOverlap,
+  type Box,
+} from "@/lib/edits/Geometry"
 import { createId } from "@/lib/Ids"
 import {
   createSlide,
@@ -18,12 +24,14 @@ import {
 import {
   ARTBOARD_HEIGHT,
   ARTBOARD_WIDTH,
+  MIN_ELEMENT_SIZE,
   slideLayoutSchema,
   type Deck,
   type ElementChanges,
   type Slide,
   type SlideElement,
 } from "@/lib/schema/Deck"
+import { paragraphText } from "@/lib/RichText"
 import type { SendStreamEvent } from "@/lib/StreamEvents"
 
 const DEFAULT_TEXT_FONT_SIZE = 40
@@ -100,8 +108,34 @@ const elementStyleInputs = {
   strokeWidth: z.number().min(0).optional().describe("Shape: outline width."),
 }
 
+// A warning means the change was made but needs a follow-up, e.g. the new
+// element overlaps others because the slide had no free space.
 type ToolResult =
-  { ok: true; createdIds: string[] } | { ok: false; error: string }
+  | { ok: true; createdIds: string[]; warning?: string }
+  | { ok: false; error: string }
+
+function overlapWarning(overlapsWith: string[]) {
+  if (overlapsWith.length === 0) return undefined
+  return `There was no free space, so it overlaps ${overlapsWith.join(", ")}. Move, shrink or remove something so nothing overlaps.`
+}
+
+function withWarning(result: ToolResult, warning: string | undefined) {
+  if (!result.ok || !warning) return result
+  return { ...result, warning }
+}
+
+// Text boxes are saved as tall as their text will render, so placement
+// sees their real size.
+function withTextHeight(element: SlideElement): SlideElement {
+  if (element.type !== "text") return element
+  const height = estimateTextHeight(
+    element.paragraphs.map(paragraphText),
+    element.fontSize,
+    element.w,
+    element.listStyle
+  )
+  return { ...element, h: Math.max(MIN_ELEMENT_SIZE, height) }
+}
 
 // Tools edit `workingDeck` so later calls in the same request see earlier changes.
 export function createAgentTools(
@@ -130,18 +164,24 @@ export function createAgentTools(
     return { ok: false, error }
   }
 
+  // Every element the agent adds lands in free space when there is any.
   function addElementToSlide(
     slideId: string,
     element: SlideElement,
     label: string,
     toolCallId: string
   ) {
-    return applyChange(
-      { type: "addElement", slideId, element },
+    const slide = findSlide(workingDeck, slideId)
+    if (!slide) return reportError(`Slide "${slideId}" does not exist.`)
+    const sizedElement = withTextHeight(element)
+    const { box, overlapsWith } = placeWithoutOverlap(slide, sizedElement)
+    const result = applyChange(
+      { type: "addElement", slideId, element: { ...sizedElement, ...box } },
       label,
       toolCallId,
       [element.id]
     )
+    return withWarning(result, overlapWarning(overlapsWith))
   }
 
   return {
@@ -339,16 +379,32 @@ export function createAgentTools(
         changes: z.object(elementStyleInputs),
       }),
       execute: ({ elementId, changes }, { toolCallId }) => {
+        const location = findElementLocation(workingDeck, elementId)
         // Fields from another element type fail validation in applyDeckEdit.
-        return applyChange(
-          {
-            type: "updateElement",
-            elementId,
-            changes: changes as ElementChanges,
-          },
+        let fullChanges = changes as ElementChanges
+        let warning: string | undefined
+
+        // Rewritten or restyled text gets its new height, and the model hears
+        // about it if the taller text now runs into something.
+        const changesTextSize =
+          changes.paragraphs || changes.fontSize || changes.listStyle
+        if (location?.element.type === "text" && changesTextSize) {
+          const resizedText = withTextHeight({
+            ...location.element,
+            ...fullChanges,
+          } as SlideElement)
+          fullChanges = { ...fullChanges, h: resizedText.h }
+          warning = overlapWarning(
+            overlappingElementIds(location.slide, resizedText, elementId)
+          )
+        }
+
+        const result = applyChange(
+          { type: "updateElement", elementId, changes: fullChanges },
           `Edited ${describeElement(workingDeck, elementId)}`,
           toolCallId
         )
+        return withWarning(result, warning)
       },
     }),
 
@@ -382,12 +438,35 @@ export function createAgentTools(
           .optional()
           .describe("New top edge. Leave out to keep it."),
       }),
-      execute: ({ elementId, toSlideId, x, y }, { toolCallId }) =>
-        applyChange(
-          { type: "moveElement", elementId, toSlideId, x, y },
-          `Moved ${describeElement(workingDeck, elementId)} to ${describeSlide(workingDeck, toSlideId)}`,
+      execute: ({ elementId, toSlideId, x, y }, { toolCallId }) => {
+        const label = `Moved ${describeElement(workingDeck, elementId)} to ${describeSlide(workingDeck, toSlideId)}`
+        const location = findElementLocation(workingDeck, elementId)
+        const isMoveWithinSlide = location?.slide.id === toSlideId
+        // Moves to another slide find free space in applyDeckEdit.
+        if (!location || !isMoveWithinSlide) {
+          return applyChange(
+            { type: "moveElement", elementId, toSlideId, x, y },
+            label,
+            toolCallId
+          )
+        }
+
+        const { slide, element } = location
+        const spot = findFreeSpot(
+          slide,
+          { ...element, x: x ?? element.x, y: y ?? element.y },
+          elementId
+        )
+        const result = applyChange(
+          { type: "moveElement", elementId, toSlideId, x: spot.x, y: spot.y },
+          label,
           toolCallId
-        ),
+        )
+        return withWarning(
+          result,
+          overlapWarning(overlappingElementIds(slide, spot, elementId))
+        )
+      },
     }),
 
     resize_element: tool({
@@ -399,12 +478,27 @@ export function createAgentTools(
         x: z.number().optional(),
         y: z.number().optional(),
       }),
-      execute: ({ elementId, ...changes }, { toolCallId }) =>
-        applyChange(
-          { type: "updateElement", elementId, changes },
+      execute: ({ elementId, w, h, x, y }, { toolCallId }) => {
+        const location = findElementLocation(workingDeck, elementId)
+        if (!location)
+          return reportError(`Element "${elementId}" does not exist.`)
+        const { slide, element } = location
+        // Keeps the asked-for size; only the position moves to free space.
+        const spot = findFreeSpot(
+          slide,
+          { x: x ?? element.x, y: y ?? element.y, w, h },
+          elementId
+        )
+        const result = applyChange(
+          { type: "updateElement", elementId, changes: spot },
           `Resized ${describeElement(workingDeck, elementId)}`,
           toolCallId
-        ),
+        )
+        return withWarning(
+          result,
+          overlapWarning(overlappingElementIds(slide, spot, elementId))
+        )
+      },
     }),
 
     reorder_elements: tool({

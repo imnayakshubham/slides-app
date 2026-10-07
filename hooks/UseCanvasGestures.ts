@@ -14,7 +14,7 @@ import {
   type SnapGuide,
 } from "@/lib/edits/Geometry"
 import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, type Slide } from "@/lib/schema/Deck"
-import { useCanvasGestureStore } from "@/store/CanvasGestureStore"
+import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
@@ -159,7 +159,7 @@ export function useCanvasGestures() {
     const deltaY = delta.y / gesture.scale
     const snapDistance = SNAP_DISTANCE_PX / gesture.scale
     const { shift: isShiftHeld, alt: isAltHeld } = heldKeysRef.current
-    const { setPreview, setMarquee } = useCanvasGestureStore.getState()
+    const { setPreview, setMarquee } = useDragPreviewStore.getState()
 
     if (gesture.kind === "move") {
       const movedElements = [...gesture.startBoxes].map(([elementId, box]) => ({
@@ -228,7 +228,7 @@ export function useCanvasGestures() {
     endGesture()
     if (!gesture) return
     const { previewBoxes, marqueeBox, clearGesture } =
-      useCanvasGestureStore.getState()
+      useDragPreviewStore.getState()
 
     if (gesture.kind === "marquee") {
       if (marqueeBox) {
@@ -265,7 +265,7 @@ export function useCanvasGestures() {
 
   function handleDragCancel() {
     endGesture()
-    useCanvasGestureStore.getState().clearGesture()
+    useDragPreviewStore.getState().clearGesture()
   }
 
   function endGesture() {

@@ -3,8 +3,10 @@
 import type { MouseEvent, PointerEvent } from "react"
 import { useDraggable } from "@dnd-kit/core"
 
+import { AgentWorkingOverlay } from "@/components/canvas/AgentWorkingOverlay"
 import { Artboard } from "@/components/canvas/Artboard"
-import { SelectionOverlay } from "@/components/canvas/SelectionOverlay"
+import { SelectionFrame } from "@/components/canvas/SelectionFrame"
+import { useAgentSlideActivity } from "@/hooks/UseAgentSlideActivity"
 import { cn } from "@/lib/utils"
 import { useEditorStore } from "@/store/EditorStore"
 
@@ -26,6 +28,7 @@ export function EditableSlide({
     (state) => state.currentSlideId === slideId
   )
   const { setNodeRef, listeners } = useDraggable({ id: slideId })
+  const agentActivity = useAgentSlideActivity(slideId)
 
   // Text boxes and tables are typed into in place.
   function startEditingInPlace(event: MouseEvent<HTMLElement>) {
@@ -54,13 +57,16 @@ export function EditableSlide({
       }}
       onDoubleClick={startEditingInPlace}
       className={cn(
-        "w-full max-w-5xl shrink-0 scroll-m-4 rounded-sm shadow-md ring-offset-4 ring-offset-muted select-none md:scroll-m-8",
+        "relative w-full max-w-5xl shrink-0 scroll-m-4 rounded-sm shadow-md ring-offset-4 ring-offset-muted select-none md:scroll-m-8",
         isCurrentSlide && "ring-2 ring-primary"
       )}
     >
       <Artboard slideId={slideId} className="rounded-sm">
-        {isCurrentSlide && <SelectionOverlay />}
+        {isCurrentSlide && <SelectionFrame />}
       </Artboard>
+      {agentActivity && (
+        <AgentWorkingOverlay size="slide" label={agentActivity} />
+      )}
     </article>
   )
 }

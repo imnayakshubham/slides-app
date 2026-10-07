@@ -20,7 +20,7 @@ import {
   type SlideBackground,
 } from "@/lib/schema/Deck"
 import { cn } from "@/lib/utils"
-import { useCanvasGestureStore } from "@/store/CanvasGestureStore"
+import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
@@ -104,8 +104,11 @@ function PositionedElement({
   const isEditing = useEditorStore(
     (state) => !isThumbnail && state.editingElementId === elementId
   )
+  const isAgentTouched = useEditorStore(
+    (state) => !isThumbnail && state.agentTouchedElementIds.includes(elementId)
+  )
   // During a drag or resize the live box comes from the gesture store.
-  const previewBox = useCanvasGestureStore((state) =>
+  const previewBox = useDragPreviewStore((state) =>
     isThumbnail ? undefined : state.previewBoxes[elementId]
   )
   if (!element) return null
@@ -143,7 +146,10 @@ function PositionedElement({
         "absolute",
         !isEditing && "*:pointer-events-none",
         !isThumbnail && "touch-none",
-        !isThumbnail && (isEditing ? "cursor-text" : "cursor-move")
+        !isThumbnail && (isEditing ? "cursor-text" : "cursor-move"),
+        // A brief glow where the agent just added or changed something.
+        "outline-[6px] outline-offset-4 transition-[outline-color] duration-700 outline-solid",
+        isAgentTouched ? "outline-primary/70" : "outline-transparent"
       )}
       style={{
         left: box.x,

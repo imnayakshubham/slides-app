@@ -2,7 +2,37 @@ import { create } from "zustand"
 
 import type { TextBoxStyle } from "@/lib/RichText"
 import type { ChatMessage } from "@/lib/schema/Conversation"
+import type { Outline } from "@/lib/schema/Outline"
 import { useDeckStore } from "@/store/DeckStore"
+
+// How long an element stays highlighted after the agent changes it.
+const AGENT_HIGHLIGHT_MS = 1500
+
+export type SlideBuildStatus = "waiting" | "filling" | "done" | "failed"
+
+export type SlideBuild = {
+  slideId: string
+  title: string
+  outlineSlideIndex: number
+  status: SlideBuildStatus
+}
+
+// An outline waiting for approval. slideKeys give each row a stable id
+// while it is reordered or removed.
+export type OutlineReview = {
+  messageId: string
+  outline: Outline
+  slideKeys: string[]
+}
+
+// A deck being generated from an approved outline, shown as a checklist
+// under the chat message that proposed it.
+export type DeckGeneration = {
+  messageId: string
+  outline: Outline
+  slides: SlideBuild[]
+  isStopped: boolean
+}
 
 type EditorStore = {
   currentSlideId: string | null
@@ -27,6 +57,23 @@ type EditorStore = {
   ) => void
   removeChatMessage: (messageId: string) => void
   setIsAgentRunning: (isAgentRunning: boolean) => void
+
+  // An outline waiting for the user to edit and approve it.
+  outlineReview: OutlineReview | null
+  setOutlineReview: (outlineReview: OutlineReview | null) => void
+  deckGeneration: DeckGeneration | null
+  setDeckGeneration: (deckGeneration: DeckGeneration | null) => void
+  setSlideBuildStatus: (slideId: string, status: SlideBuildStatus) => void
+  // The canvas follows the slide being filled until the user takes over.
+  isFollowingGeneration: boolean
+  setIsFollowingGeneration: (isFollowing: boolean) => void
+  agentTouchedElementIds: string[]
+  highlightAgentTouchedElements: (elementIds: string[]) => void
+  // Slides the agent has changed during the current chat reply; they
+  // shimmer until the reply ends.
+  agentEditingSlideIds: string[]
+  addAgentEditingSlides: (slideIds: string[]) => void
+  clearAgentEditingSlides: () => void
 }
 
 export const useEditorStore = create<EditorStore>()((set) => ({
@@ -76,6 +123,59 @@ export const useEditorStore = create<EditorStore>()((set) => ({
     })),
 
   setIsAgentRunning: (isAgentRunning) => set({ isAgentRunning }),
+
+  outlineReview: null,
+  setOutlineReview: (outlineReview) => set({ outlineReview }),
+
+  deckGeneration: null,
+  setDeckGeneration: (deckGeneration) => set({ deckGeneration }),
+  setSlideBuildStatus: (slideId, status) =>
+    set((state) => {
+      if (!state.deckGeneration) return {}
+      return {
+        deckGeneration: {
+          ...state.deckGeneration,
+          slides: state.deckGeneration.slides.map((slideBuild) =>
+            slideBuild.slideId === slideId
+              ? { ...slideBuild, status }
+              : slideBuild
+          ),
+        },
+      }
+    }),
+
+  isFollowingGeneration: false,
+  setIsFollowingGeneration: (isFollowingGeneration) =>
+    set({ isFollowingGeneration }),
+
+  agentEditingSlideIds: [],
+  addAgentEditingSlides: (slideIds) =>
+    set((state) => {
+      const newSlideIds = slideIds.filter(
+        (slideId) => !state.agentEditingSlideIds.includes(slideId)
+      )
+      // Most edits touch a slide that is already marked: no update then.
+      if (newSlideIds.length === 0) return {}
+      return {
+        agentEditingSlideIds: [...state.agentEditingSlideIds, ...newSlideIds],
+      }
+    }),
+  clearAgentEditingSlides: () => set({ agentEditingSlideIds: [] }),
+
+  agentTouchedElementIds: [],
+  highlightAgentTouchedElements: (elementIds) => {
+    if (elementIds.length === 0) return
+    set((state) => ({
+      agentTouchedElementIds: [...state.agentTouchedElementIds, ...elementIds],
+    }))
+    setTimeout(() => {
+      set((state) => ({
+        agentTouchedElementIds: state.agentTouchedElementIds.filter(
+          (elementId) => !elementIds.includes(elementId)
+        ),
+      }))
+    }, AGENT_HIGHLIGHT_MS)
+  },
 }))
 
 // Keep the editor pointing at things that still exist after any deck change

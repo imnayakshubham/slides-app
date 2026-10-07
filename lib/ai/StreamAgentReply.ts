@@ -11,36 +11,55 @@ import {
   type ToolSet,
 } from "ai"
 
-import { groqModel } from "@/lib/ai/Provider"
+import { getGroqModel } from "@/lib/ai/Model"
 import type { SendStreamEvent, StreamEvent } from "@/lib/StreamEvents"
 
 const MAX_AGENT_STEPS = 8
 
-type RunAgentOptions = {
+type StreamAgentReplyOptions = {
   instructions: string
   messages: ModelMessage[]
   tools: ToolSet
   toolChoice?: ToolChoice<ToolSet>
+  // A forced tool choice applies to every step, so a forced call needs 1,
+  // or an isFinished check that stops once the forced tool has succeeded.
+  maxSteps?: number
+  isFinished?: () => boolean
   sendEvent: SendStreamEvent
   abortSignal?: AbortSignal
 }
 
-export async function runAgent({
+export async function streamAgentReply({
   instructions,
   messages,
   tools,
   toolChoice,
+  maxSteps = MAX_AGENT_STEPS,
+  isFinished = () => false,
   sendEvent,
   abortSignal,
-}: RunAgentOptions) {
+}: StreamAgentReplyOptions) {
+  const model = getGroqModel()
+  if (!model) {
+    sendEvent({
+      event: "error",
+      data: {
+        message:
+          "The AI isn't set up: GROQ_API_KEY is missing on the server (see .env.example).",
+        code: "missing_api_key",
+      },
+    })
+    return
+  }
+
   try {
     const result = streamText({
-      model: groqModel,
+      model,
       instructions,
       messages,
       tools,
       toolChoice,
-      stopWhen: isStepCount(MAX_AGENT_STEPS),
+      stopWhen: [isStepCount(maxSteps), isFinished],
       abortSignal,
     })
 

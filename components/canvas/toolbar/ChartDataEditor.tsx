@@ -6,7 +6,7 @@ import {
   ColorInput,
   NumberInput,
   TextInput,
-} from "@/components/canvas/toolbar/ToolbarParts"
+} from "@/components/canvas/toolbar/ToolbarInputs"
 import { defaultSeriesColor } from "@/components/elements/ChartElement"
 import { Button } from "@/components/ui/button"
 import {
@@ -23,7 +23,7 @@ type ChartElementData = Extract<SlideElement, { type: "chart" }>
 // Title, axis labels, series colors and the data grid of the selected chart.
 // Categories and series are always replaced whole, so every series keeps
 // exactly one value per category.
-export function ChartEditor({ element }: { element: ChartElementData }) {
+export function ChartDataEditor({ element }: { element: ChartElementData }) {
   const accentColor = useDeckStore((state) => state.deck?.theme.colors.accent)
   const { categories, series } = element
   const isPie = element.chartType === "pie"

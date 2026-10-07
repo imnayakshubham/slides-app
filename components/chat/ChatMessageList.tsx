@@ -4,6 +4,8 @@ import { memo, useEffect, useRef } from "react"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { CheckIcon, CircleAlertIcon, RotateCcwIcon } from "lucide-react"
 
+import { GenerationProgress } from "@/components/chat/GenerationProgress"
+import { OutlineReview } from "@/components/chat/OutlineReview"
 import { Button } from "@/components/ui/button"
 import type { ChatMessage } from "@/lib/schema/Conversation"
 import { cn } from "@/lib/utils"
@@ -102,6 +104,8 @@ const ChatMessageItem = memo(function ChatMessageItem({
       {message.content && (
         <p className="whitespace-pre-wrap">{message.content}</p>
       )}
+      <OutlineReview messageId={message.id} />
+      <GenerationProgress messageId={message.id} />
 
       {message.actions.length > 0 && (
         <ul className="flex flex-col gap-1 text-xs text-muted-foreground">

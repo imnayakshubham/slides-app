@@ -3,7 +3,7 @@ import type { StreamEvent } from "@/lib/StreamEvents"
 const EVENT_PREFIX = "data: "
 
 // EventSource can't send a POST body, so the stream is read by hand.
-export async function postStream(
+export async function readServerStream(
   url: string,
   body: unknown,
   onEvent: (streamEvent: StreamEvent) => void,

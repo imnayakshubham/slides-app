@@ -3,7 +3,7 @@
 import { useRef, useState, type ChangeEvent } from "react"
 import { ImageIcon, PaintBucketIcon, UploadIcon } from "lucide-react"
 
-import { ColorInput } from "@/components/canvas/toolbar/ToolbarParts"
+import { ColorInput } from "@/components/canvas/toolbar/ToolbarInputs"
 import { Button } from "@/components/ui/button"
 import {
   Popover,
