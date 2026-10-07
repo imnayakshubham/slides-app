@@ -1,7 +1,8 @@
 import { arrayMove } from "@dnd-kit/sortable"
+import { DefaultChatTransport, isToolUIPart, readUIMessageStream } from "ai"
 import { toast } from "sonner"
 
-import { readServerStream } from "@/lib/client/ReadServerStream"
+import type { SlidesMessage } from "@/lib/ai/SlidesMessage"
 import { messageFromError } from "@/lib/ErrorMessage"
 import { endActiveTextEdit } from "@/lib/client/RichTextEditing"
 import { findElementLocation, type DeckEdit } from "@/lib/edits/DeckEdits"
@@ -11,7 +12,6 @@ import { deckRepository } from "@/lib/repository"
 import type { ChatMessage } from "@/lib/schema/Conversation"
 import type { Deck } from "@/lib/schema/Deck"
 import type { Outline, OutlineSlide } from "@/lib/schema/Outline"
-import type { StreamEvent } from "@/lib/StreamEvents"
 import { deckThemeFor } from "@/lib/themes/Themes"
 import { useDeckStore } from "@/store/DeckStore"
 import { agentFor, agentLabelFor, useAgentStore } from "@/store/AgentStore"
@@ -373,18 +373,21 @@ type StreamRequest = {
   deckId: string
   messageId: string
   url: string
-  body: unknown
+  body: Record<string, unknown>
   abortSignal: AbortSignal
   // Chat replies show text, changes and edited slides; planning and building show their own.
   isChatReply: boolean
 }
 
-// Streams one API call: deck edits apply as they arrive and the reply text goes into the chat.
+// Streams one API call with the AI SDK: deck edits apply as they arrive and the reply text goes into the chat.
 async function streamRequest(request: StreamRequest) {
   const { deckId, messageId, url, body, abortSignal, isChatReply } = request
   let errorMessage: string | undefined
   let outline: Outline | undefined
   let appliedEditCount = 0
+  let handledEditCount = 0
+  let shownTextLength = 0
+  const failedToolCallIds = new Set<string>()
   const textBuffer = createTextBuffer((text) => {
     const message = findChatMessage(messageId)
     if (message) updateMessage(messageId, { content: message.content + text })
@@ -396,46 +399,76 @@ async function streamRequest(request: StreamRequest) {
     updateMessage(messageId, { actions: [...message.actions, { label, failed }] })
   }
 
-  function handleStreamEvent(streamEvent: StreamEvent) {
-    if (streamEvent.event === "text_delta" && isChatReply) {
-      textBuffer.add(streamEvent.data.text)
-    }
+  function applyAgentEdit(edit: DeckEdit, label: string) {
     // The user may have opened another deck: never apply this deck's edits to it.
-    if (streamEvent.event === "edit" && openDeckId() === deckId) {
-      const { edit, label } = streamEvent.data
-      const deckBeforeEdit = useDeckStore.getState().deck
-      // Lock the slides first so the user's typing is saved before the agent's change lands.
-      if (isChatReply && deckBeforeEdit) {
-        markSlidesBeingEdited(deckId, slideIdsChangedBy(edit, deckBeforeEdit))
+    if (openDeckId() !== deckId) return
+    const deckBeforeEdit = useDeckStore.getState().deck
+    // Lock the slides first so the user's typing is saved before the agent's change lands.
+    if (isChatReply && deckBeforeEdit) {
+      markSlidesBeingEdited(deckId, slideIdsChangedBy(edit, deckBeforeEdit))
+    }
+    // Fails when the target was deleted meanwhile.
+    const result = useDeckStore.getState().applyEdit(edit)
+    if (result.ok) {
+      appliedEditCount += 1
+      addAction(label, false)
+      useAgentStore.getState().highlightElements(elementIdsChangedBy(edit))
+    } else {
+      addAction(`Skipped "${label}": it changed while the agent worked`, true)
+    }
+  }
+
+  // Each update is the whole reply so far; only the parts that are new since the last update are handled.
+  function handleReplyUpdate(reply: SlidesMessage) {
+    const replyText = reply.parts.map((part) => (part.type === "text" ? part.text : "")).join("")
+    if (isChatReply && replyText.length > shownTextLength) {
+      textBuffer.add(replyText.slice(shownTextLength))
+      shownTextLength = replyText.length
+    }
+
+    const edits = reply.parts.filter((part) => part.type === "data-edit")
+    for (const editPart of edits.slice(handledEditCount)) {
+      applyAgentEdit(editPart.data.edit, editPart.data.label)
+    }
+    handledEditCount = edits.length
+
+    for (const part of reply.parts) {
+      if (part.type === "data-outline") outline = part.data.outline
+      if (isToolUIPart(part) && toolCallFailed(part) && !failedToolCallIds.has(part.toolCallId)) {
+        failedToolCallIds.add(part.toolCallId)
+        addAction("A step failed, so the agent tried again", true)
       }
-      // Fails when the target was deleted meanwhile.
-      const result = useDeckStore.getState().applyEdit(edit)
-      if (result.ok) {
-        appliedEditCount += 1
-        addAction(label, false)
-        useAgentStore.getState().highlightElements(elementIdsChangedBy(edit))
-      } else {
-        addAction(`Skipped "${label}": it changed while the agent worked`, true)
-      }
-    }
-    if (streamEvent.event === "tool_error") {
-      addAction("A step failed, so the agent tried again", true)
-    }
-    if (streamEvent.event === "outline") {
-      outline = streamEvent.data.outline
-    }
-    if (streamEvent.event === "error") {
-      errorMessage = streamEvent.data.message
     }
   }
 
   try {
-    await readServerStream(url, body, handleStreamEvent, abortSignal)
+    const transport = new DefaultChatTransport<SlidesMessage>({
+      api: url,
+      prepareSendMessagesRequest: () => ({ body }),
+    })
+    const stream = await transport.sendMessages({
+      trigger: "submit-message",
+      chatId: deckId,
+      messageId: undefined,
+      messages: [],
+      abortSignal,
+    })
+    for await (const reply of readUIMessageStream<SlidesMessage>({ stream, terminateOnError: true })) {
+      handleReplyUpdate(reply)
+    }
   } catch (error) {
     if (!abortSignal.aborted) errorMessage = messageFromError(error)
   }
   textBuffer.flush()
   return { errorMessage, outline, appliedEditCount }
+}
+
+// A tool call failed when its input was invalid, it threw, or our tool answered { ok: false }.
+function toolCallFailed(part: { state: string; output?: unknown }) {
+  if (part.state === "output-error") return true
+  if (part.state !== "output-available") return false
+  const output = part.output
+  return typeof output === "object" && output !== null && "ok" in output && output.ok === false
 }
 
 function elementIdsChangedBy(edit: DeckEdit): string[] {

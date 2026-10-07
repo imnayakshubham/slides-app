@@ -1,7 +1,6 @@
 import { z } from "zod"
 
 import { buildDeckContext, recentMessages } from "@/lib/ai/DeckContext"
-import { createEventStream } from "@/lib/ai/EventStream"
 import { EDITOR_INSTRUCTIONS } from "@/lib/ai/Prompts"
 import { streamAgentReply } from "@/lib/ai/StreamAgentReply"
 import { createAgentTools } from "@/lib/ai/Tools"
@@ -22,21 +21,17 @@ export async function POST(request: Request) {
   const requestBody = await request.json().catch(() => null)
   const parsedRequest = chatRequestSchema.safeParse(requestBody)
   if (!parsedRequest.success) {
-    return Response.json({ error: z.prettifyError(parsedRequest.error) }, { status: 400 })
+    return new Response(z.prettifyError(parsedRequest.error), { status: 400 })
   }
 
   const { deck, messages, currentSlideId, selectedIds, userMessage } = parsedRequest.data
-  const { response, sendEvent, closeStream } = createEventStream()
   const deckContext = buildDeckContext(deck, currentSlideId, selectedIds)
 
-  // Not awaited: the response streams while the agent runs.
-  streamAgentReply({
+  return streamAgentReply({
     instructions: `${EDITOR_INSTRUCTIONS}\n\n${deckContext}`,
     messages: [...recentMessages(messages), { role: "user", content: userMessage }],
-    tools: createAgentTools(deck, sendEvent),
-    sendEvent,
+    createTools: (writer) =>
+      createAgentTools(deck, (edit, label) => writer.write({ type: "data-edit", data: { edit, label } })),
     abortSignal: request.signal,
-  }).finally(closeStream)
-
-  return response
+  })
 }

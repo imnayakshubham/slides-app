@@ -19,7 +19,6 @@ import {
 } from "@/lib/schema/Deck"
 import type { Deck, ElementChanges, Slide, SlideElement } from "@/lib/schema/Deck"
 import { paragraphText } from "@/lib/RichText"
-import type { SendStreamEvent } from "@/lib/StreamEvents"
 
 const DEFAULT_TEXT_FONT_SIZE = 40
 const DEFAULT_NEW_ELEMENT_WIDTH = 800
@@ -114,36 +113,33 @@ function withTextHeight(element: SlideElement): SlideElement {
 }
 
 // Tools edit `workingDeck` so later calls in the same request see earlier changes.
-export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSet {
+// `onEdit` sends each valid change to the browser as soon as it is made.
+export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: string) => void): ToolSet {
   let workingDeck = deck
 
-  function applyChange(edit: DeckEdit, label: string, toolCallId: string, createdIds: string[] = []): ToolResult {
+  function applyChange(edit: DeckEdit, label: string, createdIds: string[] = []): ToolResult {
     const result = applyDeckEdit(workingDeck, edit)
     if (!result.ok) return reportError(result.error)
 
     workingDeck = result.deck
-    sendEvent({ event: "edit", data: { edit, label, toolCallId } })
+    onEdit(edit, label)
     return { ok: true, createdIds }
   }
 
   // Returned, not thrown, so the model reads the error and retries.
   function reportError(error: string): ToolResult {
-    sendEvent({ event: "tool_error", data: { message: error } })
     return { ok: false, error }
   }
 
   // Every element the agent adds lands in free space when there is any.
-  function addElementToSlide(slideId: string, element: SlideElement, label: string, toolCallId: string) {
+  function addElementToSlide(slideId: string, element: SlideElement, label: string) {
     const slide = findSlide(workingDeck, slideId)
     if (!slide) return reportError(`Slide "${slideId}" does not exist.`)
     const sizedElement = withTextHeight(element)
     const { box, overlapsWith } = placeWithoutOverlap(slide, sizedElement)
-    const result = applyChange(
-      { type: "addElement", slideId, element: { ...sizedElement, ...box } },
-      label,
-      toolCallId,
-      [element.id]
-    )
+    const result = applyChange({ type: "addElement", slideId, element: { ...sizedElement, ...box } }, label, [
+      element.id,
+    ])
     return withWarning(result, overlapWarning(overlapsWith))
   }
 
@@ -166,13 +162,10 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         title: z.string(),
         index: z.number().int().optional().describe("Position starting at 0. Leave out to add at the end."),
       }),
-      execute: ({ layout, title, index }, { toolCallId }) => {
+      execute: ({ layout, title, index }) => {
         const slide = createSlide(layout, title, workingDeck.theme)
         const titleElementIds = slide.elements.map((element) => element.id)
-        return applyChange({ type: "addSlide", slide, index }, `Added slide "${title}"`, toolCallId, [
-          slide.id,
-          ...titleElementIds,
-        ])
+        return applyChange({ type: "addSlide", slide, index }, `Added slide "${title}"`, [slide.id, ...titleElementIds])
       },
     }),
 
@@ -186,26 +179,22 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         notes: z.string().optional().describe("Speaker notes."),
       }),
       // Leaves out fields that weren't sent, so they aren't overwritten with undefined.
-      execute: ({ slideId, background, ...otherChanges }, { toolCallId }) => {
+      execute: ({ slideId, background, ...otherChanges }) => {
         const changes = background
           ? {
               ...otherChanges,
               background: { type: "color" as const, color: background },
             }
           : otherChanges
-        return applyChange(
-          { type: "updateSlide", slideId, changes },
-          `Updated ${describeSlide(workingDeck, slideId)}`,
-          toolCallId
-        )
+        return applyChange({ type: "updateSlide", slideId, changes }, `Updated ${describeSlide(workingDeck, slideId)}`)
       },
     }),
 
     delete_slide: tool({
       description: "Delete a slide and everything on it.",
       inputSchema: z.object({ slideId: slideIdInput }),
-      execute: ({ slideId }, { toolCallId }) =>
-        applyChange({ type: "deleteSlide", slideId }, `Deleted ${describeSlide(workingDeck, slideId)}`, toolCallId),
+      execute: ({ slideId }) =>
+        applyChange({ type: "deleteSlide", slideId }, `Deleted ${describeSlide(workingDeck, slideId)}`),
     }),
 
     reorder_slides: tool({
@@ -214,18 +203,17 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         slideId: slideIdInput,
         toIndex: z.number().int().describe("New position, starting at 0."),
       }),
-      execute: ({ slideId, toIndex }, { toolCallId }) =>
+      execute: ({ slideId, toIndex }) =>
         applyChange(
           { type: "moveSlide", slideId, toIndex },
-          `Moved ${describeSlide(workingDeck, slideId)} to position ${toIndex + 1}`,
-          toolCallId
+          `Moved ${describeSlide(workingDeck, slideId)} to position ${toIndex + 1}`
         ),
     }),
 
     duplicate_slide: tool({
       description: "Copy a slide and put the copy right after it. Returns the id of the copy.",
       inputSchema: z.object({ slideId: slideIdInput }),
-      execute: ({ slideId }, { toolCallId }) => {
+      execute: ({ slideId }) => {
         const slideIndex = workingDeck.slides.findIndex((slide) => slide.id === slideId)
         if (slideIndex === -1) {
           return reportError(`Slide "${slideId}" does not exist.`)
@@ -235,7 +223,6 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         return applyChange(
           { type: "addSlide", slide: copy, index: slideIndex + 1 },
           `Duplicated slide ${slideIndex + 1}`,
-          toolCallId,
           [copy.id]
         )
       },
@@ -248,11 +235,10 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         slideId: slideIdInput,
         layout: slideLayoutSchema,
       }),
-      execute: ({ slideId, layout }, { toolCallId }) =>
+      execute: ({ slideId, layout }) =>
         applyChange(
           { type: "updateSlide", slideId, changes: { layout } },
-          `Changed ${describeSlide(workingDeck, slideId)} to the ${layout} layout`,
-          toolCallId
+          `Changed ${describeSlide(workingDeck, slideId)} to the ${layout} layout`
         ),
     }),
 
@@ -266,7 +252,7 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         box: boxInput.optional(),
         ...elementStyleInputs,
       }),
-      execute: ({ slideId, type, slot, box, ...style }, { toolCallId }) => {
+      execute: ({ slideId, type, slot, box, ...style }) => {
         const slide = findSlide(workingDeck, slideId)
         if (!slide) return reportError(`Slide "${slideId}" does not exist.`)
         const position = choosePosition(slide, slot, box)
@@ -316,12 +302,7 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
           }
         }
 
-        return addElementToSlide(
-          slideId,
-          element,
-          `Added ${type} to ${describeSlide(workingDeck, slideId)}`,
-          toolCallId
-        )
+        return addElementToSlide(slideId, element, `Added ${type} to ${describeSlide(workingDeck, slideId)}`)
       },
     }),
 
@@ -332,7 +313,7 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         elementId: elementIdInput,
         changes: z.object(elementStyleInputs),
       }),
-      execute: ({ elementId, changes }, { toolCallId }) => {
+      execute: ({ elementId, changes }) => {
         const location = findElementLocation(workingDeck, elementId)
         // Fields from another element type fail validation in applyDeckEdit.
         let fullChanges = changes as ElementChanges
@@ -351,8 +332,7 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
 
         const result = applyChange(
           { type: "updateElement", elementId, changes: fullChanges },
-          `Edited ${describeElement(workingDeck, elementId)}`,
-          toolCallId
+          `Edited ${describeElement(workingDeck, elementId)}`
         )
         return withWarning(result, warning)
       },
@@ -361,12 +341,8 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
     delete_element: tool({
       description: "Delete an element.",
       inputSchema: z.object({ elementId: elementIdInput }),
-      execute: ({ elementId }, { toolCallId }) =>
-        applyChange(
-          { type: "deleteElement", elementId },
-          `Deleted ${describeElement(workingDeck, elementId)}`,
-          toolCallId
-        ),
+      execute: ({ elementId }) =>
+        applyChange({ type: "deleteElement", elementId }, `Deleted ${describeElement(workingDeck, elementId)}`),
     }),
 
     move_element: tool({
@@ -378,22 +354,18 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         x: z.number().optional().describe("New left edge. Leave out to keep it."),
         y: z.number().optional().describe("New top edge. Leave out to keep it."),
       }),
-      execute: ({ elementId, toSlideId, x, y }, { toolCallId }) => {
+      execute: ({ elementId, toSlideId, x, y }) => {
         const label = `Moved ${describeElement(workingDeck, elementId)} to ${describeSlide(workingDeck, toSlideId)}`
         const location = findElementLocation(workingDeck, elementId)
         const isMoveWithinSlide = location?.slide.id === toSlideId
         // Moves to another slide find free space in applyDeckEdit.
         if (!location || !isMoveWithinSlide) {
-          return applyChange({ type: "moveElement", elementId, toSlideId, x, y }, label, toolCallId)
+          return applyChange({ type: "moveElement", elementId, toSlideId, x, y }, label)
         }
 
         const { slide, element } = location
         const spot = findFreeSpot(slide, { ...element, x: x ?? element.x, y: y ?? element.y }, elementId)
-        const result = applyChange(
-          { type: "moveElement", elementId, toSlideId, x: spot.x, y: spot.y },
-          label,
-          toolCallId
-        )
+        const result = applyChange({ type: "moveElement", elementId, toSlideId, x: spot.x, y: spot.y }, label)
         return withWarning(result, overlapWarning(overlappingElementIds(slide, spot, elementId)))
       },
     }),
@@ -407,7 +379,7 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         x: z.number().optional(),
         y: z.number().optional(),
       }),
-      execute: ({ elementId, w, h, x, y }, { toolCallId }) => {
+      execute: ({ elementId, w, h, x, y }) => {
         const location = findElementLocation(workingDeck, elementId)
         if (!location) return reportError(`Element "${elementId}" does not exist.`)
         const { slide, element } = location
@@ -415,8 +387,7 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         const spot = findFreeSpot(slide, { x: x ?? element.x, y: y ?? element.y, w, h }, elementId)
         const result = applyChange(
           { type: "updateElement", elementId, changes: spot },
-          `Resized ${describeElement(workingDeck, elementId)}`,
-          toolCallId
+          `Resized ${describeElement(workingDeck, elementId)}`
         )
         return withWarning(result, overlapWarning(overlappingElementIds(slide, spot, elementId)))
       },
@@ -430,11 +401,10 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
           .enum(["forward", "backward", "front", "back"])
           .describe("forward/backward move one step; front puts it on top of everything, back behind everything."),
       }),
-      execute: ({ elementId, direction }, { toolCallId }) =>
+      execute: ({ elementId, direction }) =>
         applyChange(
           { type: "reorderElement", elementId, direction },
-          `Moved ${describeElement(workingDeck, elementId)} ${direction}`,
-          toolCallId
+          `Moved ${describeElement(workingDeck, elementId)} ${direction}`
         ),
     }),
 
@@ -453,7 +423,7 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         xAxisLabel: z.string().optional(),
         yAxisLabel: z.string().optional(),
       }),
-      execute: (input, { toolCallId }) => {
+      execute: (input) => {
         const slide = findSlide(workingDeck, input.slideId)
         if (!slide) {
           return reportError(`Slide "${input.slideId}" does not exist.`)
@@ -476,8 +446,7 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         return addElementToSlide(
           input.slideId,
           chart,
-          `Added a ${input.chartType} chart to ${describeSlide(workingDeck, input.slideId)}`,
-          toolCallId
+          `Added a ${input.chartType} chart to ${describeSlide(workingDeck, input.slideId)}`
         )
       },
     }),
@@ -494,11 +463,10 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         xAxisLabel: z.string().optional(),
         yAxisLabel: z.string().optional(),
       }),
-      execute: ({ elementId, ...changes }, { toolCallId }) =>
+      execute: ({ elementId, ...changes }) =>
         applyChange(
           { type: "updateElement", elementId, changes },
-          `Updated the data of ${describeElement(workingDeck, elementId)}`,
-          toolCallId
+          `Updated the data of ${describeElement(workingDeck, elementId)}`
         ),
     }),
 
@@ -508,11 +476,10 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         elementId: elementIdInput,
         chartType: chartTypeInput,
       }),
-      execute: ({ elementId, chartType }, { toolCallId }) =>
+      execute: ({ elementId, chartType }) =>
         applyChange(
           { type: "updateElement", elementId, changes: { chartType } },
-          `Changed ${describeElement(workingDeck, elementId)} to a ${chartType} chart`,
-          toolCallId
+          `Changed ${describeElement(workingDeck, elementId)} to a ${chartType} chart`
         ),
     }),
 
@@ -525,7 +492,7 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         rows: z.array(z.array(z.string()).min(1)).min(1).describe("Rows of cell text. The first row is the header."),
         headerRow: z.boolean().optional().describe("Style the first row as a header. Leave out for yes."),
       }),
-      execute: ({ slideId, slot, box, rows, headerRow }, { toolCallId }) => {
+      execute: ({ slideId, slot, box, rows, headerRow }) => {
         const slide = findSlide(workingDeck, slideId)
         if (!slide) return reportError(`Slide "${slideId}" does not exist.`)
         const position = choosePosition(slide, slot, box)
@@ -538,7 +505,7 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
           rows,
           headerRow: headerRow ?? true,
         }
-        return addElementToSlide(slideId, table, `Added a table to ${describeSlide(workingDeck, slideId)}`, toolCallId)
+        return addElementToSlide(slideId, table, `Added a table to ${describeSlide(workingDeck, slideId)}`)
       },
     }),
   }

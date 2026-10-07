@@ -1,8 +1,6 @@
 import { tool } from "ai"
 import { z } from "zod"
 
-import { buildDeckContext } from "@/lib/ai/DeckContext"
-import { createEventStream } from "@/lib/ai/EventStream"
 import { POPULATOR_INSTRUCTIONS } from "@/lib/ai/Prompts"
 import { streamAgentReply } from "@/lib/ai/StreamAgentReply"
 import { applyDeckEdit, type DeckEdit } from "@/lib/edits/DeckEdits"
@@ -48,70 +46,55 @@ export async function POST(request: Request) {
   const parsedRequest = populateRequestSchema.safeParse(requestBody)
   console.log("parsedRequest ====>", parsedRequest)
   if (!parsedRequest.success) {
-    return Response.json({ error: z.prettifyError(parsedRequest.error) }, { status: 400 })
+    return new Response(z.prettifyError(parsedRequest.error), { status: 400 })
   }
 
   const { deck, outline, slideId, outlineSlideIndex } = parsedRequest.data
   const outlineSlide = outline.slides[outlineSlideIndex]
   const slide = deck.slides.find((deckSlide) => deckSlide.id === slideId)
   if (!outlineSlide || !slide) {
-    return Response.json({ error: "That slide is not in the deck or the outline." }, { status: 400 })
+    return new Response("That slide is not in the deck or the outline.", { status: 400 })
   }
 
-  const { response, sendEvent, closeStream } = createEventStream()
   let isSlideFilled = false
 
-  const tools = {
-    fill_slide: tool({
-      description:
-        "Write this slide's content. The layout is handled for you: only provide the text, data and speaker notes.",
-      inputSchema: slideContentSchema(outlineSlide),
-      execute: (content, { toolCallId }) => {
-        const elements = buildSlideElements(slide, content, deck.theme)
-        const edit: DeckEdit = {
-          type: "batch",
-          edits: [
-            ...elements.map((element) => ({
-              type: "addElement" as const,
-              slideId,
-              element,
-            })),
-            {
-              type: "updateSlide",
-              slideId,
-              changes: { notes: content.speakerNotes },
-            },
-          ],
-        }
-        const result = applyDeckEdit(deck, edit)
-        if (!result.ok) {
-          sendEvent({ event: "tool_error", data: { message: result.error } })
-          return { ok: false, error: result.error }
-        }
-        isSlideFilled = true
-        sendEvent({
-          event: "edit",
-          data: { edit, label: `Wrote "${slide.title}"`, toolCallId },
-        })
-        return { ok: true }
-      },
-    }),
-  }
-
-  streamAgentReply({
-    instructions: [
-      POPULATOR_INSTRUCTIONS,
-      buildDeckContext(deck, slideId, []),
-      describeOutline(outline, outlineSlideIndex),
-    ].join("\n\n"),
+  return streamAgentReply({
+    // Only the story and this slide: the AI writes content, the layout code places it.
+    instructions: [POPULATOR_INSTRUCTIONS, describeOutline(outline, outlineSlideIndex)].join("\n\n"),
     messages: [{ role: "user", content: `Write slide "${slide.title}" now.` }],
-    tools,
+    createTools: (writer) => ({
+      fill_slide: tool({
+        description:
+          "Write this slide's content. The layout is handled for you: only provide the text, data and speaker notes.",
+        inputSchema: slideContentSchema(outlineSlide),
+        execute: (content) => {
+          const elements = buildSlideElements(slide, content, deck.theme)
+          const edit: DeckEdit = {
+            type: "batch",
+            edits: [
+              ...elements.map((element) => ({
+                type: "addElement" as const,
+                slideId,
+                element,
+              })),
+              {
+                type: "updateSlide",
+                slideId,
+                changes: { notes: content.speakerNotes },
+              },
+            ],
+          }
+          const result = applyDeckEdit(deck, edit)
+          if (!result.ok) return { ok: false, error: result.error }
+          isSlideFilled = true
+          writer.write({ type: "data-edit", data: { edit, label: `Wrote "${slide.title}"` } })
+          return { ok: true }
+        },
+      }),
+    }),
     toolChoice: { type: "tool", toolName: "fill_slide" },
     maxSteps: MAX_FILL_ATTEMPTS,
     isFinished: () => isSlideFilled,
-    sendEvent,
     abortSignal: request.signal,
-  }).finally(closeStream)
-
-  return response
+  })
 }
