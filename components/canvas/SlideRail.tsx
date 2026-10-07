@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Textarea } from "@/components/ui/textarea"
 import { useAgent } from "@/hooks/UseAgent"
-import { sendAgentMessage } from "@/lib/client/AgentActions"
+import { sendAgentMessage } from "@/lib/client/DeckChat"
 import { cn } from "@/lib/utils"
 import { useEditorStore } from "@/store/EditorStore"
 

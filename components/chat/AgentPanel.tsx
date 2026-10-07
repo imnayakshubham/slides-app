@@ -7,8 +7,9 @@ import { DeckTitleInput } from "@/components/editor/DeckTitleInput"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useAgent } from "@/hooks/UseAgent"
+import { useDeckChat } from "@/hooks/UseAgentChat"
 import { useDeckStore } from "@/store/DeckStore"
-import { useAgentStore, type AgentRunKind } from "@/store/AgentStore"
+import type { AgentRunKind } from "@/store/AgentStore"
 
 // On an empty deck a message plans a new deck; otherwise it edits this one.
 const GENERATE_EXAMPLE_PROMPTS = [
@@ -43,7 +44,7 @@ export function AgentPanel({
   onRetry,
   className,
 }: AgentPanelProps) {
-  const hasMessages = useAgentStore((state) => state.chatMessages.length > 0)
+  const hasMessages = useDeckChat().messages.length > 0
   const agentRunKind = useAgent((agent) => agent.run?.kind)
   const isDeckEmpty = useDeckStore((state) => (state.deck?.slides.length ?? 0) === 0)
   const examplePrompts = isDeckEmpty ? GENERATE_EXAMPLE_PROMPTS : EDIT_EXAMPLE_PROMPTS

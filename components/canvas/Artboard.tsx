@@ -92,6 +92,8 @@ function PositionedElement({
   const previewBox = useDragPreviewStore((state) => (isThumbnail ? undefined : state.previewBoxes[elementId]))
   if (!element) return null
   const box = previewBox ?? element
+  // Animate moves from the AI or undo, but not while the user is dragging.
+  const shouldAnimateMoves = !isThumbnail && !previewBox
 
   function finishEditingTable(rows: string[][]) {
     useEditorStore.getState().setEditingElementId(null)
@@ -126,9 +128,11 @@ function PositionedElement({
         !isThumbnail && "touch-none",
         !isThumbnail && (isEditing ? "cursor-text" : "cursor-move"),
         // A brief glow where the agent just added or changed something.
-        "outline-[6px] outline-offset-4 transition-[outline-color] duration-700 outline-solid",
+        "outline-[6px] outline-offset-4 outline-solid",
         isAgentTouched ? "outline-primary/70" : "outline-transparent",
-        isBeingMovedAway && "opacity-40"
+        isBeingMovedAway && "opacity-40",
+        shouldAnimateMoves ? "transition-all" : "transition-colors",
+        "duration-300 ease-out motion-reduce:transition-none"
       )}
       style={{
         left: box.x,

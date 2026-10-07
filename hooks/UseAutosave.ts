@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import { isAgentBusyOn } from "@/lib/client/AgentActions"
+import { isAgentBusyOn } from "@/lib/client/AgentRun"
 import { deckRepository } from "@/lib/repository"
 import type { Deck } from "@/lib/schema/Deck"
 import { useDeckStore } from "@/store/DeckStore"

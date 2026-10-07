@@ -3,7 +3,7 @@ import type { DragMoveEvent } from "@dnd-kit/core"
 
 import { positionDropCursorBadge } from "@/components/canvas/DropCursorBadge"
 import { RESIZE_CURSORS } from "@/components/canvas/SelectionFrame"
-import { isSlideLockedByAgent } from "@/lib/client/AgentActions"
+import { isSlideLockedByAgent } from "@/lib/client/AgentRun"
 import type { DeckEdit } from "@/lib/edits/DeckEdits"
 import { boxesOverlap, clampBox, resizeBox, snapBox, snapResizedEdges, unionBox } from "@/lib/edits/Geometry"
 import type { Box, ResizeHandle, SnapGuide } from "@/lib/edits/Geometry"

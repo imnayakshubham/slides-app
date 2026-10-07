@@ -1,6 +1,5 @@
 import { create } from "zustand"
 
-import type { ChatMessage } from "@/lib/schema/Conversation"
 import type { Outline } from "@/lib/schema/Outline"
 
 const AGENT_HIGHLIGHT_MS = 1500
@@ -66,12 +65,6 @@ export function agentLabelFor(agent: DeckAgent, slideId: string) {
 }
 
 type AgentStore = {
-  chatMessages: ChatMessage[]
-  loadChatMessages: (messages: ChatMessage[]) => void
-  addChatMessage: (message: ChatMessage) => void
-  updateChatMessage: (messageId: string, changes: Partial<ChatMessage>) => void
-  removeChatMessage: (messageId: string) => void
-
   // Keyed by deck id, so one deck's run can never leak into another.
   agents: Record<string, DeckAgent>
   updateAgent: (deckId: string, changes: Partial<DeckAgent>) => void
@@ -81,28 +74,6 @@ type AgentStore = {
 }
 
 export const useAgentStore = create<AgentStore>()((set, get) => ({
-  chatMessages: [],
-
-  loadChatMessages: (messages) => set({ chatMessages: messages }),
-
-  addChatMessage: (message) => {
-    const chatMessages = [...get().chatMessages, message]
-    set({ chatMessages })
-  },
-
-  updateChatMessage: (messageId, changes) => {
-    const chatMessages = get().chatMessages.map((message) => {
-      if (message.id !== messageId) return message
-      return { ...message, ...changes }
-    })
-    set({ chatMessages })
-  },
-
-  removeChatMessage: (messageId) => {
-    const chatMessages = get().chatMessages.filter((message) => message.id !== messageId)
-    set({ chatMessages })
-  },
-
   agents: {},
   updateAgent: (deckId, changes) => {
     const { agents } = get()

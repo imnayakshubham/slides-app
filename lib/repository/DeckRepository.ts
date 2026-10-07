@@ -1,4 +1,4 @@
-import type { ChatMessage } from "@/lib/schema/Conversation"
+import type { SlidesMessage } from "@/lib/ai/SlidesMessage"
 import type { Deck } from "@/lib/schema/Deck"
 import type { DeckRecord, DeckSummary } from "@/lib/schema/DeckRecord"
 
@@ -14,8 +14,8 @@ export interface DeckRepository {
   // Also deletes the deck's conversation.
   deleteDeck(deckId: string): Promise<void>
   // Resolves an empty list when the deck has no conversation yet.
-  getConversationMessages(deckId: string): Promise<ChatMessage[]>
-  saveConversationMessages(deckId: string, messages: ChatMessage[]): Promise<void>
+  getConversationMessages(deckId: string): Promise<SlidesMessage[]>
+  saveConversationMessages(deckId: string, messages: SlidesMessage[]): Promise<void>
   // Resolves the image's address and its size after any downscaling.
   uploadImage(file: File): Promise<UploadedImage>
 }

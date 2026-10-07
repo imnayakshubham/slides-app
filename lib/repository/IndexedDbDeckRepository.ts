@@ -1,11 +1,14 @@
+import { safeValidateUIMessages } from "ai"
 import { openDB, type DBSchema, type IDBPDatabase } from "idb"
 import { z } from "zod"
 
+import type { SlidesMessage } from "@/lib/ai/SlidesMessage"
 import type { DeckRepository, UploadedImage } from "@/lib/repository/DeckRepository"
 import { conversationRecordSchema } from "@/lib/schema/Conversation"
-import type { ChatMessage, ConversationRecord } from "@/lib/schema/Conversation"
+import type { ConversationRecord } from "@/lib/schema/Conversation"
 import type { Deck } from "@/lib/schema/Deck"
 import { deckRecordSchema } from "@/lib/schema/DeckRecord"
+import { outlineSchema } from "@/lib/schema/Outline"
 import type { DeckRecord, DeckSummary } from "@/lib/schema/DeckRecord"
 
 const DATABASE_NAME = "ai-slides"
@@ -99,22 +102,27 @@ async function getConversationMessages(deckId: string) {
   const savedRecord = await database.get("conversations", deckId)
   if (!savedRecord) return []
 
-  // A broken chat history should not stop the deck from opening.
+  // A broken or old-format chat should not stop the deck from opening.
   const parsedRecord = conversationRecordSchema.safeParse(savedRecord)
-  if (!parsedRecord.success) {
-    console.error(`Saved chat for deck "${deckId}" is invalid`, parsedRecord.error)
+  if (!parsedRecord.success || parsedRecord.data.messages.length === 0) return []
+  const validatedMessages = await safeValidateUIMessages<SlidesMessage>({
+    messages: parsedRecord.data.messages,
+    dataSchemas: { outline: z.object({ outline: outlineSchema }) },
+  })
+  if (!validatedMessages.success) {
+    console.error(`Saved chat for deck "${deckId}" is invalid`, validatedMessages.error)
     return []
   }
-  return parsedRecord.data.messages
+  return validatedMessages.data
 }
 
-async function saveConversationMessages(deckId: string, messages: ChatMessage[]) {
-  const record = conversationRecordSchema.parse({
-    schemaVersion: 1,
+async function saveConversationMessages(deckId: string, messages: SlidesMessage[]) {
+  const record: ConversationRecord = {
+    schemaVersion: 2,
     deckId,
     updatedAt: new Date().toISOString(),
     messages,
-  })
+  }
   const database = await openDatabase()
   await database.put("conversations", record)
 }

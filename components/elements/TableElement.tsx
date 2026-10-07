@@ -50,7 +50,7 @@ export function TableElement({ element, isEditing = false, onFinishEditing }: Ta
       key={isEditing ? "editing" : "viewing"}
       ref={isEditing ? focusFirstCell : undefined}
       onBlur={finishWhenFocusLeavesTable}
-      className="size-full table-fixed border-collapse wrap-anywhere"
+      className="w-full table-fixed border-collapse wrap-anywhere"
       style={{ fontSize: TABLE_FONT_SIZE }}
     >
       {headerCells && (
@@ -64,7 +64,7 @@ export function TableElement({ element, isEditing = false, onFinishEditing }: Ta
             {headerCells.map((cell, cellIndex) => (
               <th
                 key={cellIndex}
-                className="border px-[0.6em] py-[0.4em] text-start font-semibold outline-none focus:bg-accent/40"
+                className="border-b-2 px-[0.75em] py-[0.4em] text-start font-semibold outline-none focus:bg-(--slide-accent)/15"
                 style={cellStyle}
                 {...cellEditingProps}
               >
@@ -80,7 +80,7 @@ export function TableElement({ element, isEditing = false, onFinishEditing }: Ta
             {row.map((cell, cellIndex) => (
               <td
                 key={cellIndex}
-                className="border px-[0.6em] py-[0.4em] outline-none focus:bg-accent/40"
+                className="border-b px-[0.75em] py-[0.4em] outline-none focus:bg-(--slide-accent)/15"
                 style={cellStyle}
                 {...cellEditingProps}
               >

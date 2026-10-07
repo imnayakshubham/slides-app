@@ -24,71 +24,51 @@ const DEFAULT_TEXT_FONT_SIZE = 40
 const DEFAULT_NEW_ELEMENT_WIDTH = 800
 const DEFAULT_NEW_ELEMENT_HEIGHT = 450
 
-const slideIdInput = z.string().describe("Id of the slide, from the deck context.")
-const elementIdInput = z.string().describe("Id of the element, from the deck context.")
+const slideIdInput = z.string().describe("Slide id.")
+const elementIdInput = z.string().describe("Element id.")
 
 const boxInput = z
-  .object({
-    x: z.number().describe("Left edge, 0 to 1920."),
-    y: z.number().describe("Top edge, 0 to 1080."),
-    w: z.number().describe("Width, at least 40."),
-    h: z.number().describe("Height, at least 40."),
-  })
-  .describe("Position and size on the 1920x1080 artboard.")
+  .object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() })
+  .describe("[x, y, w, h] on the 1920x1080 artboard; w and h at least 40.")
 
-const slotInput = z
-  .string()
-  .optional()
-  .describe(
-    "Name of a layout slot to fill, such as 'body', 'visual', 'chart', 'left' or 'right'. The deck context lists each slide's slots. Prefer this over box."
-  )
+const slotInput = z.string().optional().describe("A slot from the slide's slots in the deck context. Prefer over box.")
 
 const chartTypeInput = z.enum(["bar", "line", "pie", "area", "stackedBar"])
-const chartTitleInput = z.string().describe("Title shown above the chart. Empty for no title.")
-const chartCategoriesInput = z
-  .array(z.string())
-  .min(1)
-  .describe("Category names along the x-axis. For a pie chart, the slice names.")
+const chartTitleInput = z.string().describe("Empty for no title.")
+const chartCategoriesInput = z.array(z.string()).min(1).describe("X-axis labels, or pie slice names.")
 const chartSeriesInput = z
   .array(
     z.object({
-      name: z.string().describe("Series name shown in the legend."),
-      data: z.array(z.number()).describe("One number per category, in the same order as categories."),
-      color: z.string().optional().describe("CSS color. Leave out to use the theme colors."),
+      name: z.string(),
+      data: z.array(z.number()).describe("One number per category."),
+      color: z.string().optional().describe("CSS color; omit for theme."),
     })
   )
   .min(1)
-  .describe("Data series. A pie chart only shows the first series.")
+  .describe("A pie shows only the first.")
 
 // All optional, so one tool covers text, image and shape elements.
 const elementStyleInputs = {
-  role: z
-    .enum(TEXT_ROLES)
-    .optional()
-    .describe("Text: what the box is for. title and heading use the heading font. Default body."),
-  paragraphs: z.array(z.string()).optional().describe("Text: one string per paragraph or list item."),
-  fontSize: z.number().positive().optional().describe("Text: font size in px."),
-  bold: z.boolean().optional().describe("Text"),
-  italic: z.boolean().optional().describe("Text"),
-  color: z.string().optional().describe("Text: CSS color."),
-  align: z.enum(["left", "center", "right"]).optional().describe("Text"),
-  listStyle: z.enum(["none", "bullet", "number"]).optional().describe("Text"),
-  src: z
-    .string()
-    .optional()
-    .describe(
-      "Image: a real image URL. Leave out unless you are sure the URL works; a placeholder showing alt is placed instead, which the user replaces."
-    ),
-  alt: z.string().optional().describe("Image: what the image shows. Required when there is no src."),
-  fit: z.enum(["cover", "contain"]).optional().describe("Image"),
-  shape: z.enum(["rect", "ellipse"]).optional().describe("Shape"),
-  fill: z.string().optional().describe("Shape: CSS fill color."),
-  stroke: z.string().optional().describe("Shape: CSS outline color."),
-  strokeWidth: z.number().min(0).optional().describe("Shape: outline width."),
+  role: z.enum(TEXT_ROLES).optional().describe("Default body."),
+  paragraphs: z.array(z.string()).optional().describe("One per paragraph or list item."),
+  fontSize: z.number().positive().optional().describe("px."),
+  bold: z.boolean().optional(),
+  italic: z.boolean().optional(),
+  color: z.string().optional().describe("Text CSS color."),
+  align: z.enum(["left", "center", "right"]).optional(),
+  listStyle: z.enum(["none", "bullet", "number"]).optional(),
+  src: z.string().optional().describe("Image URL. Omit unless sure it works; alt makes a placeholder."),
+  alt: z.string().optional().describe("What the image shows. Required without src."),
+  fit: z.enum(["cover", "contain"]).optional(),
+  shape: z.enum(["rect", "ellipse"]).optional(),
+  fill: z.string().optional().describe("CSS color."),
+  stroke: z.string().optional().describe("CSS color."),
+  strokeWidth: z.number().min(0).optional(),
 }
 
 // A warning means the change was made but needs a fix, e.g. it overlaps because the slide is full.
-type ToolResult = { ok: true; createdIds: string[]; warning?: string } | { ok: false; error: string }
+// `label` is the line the chat shows for this change.
+type ToolResult = { ok: true; label: string; createdIds: string[]; warning?: string } | { ok: false; error: string }
 
 function overlapWarning(overlapsWith: string[]) {
   if (overlapsWith.length === 0) return undefined
@@ -123,7 +103,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
 
     workingDeck = result.deck
     onEdit(edit, label)
-    return { ok: true, createdIds }
+    return { ok: true, label, createdIds }
   }
 
   // Returned, not thrown, so the model reads the error and retries.
@@ -145,8 +125,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
 
   return {
     get_slide: tool({
-      description:
-        "Read the full details of one slide and all of its elements. Use it before editing details the deck context only summarizes.",
+      description: "Full details of a slide and its elements.",
       inputSchema: z.object({ slideId: slideIdInput }),
       execute: ({ slideId }) => {
         const slide = findSlide(workingDeck, slideId)
@@ -156,11 +135,11 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
     }),
 
     add_slide: tool({
-      description: "Add a new slide with a layout and a title. Returns the new slide id and the id of its title text.",
+      description: "Add a slide. Returns its id and its title element id.",
       inputSchema: z.object({
         layout: slideLayoutSchema,
         title: z.string(),
-        index: z.number().int().optional().describe("Position starting at 0. Leave out to add at the end."),
+        index: z.number().int().optional().describe("0-based; omit for the end."),
       }),
       execute: ({ layout, title, index }) => {
         const slide = createSlide(layout, title, workingDeck.theme)
@@ -170,21 +149,20 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
     }),
 
     update_slide: tool({
-      description:
-        "Change a slide's title, background color or speaker notes. The slide title is not the title text on the slide; use update_element to change that text.",
+      description: "Change a slide's title, background or notes. For the title text on the slide, use update_element.",
       inputSchema: z.object({
         slideId: slideIdInput,
         title: z.string().optional(),
         background: z.string().optional().describe("CSS color."),
-        notes: z.string().optional().describe("Speaker notes."),
+        notes: z.string().optional(),
       }),
       // Leaves out fields that weren't sent, so they aren't overwritten with undefined.
       execute: ({ slideId, background, ...otherChanges }) => {
         const changes = background
           ? {
-              ...otherChanges,
-              background: { type: "color" as const, color: background },
-            }
+            ...otherChanges,
+            background: { type: "color" as const, color: background },
+          }
           : otherChanges
         return applyChange({ type: "updateSlide", slideId, changes }, `Updated ${describeSlide(workingDeck, slideId)}`)
       },
@@ -198,10 +176,10 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
     }),
 
     reorder_slides: tool({
-      description: "Move a slide to a new position in the deck.",
+      description: "Move a slide to a new position.",
       inputSchema: z.object({
         slideId: slideIdInput,
-        toIndex: z.number().int().describe("New position, starting at 0."),
+        toIndex: z.number().int().describe("0-based."),
       }),
       execute: ({ slideId, toIndex }) =>
         applyChange(
@@ -211,7 +189,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
     }),
 
     duplicate_slide: tool({
-      description: "Copy a slide and put the copy right after it. Returns the id of the copy.",
+      description: "Copy a slide to right after it. Returns the copy's id.",
       inputSchema: z.object({ slideId: slideIdInput }),
       execute: ({ slideId }) => {
         const slideIndex = workingDeck.slides.findIndex((slide) => slide.id === slideId)
@@ -229,8 +207,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
     }),
 
     change_layout: tool({
-      description:
-        "Change a slide's layout, which changes the slots it offers. Elements already on the slide keep their positions.",
+      description: "Change a slide's layout. Elements keep their positions.",
       inputSchema: z.object({
         slideId: slideIdInput,
         layout: slideLayoutSchema,
@@ -243,8 +220,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
     }),
 
     add_element: tool({
-      description:
-        "Add a text, image or shape element to a slide. Use add_chart for charts and add_table for tables. Returns the new element id.",
+      description: "Add a text, image or shape. Returns its id.",
       inputSchema: z.object({
         slideId: slideIdInput,
         type: z.enum(["text", "image", "shape"]),
@@ -307,8 +283,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
     }),
 
     update_element: tool({
-      description:
-        "Change the content or style of a text, image or shape element. Send only the fields to change, and only fields that belong to that element's type. Use move_element or resize_element to change position or size.",
+      description: "Edit a text, image or shape. Send only the fields to change.",
       inputSchema: z.object({
         elementId: elementIdInput,
         changes: z.object(elementStyleInputs),
@@ -346,13 +321,12 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
     }),
 
     move_element: tool({
-      description:
-        "Move an element to a new position on its slide, or to another slide. Always use this to move content between slides; never delete it and add it again.",
+      description: "Move an element on its slide or to another slide.",
       inputSchema: z.object({
         elementId: elementIdInput,
-        toSlideId: z.string().describe("Slide to move it to. Use its current slide to move it within that slide."),
-        x: z.number().optional().describe("New left edge. Leave out to keep it."),
-        y: z.number().optional().describe("New top edge. Leave out to keep it."),
+        toSlideId: z.string().describe("Its own slide to move within it."),
+        x: z.number().optional().describe("Omit to keep."),
+        y: z.number().optional().describe("Omit to keep."),
       }),
       execute: ({ elementId, toSlideId, x, y }) => {
         const label = `Moved ${describeElement(workingDeck, elementId)} to ${describeSlide(workingDeck, toSlideId)}`
@@ -374,8 +348,8 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
       description: "Resize an element, and optionally move it on its slide.",
       inputSchema: z.object({
         elementId: elementIdInput,
-        w: z.number().describe("New width, at least 40."),
-        h: z.number().describe("New height, at least 40."),
+        w: z.number(),
+        h: z.number(),
         x: z.number().optional(),
         y: z.number().optional(),
       }),
@@ -394,12 +368,12 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
     }),
 
     reorder_elements: tool({
-      description: "Change which elements are drawn on top of which on a slide.",
+      description: "Change z-order.",
       inputSchema: z.object({
         elementId: elementIdInput,
         direction: z
           .enum(["forward", "backward", "front", "back"])
-          .describe("forward/backward move one step; front puts it on top of everything, back behind everything."),
+          .describe("forward/backward one step; front/back all the way."),
       }),
       execute: ({ elementId, direction }) =>
         applyChange(
@@ -409,8 +383,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
     }),
 
     add_chart: tool({
-      description:
-        "Add a chart with real numbers. Every series needs exactly one number per category. Returns the new element id.",
+      description: "Add a chart. Returns its id.",
       inputSchema: z.object({
         slideId: slideIdInput,
         slot: slotInput,
@@ -419,7 +392,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
         title: chartTitleInput,
         categories: chartCategoriesInput,
         series: chartSeriesInput,
-        showLegend: z.boolean().optional().describe("Leave out to show it only when there are several series."),
+        showLegend: z.boolean().optional().describe("Default: on when several series."),
         xAxisLabel: z.string().optional(),
         yAxisLabel: z.string().optional(),
       }),
@@ -452,8 +425,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
     }),
 
     update_chart_data: tool({
-      description:
-        "Change a chart's title, categories, series, legend or axis labels. Lists are replaced as a whole, and every series needs one number per category.",
+      description: "Change a chart's title, data, legend or axis labels. Lists are replaced whole.",
       inputSchema: z.object({
         elementId: elementIdInput,
         title: chartTitleInput.optional(),
@@ -471,7 +443,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
     }),
 
     change_chart_type: tool({
-      description: "Switch a chart to another chart type. Its data stays the same.",
+      description: "Switch chart type; data is kept.",
       inputSchema: z.object({
         elementId: elementIdInput,
         chartType: chartTypeInput,
@@ -484,13 +456,13 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
     }),
 
     add_table: tool({
-      description: "Add a table. Every row needs the same number of cells. Returns the new element id.",
+      description: "Add a table. Returns its id.",
       inputSchema: z.object({
         slideId: slideIdInput,
         slot: slotInput,
         box: boxInput.optional(),
-        rows: z.array(z.array(z.string()).min(1)).min(1).describe("Rows of cell text. The first row is the header."),
-        headerRow: z.boolean().optional().describe("Style the first row as a header. Leave out for yes."),
+        rows: z.array(z.array(z.string()).min(1)).min(1).describe("First row is the header; same cell count per row."),
+        headerRow: z.boolean().optional().describe("Default true."),
       }),
       execute: ({ slideId, slot, box, rows, headerRow }) => {
         const slide = findSlide(workingDeck, slideId)

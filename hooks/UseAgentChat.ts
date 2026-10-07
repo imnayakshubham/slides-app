@@ -1,14 +1,28 @@
 import { useEffect } from "react"
+import { useChat } from "@ai-sdk/react"
 
-import { retryLastAgentMessage, sendAgentMessage, stopAgent, stopAllAgentRuns } from "@/lib/client/AgentActions"
+import { stopAllRuns } from "@/lib/client/AgentRun"
+import { deckChatFor, retryLastAgentMessage, sendAgentMessage, stopAgent, stopAllChats } from "@/lib/client/DeckChat"
+import { useDeckStore } from "@/store/DeckStore"
 
-// The chat panel's view of the agent; it only stops running agents when the editor closes.
+// Streaming text re-renders the chat at most this often.
+const TEXT_THROTTLE_MS = 50
+
+// The editor's chat actions; leaving the editor stops every reply and slide generation.
 export function useAgentChat() {
-  useEffect(() => stopAllAgentRuns, [])
+  useEffect(
+    () => () => {
+      stopAllChats()
+      stopAllRuns()
+    },
+    []
+  )
 
-  return {
-    sendMessage: sendAgentMessage,
-    retry: retryLastAgentMessage,
-    stop: stopAgent,
-  }
+  return { sendMessage: sendAgentMessage, retry: retryLastAgentMessage, stop: stopAgent }
+}
+
+// The open deck's chat messages, status and error, from the AI SDK.
+export function useDeckChat() {
+  const deckId = useDeckStore((state) => state.deck?.id ?? "")
+  return useChat({ chat: deckChatFor(deckId), experimental_throttle: TEXT_THROTTLE_MS })
 }

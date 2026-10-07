@@ -19,9 +19,9 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAutosave } from "@/hooks/UseAutosave"
+import { openDeckChat } from "@/lib/client/DeckChat"
 import { deckRepository } from "@/lib/repository"
 import { useDeckStore } from "@/store/DeckStore"
-import { useAgentStore } from "@/store/AgentStore"
 
 type DeckLoadState =
   { status: "loading" } | { status: "ready" } | { status: "not-found" } | { status: "invalid"; message: string }
@@ -41,8 +41,9 @@ export function DeckEditor({ deckId }: { deckId: string }) {
           setLoadState({ status: "not-found" })
           return
         }
+        // The chat opens first, so the chat panel finds it as soon as the deck shows.
+        openDeckChat(deckId, chatMessages)
         useDeckStore.getState().loadDeck(record.deck)
-        useAgentStore.getState().loadChatMessages(chatMessages)
         setLoadState({ status: "ready" })
       })
       .catch((error: Error) => {

@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     instructions: `${EDITOR_INSTRUCTIONS}\n\n${deckContext}`,
     messages: [...recentMessages(messages), { role: "user", content: userMessage }],
     createTools: (writer) =>
-      createAgentTools(deck, (edit, label) => writer.write({ type: "data-edit", data: { edit, label } })),
+      createAgentTools(deck, (edit, label) => writer.write({ type: "data-edit", data: { edit, label }, transient: true })),
     abortSignal: request.signal,
   })
 }
