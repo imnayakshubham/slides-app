@@ -1,4 +1,4 @@
-import { findFreeSpot } from "@/lib/edits/Geometry"
+import { clampBox, findFreeSpot } from "@/lib/edits/Geometry"
 import { createId } from "@/lib/Ids"
 import { TEXT_PRESETS, type TextPresetName } from "@/lib/layouts/TextPresets"
 import type { UploadedImage } from "@/lib/repository/DeckRepository"
@@ -13,6 +13,7 @@ import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
 type Theme = Deck["theme"]
+type Point = { x: number; y: number }
 
 const CHART_SIZE = { width: 960, height: 540 }
 const TABLE_SIZE = { width: 960, height: 300 }
@@ -125,17 +126,21 @@ export function createImageBlock(image: UploadedImage): SlideElement {
 }
 
 // Adds the element to the current slide as one undo step and selects it.
-export function insertElement(element: SlideElement) {
+// With `at` (slide units), its top-left corner goes there, kept inside the
+// slide; otherwise it goes to the nearest spot that covers nothing.
+export function insertElement(element: SlideElement, at?: Point) {
   const { deck, applyEdit } = useDeckStore.getState()
   const { currentSlideId, setSelectedElementIds } = useEditorStore.getState()
   const currentSlide = deck?.slides.find((slide) => slide.id === currentSlideId)
   if (!currentSlide) return
 
-  const freeSpot = findFreeSpot(currentSlide, element)
+  const box = at
+    ? clampBox({ x: at.x, y: at.y, w: element.w, h: element.h })
+    : findFreeSpot(currentSlide, element)
   const result = applyEdit({
     type: "addElement",
     slideId: currentSlide.id,
-    element: { ...element, ...freeSpot },
+    element: { ...element, ...box },
   })
   if (result.ok) setSelectedElementIds([element.id])
 }

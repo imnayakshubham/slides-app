@@ -1,15 +1,20 @@
 "use client"
 
-import type { MouseEvent, PointerEvent } from "react"
+import { useRef, type MouseEvent, type PointerEvent } from "react"
 import { useDraggable } from "@dnd-kit/core"
 
 import { AgentWorkingOverlay } from "@/components/canvas/AgentWorkingOverlay"
 import { Artboard } from "@/components/canvas/Artboard"
 import { SelectionFrame } from "@/components/canvas/SelectionFrame"
 import { useAgentSlideActivity } from "@/hooks/UseAgentSlideActivity"
+import { ARTBOARD_WIDTH } from "@/lib/schema/Deck"
 import { cn } from "@/lib/utils"
 import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useEditorStore } from "@/store/EditorStore"
+
+// A press that moves further than this is a drag (selection box), not a
+// click, so it never opens the "Add here" menu.
+const CLICK_MOVE_TOLERANCE_PX = 4
 
 type EditableSlideProps = {
   slideId: string
@@ -35,6 +40,54 @@ export function EditableSlide({
   const dropTarget = useDragPreviewStore((state) =>
     state.dropTarget?.slideId === slideId ? state.dropTarget : null
   )
+  // Where the last press started, and whether it may open "Add here":
+  // only on the current slide with nothing selected or being edited, so
+  // a click that deselects or ends an edit stays just that.
+  const pressRef = useRef<{
+    x: number
+    y: number
+    canOpenAddHere: boolean
+  } | null>(null)
+
+  function rememberPress(event: PointerEvent<HTMLElement>) {
+    const editor = useEditorStore.getState()
+    pressRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      canOpenAddHere:
+        isCurrentSlide &&
+        editor.selectedElementIds.length === 0 &&
+        editor.editingElementId === null &&
+        editor.addHereMenu === null,
+    }
+  }
+
+  // A plain click on an empty spot opens "Add here" at that spot.
+  function openAddHereOnEmptyClick(event: MouseEvent<HTMLElement>) {
+    const press = pressRef.current
+    pressRef.current = null
+    if (!press?.canOpenAddHere || isLockedByAgent) return
+    const movedDistance = Math.hypot(
+      event.clientX - press.x,
+      event.clientY - press.y
+    )
+    if (movedDistance > CLICK_MOVE_TOLERANCE_PX) return
+    const target = event.target as HTMLElement
+    if (target.closest("[data-element-id], [data-handle]")) return
+    const artboard =
+      event.currentTarget.querySelector<HTMLElement>("[data-artboard]")
+    if (!artboard) return
+
+    const artboardRect = artboard.getBoundingClientRect()
+    const scale = artboardRect.width / ARTBOARD_WIDTH
+    useEditorStore.getState().setAddHereMenu({
+      screenPoint: { x: event.clientX, y: event.clientY },
+      slidePoint: {
+        x: Math.round((event.clientX - artboardRect.left) / scale),
+        y: Math.round((event.clientY - artboardRect.top) / scale),
+      },
+    })
+  }
 
   // Text boxes and tables are typed into in place.
   function startEditingInPlace(event: MouseEvent<HTMLElement>) {
@@ -61,8 +114,10 @@ export function EditableSlide({
       aria-current={isCurrentSlide ? "true" : undefined}
       onPointerDown={(event) => {
         if (isLockedByAgent) return
+        rememberPress(event)
         if (prepareGesture(event, slideId)) listeners?.onPointerDown?.(event)
       }}
+      onClick={openAddHereOnEmptyClick}
       onDoubleClick={startEditingInPlace}
       className={cn(
         "relative w-full max-w-5xl shrink-0 scroll-m-4 rounded-lg shadow-sm ring-1 ring-foreground/10 transition-shadow select-none md:scroll-m-8",

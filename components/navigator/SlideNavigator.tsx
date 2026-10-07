@@ -9,12 +9,9 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragOverEvent,
 } from "@dnd-kit/core"
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable"
+import { SortableContext, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { CopyIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react"
 import { useShallow } from "zustand/react/shallow"
@@ -22,6 +19,14 @@ import { useShallow } from "zustand/react/shallow"
 import { AgentWorkingOverlay } from "@/components/canvas/AgentWorkingOverlay"
 import { Artboard } from "@/components/canvas/Artboard"
 import { DeckTitleInput } from "@/components/editor/DeckTitleInput"
+import {
+  SlideInsertionLine,
+  insertionLineFor,
+  keepSlidesInPlace,
+  slideInsertionFor,
+  type InsertionLine,
+  type SlideInsertion,
+} from "@/components/editor/SlideInsertionLine"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +42,7 @@ import { Button } from "@/components/ui/button"
 import { useAgentSlideActivity } from "@/hooks/UseAgentSlideActivity"
 import {
   addBlankSlideAfterCurrent,
+  addBlankSlideAt,
   duplicateSlideAfterItself,
 } from "@/lib/client/SlideActions"
 import { cn } from "@/lib/utils"
@@ -50,6 +56,8 @@ import { useEditorStore } from "@/store/EditorStore"
 const DRAG_START_DISTANCE_PX = 3
 const TOUCH_DRAG_HOLD_MS = 250
 const TOUCH_DRAG_TOLERANCE_PX = 5
+// Matches the list's gap-3, so the insertion line sits mid-gap.
+const THUMBNAIL_GAP_PX = 12
 
 export function SlideNavigator({ onClose }: { onClose: () => void }) {
   const slideIds = useDeckStore(useShallow(selectSlideIds))
@@ -65,7 +73,22 @@ export function SlideNavigator({ onClose }: { onClose: () => void }) {
     })
   )
 
+  const [insertion, setInsertion] = useState<SlideInsertion | null>(null)
+
+  // Runs only when the thumbnail under the pointer changes.
+  function showInsertionLine({ active, over }: DragOverEvent) {
+    setInsertion(
+      over
+        ? slideInsertionFor(
+            slideIds.indexOf(String(active.id)),
+            slideIds.indexOf(String(over.id))
+          )
+        : null
+    )
+  }
+
   function moveDraggedSlide({ active, over }: DragEndEvent) {
+    setInsertion(null)
     if (!over || active.id === over.id) return
     useDeckStore.getState().applyEdit({
       type: "moveSlide",
@@ -106,23 +129,39 @@ export function SlideNavigator({ onClose }: { onClose: () => void }) {
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
+          onDragOver={showInsertionLine}
           onDragEnd={moveDraggedSlide}
+          onDragCancel={() => setInsertion(null)}
         >
-          <SortableContext
-            items={slideIds}
-            strategy={verticalListSortingStrategy}
-          >
+          <SortableContext items={slideIds} strategy={keepSlidesInPlace}>
             <ol className="-mx-1 flex min-h-0 flex-col gap-3 overflow-y-auto px-1 py-1">
               {slideIds.map((slideId, slideIndex) => (
                 <SlideThumbnail
                   key={slideId}
                   slideId={slideId}
                   slideNumber={slideIndex + 1}
+                  insertionLine={insertionLineFor(
+                    insertion,
+                    slideIndex,
+                    slideIds.length
+                  )}
+                  canInsertAfter={slideIndex < slideIds.length - 1}
                 />
               ))}
             </ol>
           </SortableContext>
         </DndContext>
+      )}
+      {slideIds.length > 0 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="shrink-0 rounded-lg border border-dashed text-muted-foreground"
+          onClick={() => addBlankSlideAt(slideIds.length)}
+        >
+          <PlusIcon />
+          Add slide
+        </Button>
       )}
     </nav>
   )
@@ -131,9 +170,14 @@ export function SlideNavigator({ onClose }: { onClose: () => void }) {
 function SlideThumbnail({
   slideId,
   slideNumber,
+  insertionLine,
+  canInsertAfter,
 }: {
   slideId: string
   slideNumber: number
+  insertionLine: InsertionLine | null
+  // False for the last slide: "Add slide" below the list covers the end.
+  canInsertAfter: boolean
 }) {
   const slideTitle = useDeckStore(
     (state) => state.deck?.slides.find((slide) => slide.id === slideId)?.title
@@ -165,8 +209,11 @@ function SlideThumbnail({
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      className={cn("group relative", isDragging && "z-10 opacity-80")}
+      className={cn("group relative", isDragging && "z-10 opacity-60")}
     >
+      {insertionLine && (
+        <SlideInsertionLine line={insertionLine} gapPx={THUMBNAIL_GAP_PX} />
+      )}
       <button
         ref={thumbnailRef}
         {...listeners}
@@ -222,6 +269,18 @@ function SlideThumbnail({
           </span>
         )}
       </div>
+      {canInsertAfter && (
+        <Button
+          variant="secondary"
+          size="icon-xs"
+          aria-label={`Add a slide after slide ${slideNumber}`}
+          title="Add a slide here"
+          onClick={() => addBlankSlideAt(slideNumber)}
+          className="absolute -bottom-1.5 left-1/2 z-10 -translate-x-1/2 translate-y-1/2 rounded-full shadow-sm lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100"
+        >
+          <PlusIcon />
+        </Button>
+      )}
       <div className="absolute end-1 top-1 flex gap-0.5 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100">
         <Button
           variant="secondary"

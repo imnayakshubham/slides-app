@@ -45,13 +45,15 @@ import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
 type BlockCategory = "text" | "data" | "shapes" | "images"
+type SlidePoint = { x: number; y: number }
 
 type Block = {
   label: string
   category: BlockCategory
   Icon: typeof TextIcon
-  // "upload" opens the file picker instead of inserting right away.
-  insert: (() => void) | "upload"
+  // `at` is the top-left corner in slide units ("Add here" menu); left out,
+  // the block goes to a free spot. "upload" opens the file picker first.
+  insert: ((at?: SlidePoint) => void) | "upload"
 }
 
 const CATEGORIES: {
@@ -77,7 +79,7 @@ function textBlock(presetName: TextPresetName, Icon: typeof TextIcon): Block {
     label: TEXT_PRESETS[presetName].label,
     category: "text",
     Icon,
-    insert: () => insertElement(createTextBlock(presetName, getTheme())),
+    insert: (at) => insertElement(createTextBlock(presetName, getTheme()), at),
   }
 }
 
@@ -91,49 +93,50 @@ const BLOCKS: Block[] = [
     label: "Bar chart",
     category: "data",
     Icon: ChartColumnIcon,
-    insert: () => insertElement(createChartBlock("bar", getTheme())),
+    insert: (at) => insertElement(createChartBlock("bar", getTheme()), at),
   },
   {
     label: "Line chart",
     category: "data",
     Icon: ChartLineIcon,
-    insert: () => insertElement(createChartBlock("line", getTheme())),
+    insert: (at) => insertElement(createChartBlock("line", getTheme()), at),
   },
   {
     label: "Pie chart",
     category: "data",
     Icon: ChartPieIcon,
-    insert: () => insertElement(createChartBlock("pie", getTheme())),
+    insert: (at) => insertElement(createChartBlock("pie", getTheme()), at),
   },
   {
     label: "Area chart",
     category: "data",
     Icon: ChartAreaIcon,
-    insert: () => insertElement(createChartBlock("area", getTheme())),
+    insert: (at) => insertElement(createChartBlock("area", getTheme()), at),
   },
   {
     label: "Stacked bar",
     category: "data",
     Icon: ChartColumnStackedIcon,
-    insert: () => insertElement(createChartBlock("stackedBar", getTheme())),
+    insert: (at) =>
+      insertElement(createChartBlock("stackedBar", getTheme()), at),
   },
   {
     label: "Table",
     category: "data",
     Icon: TableIcon,
-    insert: () => insertElement(createTableBlock()),
+    insert: (at) => insertElement(createTableBlock(), at),
   },
   {
     label: "Rectangle",
     category: "shapes",
     Icon: SquareIcon,
-    insert: () => insertElement(createShapeBlock("rect", getTheme())),
+    insert: (at) => insertElement(createShapeBlock("rect", getTheme()), at),
   },
   {
     label: "Ellipse",
     category: "shapes",
     Icon: CircleIcon,
-    insert: () => insertElement(createShapeBlock("ellipse", getTheme())),
+    insert: (at) => insertElement(createShapeBlock("ellipse", getTheme()), at),
   },
   {
     label: "Upload image",
@@ -149,11 +152,10 @@ export function AddBlockMenu() {
   const hasSlides = useDeckStore(
     (state) => (state.deck?.slides.length ?? 0) > 0
   )
-  const imageInputRef = useRef<HTMLInputElement>(null)
+  const { addBlock, imageInput, uploadError } = useBlockAdder()
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [category, setCategory] = useState<BlockCategory | "all">("all")
-  const [uploadError, setUploadError] = useState<string | null>(null)
 
   // Searching looks through every category.
   const searchText = search.trim().toLowerCase()
@@ -171,29 +173,15 @@ export function AddBlockMenu() {
     }
   }
 
-  function addBlock(block: Block) {
+  function addBlockAndClose(block: Block) {
     setIsOpen(false)
-    if (block.insert === "upload") imageInputRef.current?.click()
-    else block.insert()
+    addBlock(block)
   }
 
   function addFirstMatchOnEnter(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Enter" && visibleBlocks.length > 0) {
       event.preventDefault()
-      addBlock(visibleBlocks[0])
-    }
-  }
-
-  async function insertPickedImage(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    // Cleared so picking the same file again still fires a change.
-    event.target.value = ""
-    if (!file) return
-    setUploadError(null)
-    try {
-      insertElement(createImageBlock(await deckRepository.uploadImage(file)))
-    } catch {
-      setUploadError("That image couldn't be read. Try a PNG or JPEG.")
+      addBlockAndClose(visibleBlocks[0])
     }
   }
 
@@ -264,21 +252,118 @@ export function AddBlockMenu() {
                   No blocks match “{search.trim()}”.
                 </p>
               ) : (
-                <BlockGroups blocks={visibleBlocks} onAddBlock={addBlock} />
+                <BlockGroups
+                  blocks={visibleBlocks}
+                  onAddBlock={addBlockAndClose}
+                />
               )}
             </div>
           </div>
         </PopoverContent>
       </Popover>
-      <input
-        ref={imageInputRef}
-        type="file"
-        accept="image/*"
-        hidden
-        onChange={(event) => void insertPickedImage(event)}
-      />
+      {imageInput}
       {uploadError && (
         <p role="alert" className="text-xs text-destructive">
+          {uploadError}
+        </p>
+      )}
+    </>
+  )
+}
+
+// Adds blocks to the current slide. An image block opens the file picker
+// first; render `imageInput` once wherever the hook is used.
+function useBlockAdder() {
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  // Where the picked image goes once the file is read.
+  const imagePointRef = useRef<SlidePoint | undefined>(undefined)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+
+  function addBlock(block: Block, at?: SlidePoint) {
+    if (block.insert !== "upload") {
+      block.insert(at)
+      return
+    }
+    imagePointRef.current = at
+    imageInputRef.current?.click()
+  }
+
+  async function insertPickedImage(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    // Cleared so picking the same file again still fires a change.
+    event.target.value = ""
+    if (!file) return
+    setUploadError(null)
+    try {
+      const image = await deckRepository.uploadImage(file)
+      insertElement(createImageBlock(image), imagePointRef.current)
+    } catch {
+      setUploadError("That image couldn't be read. Try a PNG or JPEG.")
+    }
+  }
+
+  const imageInput = (
+    <input
+      ref={imageInputRef}
+      type="file"
+      accept="image/*"
+      hidden
+      onChange={(event) => void insertPickedImage(event)}
+    />
+  )
+
+  return { addBlock, imageInput, uploadError }
+}
+
+// Opened by clicking an empty spot on the current slide: the new block's
+// top-left corner goes where the click was.
+export function AddHereMenu() {
+  const addHereMenu = useEditorStore((state) => state.addHereMenu)
+  const setAddHereMenu = useEditorStore((state) => state.setAddHereMenu)
+  const { addBlock, imageInput, uploadError } = useBlockAdder()
+
+  // A zero-size box at the click, for the menu to open from.
+  const anchor = addHereMenu
+    ? {
+        getBoundingClientRect: () =>
+          DOMRect.fromRect({
+            x: addHereMenu.screenPoint.x,
+            y: addHereMenu.screenPoint.y,
+            width: 0,
+            height: 0,
+          }),
+      }
+    : null
+
+  function addBlockHere(block: Block) {
+    const slidePoint = addHereMenu?.slidePoint
+    setAddHereMenu(null)
+    addBlock(block, slidePoint)
+  }
+
+  return (
+    <>
+      <Popover
+        open={addHereMenu !== null}
+        onOpenChange={(open) => {
+          if (!open) setAddHereMenu(null)
+        }}
+      >
+        <PopoverContent
+          anchor={anchor}
+          align="start"
+          className="max-h-[min(26rem,70svh)] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl p-3"
+        >
+          <p className="font-medium">Add here</p>
+          <BlockGroups blocks={BLOCKS} onAddBlock={addBlockHere} isCompact />
+        </PopoverContent>
+      </Popover>
+      {imageInput}
+      {uploadError && (
+        <p
+          role="alert"
+          className="fixed start-1/2 bottom-6 z-50 -translate-x-1/2 rounded-full bg-destructive px-3 py-1.5 text-sm text-white shadow-md"
+        >
           {uploadError}
         </p>
       )}
@@ -290,9 +375,12 @@ export function AddBlockMenu() {
 function BlockGroups({
   blocks,
   onAddBlock,
+  isCompact = false,
 }: {
   blocks: Block[]
   onAddBlock: (block: Block) => void
+  // Smaller cards, three across, for the "Add here" menu.
+  isCompact?: boolean
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -304,15 +392,28 @@ function BlockGroups({
             <h3 className="text-xs font-medium text-muted-foreground">
               {label}
             </h3>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div
+              className={cn(
+                "grid gap-2",
+                isCompact ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-3"
+              )}
+            >
               {blocksInCategory.map((block) => (
                 <button
                   key={block.label}
                   type="button"
                   onClick={() => onAddBlock(block)}
-                  className="flex flex-col items-center gap-2 rounded-xl border bg-card px-2 py-4 text-center text-sm font-medium shadow-xs transition outline-none hover:border-primary/40 hover:shadow-sm focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.98]"
+                  className={cn(
+                    "flex flex-col items-center gap-2 rounded-xl border bg-card px-2 text-center font-medium shadow-xs transition outline-none hover:border-primary/40 hover:shadow-sm focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.98]",
+                    isCompact ? "py-2.5 text-xs" : "py-4 text-sm"
+                  )}
                 >
-                  <block.Icon className="size-7 text-primary" />
+                  <block.Icon
+                    className={cn(
+                      "text-primary",
+                      isCompact ? "size-5" : "size-7"
+                    )}
+                  />
                   {block.label}
                 </button>
               ))}

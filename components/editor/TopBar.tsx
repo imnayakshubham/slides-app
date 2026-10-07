@@ -1,10 +1,17 @@
 import Link from "next/link"
-import { HouseIcon, PanelLeftOpenIcon, UploadIcon } from "lucide-react"
+import {
+  HouseIcon,
+  Loader2Icon,
+  PanelLeftOpenIcon,
+  UploadIcon,
+} from "lucide-react"
 
 import { DeckTitleInput } from "@/components/editor/DeckTitleInput"
 import { Button } from "@/components/ui/button"
 import type { SaveStatus } from "@/hooks/UseAutosave"
 import { cn } from "@/lib/utils"
+
+export type ExportStatus = "idle" | "exporting" | "error"
 
 type TopBarProps = {
   deckTitle: string
@@ -14,6 +21,7 @@ type TopBarProps = {
   saveStatus: SaveStatus
   onRetrySave: () => void
   canExport: boolean
+  exportStatus: ExportStatus
   onExport: () => void
 }
 
@@ -25,6 +33,7 @@ export function TopBar({
   saveStatus,
   onRetrySave,
   canExport,
+  exportStatus,
   onExport,
 }: TopBarProps) {
   return (
@@ -67,17 +76,11 @@ export function TopBar({
           saveStatus={saveStatus}
           onRetrySave={onRetrySave}
         />
-        <Button
-          variant="outline"
-          className="rounded-full"
-          aria-label="Export to PDF"
-          title="Export to PDF"
-          disabled={!canExport}
-          onClick={onExport}
-        >
-          <UploadIcon />
-          <span className="max-sm:sr-only">Export</span>
-        </Button>
+        <ExportButton
+          canExport={canExport}
+          exportStatus={exportStatus}
+          onExport={onExport}
+        />
       </div>
     </header>
   )
@@ -102,5 +105,39 @@ function SaveStatusIndicator({
     <span className="text-xs text-muted-foreground" aria-live="polite">
       {saveStatus === "saving" ? "Saving…" : "Saved"}
     </span>
+  )
+}
+
+function ExportButton({
+  canExport,
+  exportStatus,
+  onExport,
+}: {
+  canExport: boolean
+  exportStatus: ExportStatus
+  onExport: () => void
+}) {
+  if (exportStatus === "error") {
+    return (
+      <Button variant="destructive" size="sm" onClick={onExport}>
+        Export failed — Retry
+      </Button>
+    )
+  }
+
+  const isExporting = exportStatus === "exporting"
+  return (
+    <Button
+      variant="outline"
+      className="rounded-full"
+      title="Download as PowerPoint (.pptx)"
+      disabled={!canExport || isExporting}
+      onClick={onExport}
+    >
+      {isExporting ? <Loader2Icon className="animate-spin" /> : <UploadIcon />}
+      <span className="max-sm:sr-only">
+        {isExporting ? "Exporting…" : "Export"}
+      </span>
+    </Button>
   )
 }

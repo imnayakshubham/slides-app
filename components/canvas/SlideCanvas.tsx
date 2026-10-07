@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, type ComponentProps } from "react"
+import { useEffect, useState, type ComponentProps } from "react"
 import {
   DndContext,
   PointerSensor,
@@ -9,12 +9,9 @@ import {
   useSensors,
   type DragEndEvent,
   type DragMoveEvent,
+  type DragOverEvent,
 } from "@dnd-kit/core"
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable"
+import { SortableContext, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { PlusIcon, SparklesIcon } from "lucide-react"
 import { useShallow } from "zustand/react/shallow"
@@ -23,9 +20,21 @@ import { DropCursorBadge } from "@/components/canvas/DropCursorBadge"
 import { EditableSlide } from "@/components/canvas/EditableSlide"
 import { SelectionToolbar } from "@/components/canvas/SelectionToolbar"
 import { SlideRail } from "@/components/canvas/SlideRail"
+import { AddHereMenu } from "@/components/editor/AddBlockMenu"
+import {
+  SlideInsertionLine,
+  insertionLineFor,
+  keepSlidesInPlace,
+  slideInsertionFor,
+  type InsertionLine,
+  type SlideInsertion,
+} from "@/components/editor/SlideInsertionLine"
 import { Button } from "@/components/ui/button"
 import { useCanvasGestures } from "@/hooks/UseCanvasGestures"
-import { addBlankSlideAfterCurrent } from "@/lib/client/SlideActions"
+import {
+  addBlankSlideAfterCurrent,
+  addBlankSlideAt,
+} from "@/lib/client/SlideActions"
 import { cn } from "@/lib/utils"
 import { selectSlideIds, useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
@@ -33,6 +42,8 @@ import { useEditorStore } from "@/store/EditorStore"
 // A press only becomes a drag after this many screen pixels, so clicks
 // never nudge anything.
 const DRAG_START_DISTANCE_PX = 3
+// Matches the canvas list's gap-8, so the insertion line sits mid-gap.
+const SLIDE_GAP_PX = 32
 
 // The canvas has two kinds of drag in one DndContext: element gestures
 // (each slide is a draggable with its slide id) and slide reordering from
@@ -52,6 +63,7 @@ export function SlideCanvas({ onOpenAgent }: { onOpenAgent: () => void }) {
   const slideIds = useDeckStore(useShallow(selectSlideIds))
   const currentSlideId = useEditorStore((state) => state.currentSlideId)
   const gestures = useCanvasGestures()
+  const [insertion, setInsertion] = useState<SlideInsertion | null>(null)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: DRAG_START_DISTANCE_PX },
@@ -75,11 +87,27 @@ export function SlideCanvas({ onOpenAgent }: { onOpenAgent: () => void }) {
     if (!isReorderingSlide(event)) gestures.handleDragMove(event)
   }
 
+  // Runs only when the slide under the pointer changes.
+  function handleDragOver(event: DragOverEvent) {
+    const draggedSlide = slideOrderData(event.active.data.current)
+    const targetSlide = slideOrderData(event.over?.data.current)
+    if (!draggedSlide) return
+    setInsertion(
+      targetSlide
+        ? slideInsertionFor(
+            slideIds.indexOf(draggedSlide.slideId),
+            slideIds.indexOf(targetSlide.slideId)
+          )
+        : null
+    )
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     if (!isReorderingSlide(event)) {
       gestures.handleDragEnd()
       return
     }
+    setInsertion(null)
     const draggedSlide = slideOrderData(event.active.data.current)
     const targetSlide = slideOrderData(event.over?.data.current)
     if (!draggedSlide || !targetSlide) return
@@ -122,8 +150,12 @@ export function SlideCanvas({ onOpenAgent }: { onOpenAgent: () => void }) {
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragMove={handleDragMove}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
-      onDragCancel={gestures.handleDragCancel}
+      onDragCancel={() => {
+        setInsertion(null)
+        gestures.handleDragCancel()
+      }}
     >
       <div
         data-slide-canvas
@@ -131,20 +163,34 @@ export function SlideCanvas({ onOpenAgent }: { onOpenAgent: () => void }) {
       >
         <SortableContext
           items={slideIds.map(slideOrderId)}
-          strategy={verticalListSortingStrategy}
+          strategy={keepSlidesInPlace}
         >
           {slideIds.map((slideId, slideIndex) => (
             <SortableSlideRow
               key={slideId}
               slideId={slideId}
               slideNumber={slideIndex + 1}
+              insertionLine={insertionLineFor(
+                insertion,
+                slideIndex,
+                slideIds.length
+              )}
               prepareGesture={gestures.prepareGesture}
             />
           ))}
         </SortableContext>
+        <Button
+          variant="outline"
+          className="shrink-0 rounded-full"
+          onClick={() => addBlankSlideAt(slideIds.length)}
+        >
+          <PlusIcon />
+          Add slide
+        </Button>
         <SelectionToolbar />
       </div>
       <DropCursorBadge />
+      <AddHereMenu />
     </DndContext>
   )
 }
@@ -154,10 +200,12 @@ export function SlideCanvas({ onOpenAgent }: { onOpenAgent: () => void }) {
 function SortableSlideRow({
   slideId,
   slideNumber,
+  insertionLine,
   prepareGesture,
 }: {
   slideId: string
   slideNumber: number
+  insertionLine: InsertionLine | null
   prepareGesture: ComponentProps<typeof EditableSlide>["prepareGesture"]
 }) {
   const isCurrentSlide = useEditorStore(
@@ -180,10 +228,13 @@ function SortableSlideRow({
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={cn(
-        "group flex w-full max-w-5xl shrink-0 flex-col gap-2 sm:max-w-[67rem] sm:flex-row sm:gap-3",
-        isDragging && "z-10 opacity-80"
+        "group relative flex w-full max-w-5xl shrink-0 flex-col gap-2 sm:max-w-[67rem] sm:flex-row sm:gap-3",
+        isDragging && "z-10 opacity-60"
       )}
     >
+      {insertionLine && (
+        <SlideInsertionLine line={insertionLine} gapPx={SLIDE_GAP_PX} />
+      )}
       <SlideRail
         slideId={slideId}
         slideNumber={slideNumber}

@@ -10,6 +10,7 @@ Rules:
 - If a tool result has a warning (for example, something overlaps because the slide is full), fix it before you finish: move, shrink or remove something.
 - Keep slides finished and presentable: short, parallel bullets of 12 words or fewer, realistic numbers, and nothing overflowing.
 - Charts need real numbers, one value per category in every series. Tables need the same number of cells in every row.
+- For an image, give alt (what it shows) and leave out src unless you have a URL you know works; a themed placeholder is placed for the user to replace.
 - If a tool returns ok: false, read the error, fix the call and try again.
 - When you are done, reply with one or two short sentences saying what you changed. If the request is unclear, ask instead of guessing.`
 

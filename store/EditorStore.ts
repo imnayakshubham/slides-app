@@ -82,6 +82,13 @@ export function agentActivityOnSlide(agent: DeckAgentState, slideId: string) {
   return null
 }
 
+// Where an "Add here" menu was opened: on screen (to place the menu) and on
+// the slide, in artboard units (where the new element goes).
+export type AddHereMenu = {
+  screenPoint: { x: number; y: number }
+  slidePoint: { x: number; y: number }
+}
+
 type EditorStore = {
   currentSlideId: string | null
   selectedElementIds: string[]
@@ -94,6 +101,9 @@ type EditorStore = {
   // highlighted (then toolbar settings apply to the whole box).
   highlightedTextStyle: TextBoxStyle | null
   setHighlightedTextStyle: (style: TextBoxStyle | null) => void
+  // Opened by clicking an empty spot on the current slide.
+  addHereMenu: AddHereMenu | null
+  setAddHereMenu: (menu: AddHereMenu | null) => void
 
   chatMessages: ChatMessage[]
   loadChatMessages: (messages: ChatMessage[]) => void
@@ -125,6 +135,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
       selectedElementIds: [],
       editingElementId: null,
       highlightedTextStyle: null,
+      addHereMenu: null,
     }),
 
   setSelectedElementIds: (elementIds) =>
@@ -136,6 +147,9 @@ export const useEditorStore = create<EditorStore>()((set) => ({
 
   highlightedTextStyle: null,
   setHighlightedTextStyle: (style) => set({ highlightedTextStyle: style }),
+
+  addHereMenu: null,
+  setAddHereMenu: (menu) => set({ addHereMenu: menu }),
 
   chatMessages: [],
 

@@ -16,6 +16,7 @@ import {
   type Box,
 } from "@/lib/edits/Geometry"
 import { createId } from "@/lib/Ids"
+import { imagePlaceholderSrc } from "@/lib/layouts/ImagePlaceholder"
 import {
   createSlide,
   duplicateSlide,
@@ -99,8 +100,16 @@ const elementStyleInputs = {
   color: z.string().optional().describe("Text: CSS color."),
   align: z.enum(["left", "center", "right"]).optional().describe("Text"),
   listStyle: z.enum(["none", "bullet", "number"]).optional().describe("Text"),
-  src: z.string().optional().describe("Image: URL."),
-  alt: z.string().optional().describe("Image: short description."),
+  src: z
+    .string()
+    .optional()
+    .describe(
+      "Image: a real image URL. Leave out unless you are sure the URL works; a placeholder showing alt is placed instead, which the user replaces."
+    ),
+  alt: z
+    .string()
+    .optional()
+    .describe("Image: what the image shows. Required when there is no src."),
   fit: z.enum(["cover", "contain"]).optional().describe("Image"),
   shape: z.enum(["rect", "ellipse"]).optional().describe("Shape"),
   fill: z.string().optional().describe("Shape: CSS fill color."),
@@ -341,13 +350,19 @@ export function createAgentTools(
             listStyle: style.listStyle ?? "none",
           }
         } else if (type === "image") {
-          if (!style.src) return reportError("An image needs a src URL.")
+          const description = style.alt?.trim() ?? ""
+          if (!style.src && !description) {
+            return reportError(
+              "An image needs a src URL or an alt description for a placeholder."
+            )
+          }
           element = {
             id: elementId,
             type: "image",
             ...position,
-            src: style.src,
-            alt: style.alt ?? "",
+            src:
+              style.src ?? imagePlaceholderSrc(description, workingDeck.theme),
+            alt: description,
             fit: style.fit ?? "cover",
           }
         } else {

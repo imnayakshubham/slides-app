@@ -2,23 +2,28 @@ import { createSlide, duplicateSlide } from "@/lib/layouts/SlideLayouts"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
-// Slide actions shared by the navigator and the empty canvas. Each one is a
+// Slide actions shared by the navigator and the canvas. Each one is a
 // single undo step and opens the new slide.
 
-export function addBlankSlideAfterCurrent() {
+// `index` is where the new slide goes; the slide count adds it at the end.
+export function addBlankSlideAt(index: number) {
   const { deck, applyEdit } = useDeckStore.getState()
+  if (!deck) return
+  const newSlide = createSlide("blank", "", deck.theme)
+  const result = applyEdit({ type: "addSlide", slide: newSlide, index })
+  if (result.ok) useEditorStore.getState().goToSlide(newSlide.id)
+}
+
+// With no current slide, the new slide goes at the end.
+export function addBlankSlideAfterCurrent() {
+  const deck = useDeckStore.getState().deck
   if (!deck) return
   const currentSlideIndex = deck.slides.findIndex(
     (slide) => slide.id === useEditorStore.getState().currentSlideId
   )
-  const newSlide = createSlide("blank", "", deck.theme)
-  const result = applyEdit({
-    type: "addSlide",
-    slide: newSlide,
-    index:
-      currentSlideIndex === -1 ? deck.slides.length : currentSlideIndex + 1,
-  })
-  if (result.ok) useEditorStore.getState().goToSlide(newSlide.id)
+  addBlankSlideAt(
+    currentSlideIndex === -1 ? deck.slides.length : currentSlideIndex + 1
+  )
 }
 
 export function duplicateSlideAfterItself(slideId: string) {
