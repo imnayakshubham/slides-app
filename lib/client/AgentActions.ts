@@ -36,8 +36,8 @@ function deckAgent(deckId: string) {
   return deckAgentOf(useEditorStore.getState().agentByDeckId, deckId)
 }
 
-function updateDeckAgent(deckId: string, update: (agent: DeckAgentState) => Partial<DeckAgentState>) {
-  useEditorStore.getState().updateDeckAgent(deckId, update)
+function updateDeckAgent(deckId: string, changes: Partial<DeckAgentState>) {
+  useEditorStore.getState().updateDeckAgent(deckId, changes)
 }
 
 // True while the agent is changing this slide of the open deck (or has
@@ -160,68 +160,55 @@ async function planDeck(deckId: string, prompt: string) {
     })
 
     if (outline) {
-      updateMessage(messageId, (message) => ({
-        ...message,
+      updateMessage(messageId, {
         content: `Here's an outline for “${outline.title}”, ${outline.slides.length} slides. Edit, reorder or remove slides, then generate.`,
-      }))
-      updateDeckAgent(deckId, () => ({
-        outlineReview: {
-          messageId,
-          outline,
-          slideKeys: outline.slides.map(() => createId()),
-        },
-      }))
+      })
+      const slideKeys = outline.slides.map(() => createId())
+      updateDeckAgent(deckId, { outlineReview: { messageId, outline, slideKeys } })
     }
     const missingOutline = !outline && !errorMessage && !abortSignal.aborted ? NO_OUTLINE_MESSAGE : undefined
     finishAssistantMessage(messageId, errorMessage ?? missingOutline, abortSignal.aborted)
   })
 }
 
-// Edits to the open deck's outline before it is approved. Each keeps the
-// row keys in the same order as the slides.
-function updateOutlineReview(
-  update: (
-    slides: OutlineSlide[],
-    slideKeys: string[]
-  ) => {
-    slides: OutlineSlide[]
-    slideKeys: string[]
-  }
-) {
+function openOutlineReview() {
   const deckId = openDeckId()
-  if (!deckId) return
-  updateDeckAgent(deckId, ({ outlineReview }) => {
-    if (!outlineReview) return {}
-    const { slides, slideKeys } = update(outlineReview.outline.slides, outlineReview.slideKeys)
-    return {
-      outlineReview: {
-        ...outlineReview,
-        outline: { ...outlineReview.outline, slides },
-        slideKeys,
-      },
-    }
-  })
+  if (!deckId) return null
+  return deckAgent(deckId).outlineReview
+}
+
+// Row keys are reordered and removed together with their slides.
+function saveOutlineSlides(slides: OutlineSlide[], slideKeys: string[]) {
+  const deckId = openDeckId()
+  const outlineReview = openOutlineReview()
+  if (!deckId || !outlineReview) return
+  const outline = { ...outlineReview.outline, slides }
+  updateDeckAgent(deckId, { outlineReview: { ...outlineReview, outline, slideKeys } })
 }
 
 export function renameOutlineSlide(slideIndex: number, title: string) {
-  updateOutlineReview((slides, slideKeys) => ({
-    slides: slides.map((slide, index) => (index === slideIndex ? { ...slide, title } : slide)),
-    slideKeys,
-  }))
+  const outlineReview = openOutlineReview()
+  if (!outlineReview) return
+  const slides = outlineReview.outline.slides.map((slide, index) =>
+    index === slideIndex ? { ...slide, title } : slide
+  )
+  saveOutlineSlides(slides, outlineReview.slideKeys)
 }
 
 export function moveOutlineSlide(fromIndex: number, toIndex: number) {
-  updateOutlineReview((slides, slideKeys) => ({
-    slides: arrayMove(slides, fromIndex, toIndex),
-    slideKeys: arrayMove(slideKeys, fromIndex, toIndex),
-  }))
+  const outlineReview = openOutlineReview()
+  if (!outlineReview) return
+  const slides = arrayMove(outlineReview.outline.slides, fromIndex, toIndex)
+  const slideKeys = arrayMove(outlineReview.slideKeys, fromIndex, toIndex)
+  saveOutlineSlides(slides, slideKeys)
 }
 
 export function removeOutlineSlide(slideIndex: number) {
-  updateOutlineReview((slides, slideKeys) => ({
-    slides: slides.filter((_, index) => index !== slideIndex),
-    slideKeys: slideKeys.filter((_, index) => index !== slideIndex),
-  }))
+  const outlineReview = openOutlineReview()
+  if (!outlineReview) return
+  const slides = outlineReview.outline.slides.filter((_, index) => index !== slideIndex)
+  const slideKeys = outlineReview.slideKeys.filter((_, index) => index !== slideIndex)
+  saveOutlineSlides(slides, slideKeys)
 }
 
 export function discardOutline() {
@@ -229,11 +216,8 @@ export function discardOutline() {
   if (!deckId) return
   const outlineReview = deckAgent(deckId).outlineReview
   if (!outlineReview) return
-  updateDeckAgent(deckId, () => ({ outlineReview: null }))
-  updateMessage(outlineReview.messageId, (message) => ({
-    ...message,
-    content: "Outline discarded.",
-  }))
+  updateDeckAgent(deckId, { outlineReview: null })
+  updateMessage(outlineReview.messageId, { content: "Outline discarded." })
   saveConversation(deckId)
 }
 
@@ -246,7 +230,7 @@ export async function generateApprovedOutline() {
   const outlineReview = deckAgent(deckId).outlineReview
   if (!outlineReview) return
   const { messageId, outline } = outlineReview
-  updateDeckAgent(deckId, () => ({ outlineReview: null }))
+  updateDeckAgent(deckId, { outlineReview: null })
 
   await runAgentWork(deckId, "generating", async (abortSignal) => {
     // Outlines planned before themes existed keep the deck's theme.
@@ -271,15 +255,10 @@ export async function generateApprovedOutline() {
       outlineSlideIndex: index,
       status: "waiting",
     }))
-    updateDeckAgent(deckId, () => ({
-      generation: {
-        messageId,
-        outline,
-        slides: slideBuilds,
-        isStopped: false,
-      },
+    updateDeckAgent(deckId, {
+      generation: { messageId, outline, slides: slideBuilds, isStopped: false },
       isFollowingGeneration: true,
-    }))
+    })
     await fillSlides(deckId, slideBuilds, abortSignal)
   })
 }
@@ -298,24 +277,21 @@ export async function continueStoppedGeneration() {
   const generation = deckAgent(deckId).generation
   if (!generation) return
   const waitingBuilds = generation.slides.filter((build) => build.status === "waiting")
-  updateDeckAgent(deckId, () => ({ isFollowingGeneration: true }))
+  updateDeckAgent(deckId, { isFollowingGeneration: true })
   await runAgentWork(deckId, "generating", (abortSignal) => fillSlides(deckId, waitingBuilds, abortSignal))
 }
 
 function setSlideBuildStatus(deckId: string, slideId: string, status: SlideBuildStatus) {
-  updateDeckAgent(deckId, ({ generation }) => {
-    if (!generation) return {}
-    return {
-      generation: {
-        ...generation,
-        slides: generation.slides.map((build) => (build.slideId === slideId ? { ...build, status } : build)),
-      },
-    }
-  })
+  const generation = deckAgent(deckId).generation
+  if (!generation) return
+  const slides = generation.slides.map((build) => (build.slideId === slideId ? { ...build, status } : build))
+  updateDeckAgent(deckId, { generation: { ...generation, slides } })
 }
 
 function setGenerationStopped(deckId: string, isStopped: boolean) {
-  updateDeckAgent(deckId, ({ generation }) => (generation ? { generation: { ...generation, isStopped } } : {}))
+  const generation = deckAgent(deckId).generation
+  if (!generation) return
+  updateDeckAgent(deckId, { generation: { ...generation, isStopped } })
 }
 
 async function fillSlides(deckId: string, slideBuilds: SlideBuild[], abortSignal: AbortSignal) {
@@ -361,7 +337,7 @@ async function fillSlides(deckId: string, slideBuilds: SlideBuild[], abortSignal
   }
 
   if (abortSignal.aborted) setGenerationStopped(deckId, true)
-  updateDeckAgent(deckId, () => ({ isFollowingGeneration: false }))
+  updateDeckAgent(deckId, { isFollowingGeneration: false })
 }
 
 // One run per deck at a time. Everything it changes is one undo step, and
@@ -372,16 +348,14 @@ async function runAgentWork(deckId: string, kind: AgentRunKind, work: (abortSign
   const runId = createId()
   const abortController = new AbortController()
   abortControllersByRunId.set(runId, abortController)
-  updateDeckAgent(deckId, () => ({
-    run: { runId, kind, editingSlideIds: [] },
-  }))
+  updateDeckAgent(deckId, { run: { runId, kind, editingSlideIds: [] } })
   useDeckStore.getState().beginGroup()
   try {
     await work(abortController.signal)
   } finally {
     abortControllersByRunId.delete(runId)
     const isStillThisRun = deckAgent(deckId).run?.runId === runId
-    if (isStillThisRun) updateDeckAgent(deckId, () => ({ run: null }))
+    if (isStillThisRun) updateDeckAgent(deckId, { run: null })
     if (isStillThisRun && openDeckId() === deckId) {
       useDeckStore.getState().endGroup()
       saveConversation(deckId)
@@ -407,19 +381,15 @@ async function streamRequest(request: StreamRequest) {
   let errorMessage: string | undefined
   let outline: Outline | undefined
   let appliedEditCount = 0
-  const textBuffer = createTextBuffer((text) =>
-    updateMessage(messageId, (message) => ({
-      ...message,
-      content: message.content + text,
-    }))
-  )
+  const textBuffer = createTextBuffer((text) => {
+    const message = findChatMessage(messageId)
+    if (message) updateMessage(messageId, { content: message.content + text })
+  })
 
   function addAction(label: string, failed: boolean) {
-    if (!isChatReply) return
-    updateMessage(messageId, (message) => ({
-      ...message,
-      actions: [...message.actions, { label, failed }],
-    }))
+    const message = findChatMessage(messageId)
+    if (!isChatReply || !message) return
+    updateMessage(messageId, { actions: [...message.actions, { label, failed }] })
   }
 
   function handleStreamEvent(streamEvent: StreamEvent) {
@@ -490,9 +460,7 @@ function markSlidesBeingEdited(deckId: string, slideIds: string[]) {
   // Most edits touch a slide that is already marked: no update then.
   if (newSlideIds.length === 0) return
   releaseSlidesToAgent(newSlideIds)
-  updateDeckAgent(deckId, () => ({
-    run: { ...run, editingSlideIds: [...run.editingSlideIds, ...newSlideIds] },
-  }))
+  updateDeckAgent(deckId, { run: { ...run, editingSlideIds: [...run.editingSlideIds, ...newSlideIds] } })
 }
 
 // Read from the deck before the edit, so a moved element marks both the
@@ -532,18 +500,25 @@ function startAssistantMessage() {
 }
 
 function finishAssistantMessage(messageId: string, errorMessage: string | undefined, wasStopped: boolean) {
-  updateMessage(messageId, (message) => {
-    if (errorMessage) return { ...message, status: "error", errorMessage }
-    const isEmpty = !message.content && message.actions.length === 0
-    if (wasStopped && isEmpty) {
-      return { ...message, status: "complete", content: "Stopped." }
-    }
-    return { ...message, status: "complete" }
-  })
+  if (errorMessage) {
+    updateMessage(messageId, { status: "error", errorMessage })
+    return
+  }
+  const message = findChatMessage(messageId)
+  const isEmpty = !message?.content && message?.actions.length === 0
+  if (wasStopped && isEmpty) {
+    updateMessage(messageId, { status: "complete", content: "Stopped." })
+    return
+  }
+  updateMessage(messageId, { status: "complete" })
 }
 
-function updateMessage(messageId: string, update: (message: ChatMessage) => ChatMessage) {
-  useEditorStore.getState().updateChatMessage(messageId, update)
+function findChatMessage(messageId: string) {
+  return useEditorStore.getState().chatMessages.find((message) => message.id === messageId)
+}
+
+function updateMessage(messageId: string, changes: Partial<ChatMessage>) {
+  useEditorStore.getState().updateChatMessage(messageId, changes)
 }
 
 function createMessage(role: ChatMessage["role"], content: string): ChatMessage {

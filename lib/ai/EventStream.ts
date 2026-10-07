@@ -3,7 +3,6 @@ import type { SendStreamEvent } from "@/lib/StreamEvents"
 export function createEventStream() {
   const encoder = new TextEncoder()
   let streamController: ReadableStreamDefaultController<Uint8Array>
-  // Also set when the browser disconnects, e.g. after Stop.
   let isClosed = false
 
   const body = new ReadableStream<Uint8Array>({

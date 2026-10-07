@@ -109,10 +109,10 @@ export function estimateTextHeight(
     1,
     Math.floor((textWidth / (AVERAGE_CHARACTER_WIDTH * fontSize)) * WORD_WRAP_ALLOWANCE)
   )
-  const lineCount = paragraphs.reduce(
-    (total, paragraph) => total + Math.max(1, Math.ceil(paragraph.length / charactersPerLine)),
-    0
-  )
+  let lineCount = 0
+  for (const paragraph of paragraphs) {
+    lineCount += Math.max(1, Math.ceil(paragraph.length / charactersPerLine))
+  }
   const listGaps = isList ? paragraphs.length * LIST_ITEM_GAP * fontSize : 0
   return Math.ceil(lineCount * LINE_HEIGHT * fontSize + listGaps)
 }

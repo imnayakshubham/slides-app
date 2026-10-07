@@ -33,18 +33,16 @@ const DRAG_START_DISTANCE_PX = 3
 // Matches the canvas list's gap-8, so the insertion line sits mid-gap.
 const SLIDE_GAP_PX = 32
 
-// The canvas has two kinds of drag in one DndContext: element gestures
-// (each slide is a draggable with its slide id) and slide reordering from
-// the rail's handle (sortable rows with these ids).
-type SlideOrderData = { kind: "slideOrder"; slideId: string }
-
+// One DndContext runs two kinds of drag: element gestures (each slide is a
+// draggable with its slide id) and slide reordering from the rail's handle
+// (sortable rows, whose drag data carries `reorderSlideId`).
 function slideOrderId(slideId: string) {
   return `slide-order:${slideId}`
 }
 
-function slideOrderData(data: unknown): SlideOrderData | null {
-  const candidate = data as Partial<SlideOrderData> | undefined
-  return candidate?.kind === "slideOrder" ? (candidate as SlideOrderData) : null
+function reorderSlideIdOf(dragData?: Record<string, unknown>) {
+  const slideId = dragData?.reorderSlideId
+  return typeof slideId === "string" ? slideId : null
 }
 
 export function SlideCanvas({ onOpenAgent }: { onOpenAgent: () => void }) {
@@ -63,42 +61,36 @@ export function SlideCanvas({ onOpenAgent }: { onOpenAgent: () => void }) {
     document.querySelector(`[data-canvas-slide-id="${currentSlideId}"]`)?.scrollIntoView({ block: "nearest" })
   }, [currentSlideId])
 
-  // Set while the rail's handle drags a slide, so the element gesture
-  // handlers stay out of it.
-  function isReorderingSlide(event: DragMoveEvent) {
-    return slideOrderData(event.active.data.current) !== null
-  }
-
   function handleDragMove(event: DragMoveEvent) {
-    if (!isReorderingSlide(event)) gestures.handleDragMove(event)
+    const isReorderingSlide = reorderSlideIdOf(event.active.data.current) !== null
+    if (!isReorderingSlide) gestures.handleDragMove(event)
   }
 
   // Runs only when the slide under the pointer changes.
   function handleDragOver(event: DragOverEvent) {
-    const draggedSlide = slideOrderData(event.active.data.current)
-    const targetSlide = slideOrderData(event.over?.data.current)
-    if (!draggedSlide) return
-    setInsertion(
-      targetSlide
-        ? slideInsertionFor(slideIds.indexOf(draggedSlide.slideId), slideIds.indexOf(targetSlide.slideId))
-        : null
-    )
+    const draggedSlideId = reorderSlideIdOf(event.active.data.current)
+    if (!draggedSlideId) return
+    const targetSlideId = reorderSlideIdOf(event.over?.data.current)
+    if (!targetSlideId) {
+      setInsertion(null)
+      return
+    }
+    setInsertion(slideInsertionFor(slideIds.indexOf(draggedSlideId), slideIds.indexOf(targetSlideId)))
   }
 
   function handleDragEnd(event: DragEndEvent) {
-    if (!isReorderingSlide(event)) {
+    const draggedSlideId = reorderSlideIdOf(event.active.data.current)
+    if (!draggedSlideId) {
       gestures.handleDragEnd()
       return
     }
     setInsertion(null)
-    const draggedSlide = slideOrderData(event.active.data.current)
-    const targetSlide = slideOrderData(event.over?.data.current)
-    if (!draggedSlide || !targetSlide) return
-    if (draggedSlide.slideId === targetSlide.slideId) return
+    const targetSlideId = reorderSlideIdOf(event.over?.data.current)
+    if (!targetSlideId || targetSlideId === draggedSlideId) return
     useDeckStore.getState().applyEdit({
       type: "moveSlide",
-      slideId: draggedSlide.slideId,
-      toIndex: slideIds.indexOf(targetSlide.slideId),
+      slideId: draggedSlideId,
+      toIndex: slideIds.indexOf(targetSlideId),
     })
   }
 
@@ -183,7 +175,7 @@ function SortableSlideRow({
   const isCurrentSlide = useEditorStore((state) => state.currentSlideId === slideId)
   const { setNodeRef, setActivatorNodeRef, listeners, transform, transition, isDragging } = useSortable({
     id: slideOrderId(slideId),
-    data: { kind: "slideOrder", slideId } satisfies SlideOrderData,
+    data: { reorderSlideId: slideId },
   })
 
   return (

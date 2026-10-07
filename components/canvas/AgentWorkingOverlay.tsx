@@ -10,15 +10,10 @@ const DOT_STYLE = {
 
 type AgentWorkingOverlayProps = {
   size: "slide" | "thumbnail"
-  // Shown in a chip on full slides; thumbnails are too small for it.
   label?: string
-  // On the canvas the slide is locked: the overlay takes the pointer and
-  // shows a lock. Thumbnails stay clickable for navigation.
   isLocked?: boolean
 }
 
-// Sits on top of a slide the agent is working on. The slide stays visible
-// underneath while the agent works.
 export function AgentWorkingOverlay({ size, label, isLocked = false }: AgentWorkingOverlayProps) {
   return (
     <div

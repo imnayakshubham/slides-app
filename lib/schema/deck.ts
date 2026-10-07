@@ -135,7 +135,6 @@ export const slideSchema = z.strictObject({
   id: z.string().min(1),
   title: z.string(),
   layout: slideLayoutSchema,
-  // Left out = the theme background.
   background: z.preprocess(upgradeColorStringBackground, slideBackgroundSchema.optional()),
   notes: z.string(),
   elements: z.array(slideElementSchema),

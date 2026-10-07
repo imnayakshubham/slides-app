@@ -98,7 +98,7 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
     const deckId = useDeckStore.getState().deck?.id
     const { agentByDeckId, updateDeckAgent } = useEditorStore.getState()
     if (deckId && deckAgentOf(agentByDeckId, deckId).isFollowingGeneration) {
-      updateDeckAgent(deckId, () => ({ isFollowingGeneration: false }))
+      updateDeckAgent(deckId, { isFollowingGeneration: false })
     }
   }
 

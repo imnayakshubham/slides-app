@@ -41,12 +41,10 @@ export function normalizeRuns(runs: TextRun[], box: TextBoxStyle): Paragraph {
   const mergedRuns: TextRun[] = []
   for (const run of runs) {
     if (run.text === "") continue
-    const cleanRun: TextRun = { text: run.text }
+    let cleanRun: TextRun = { text: run.text }
     for (const mark of TEXT_MARKS) {
-      const value = run[mark]
-      if (value !== undefined && value !== box[mark]) {
-        Object.assign(cleanRun, { [mark]: value })
-      }
+      const isDifferentFromBox = run[mark] !== undefined && run[mark] !== box[mark]
+      if (isDifferentFromBox) cleanRun = { ...cleanRun, [mark]: run[mark] }
     }
     const previousRun = mergedRuns.at(-1)
     if (previousRun && sameMarks(previousRun, cleanRun)) {

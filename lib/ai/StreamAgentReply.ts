@@ -3,7 +3,7 @@ import "server-only"
 import { APICallError, isStepCount, RetryError, StreamProviderError, streamText } from "ai"
 import type { ModelMessage, ToolChoice, ToolSet } from "ai"
 
-import { getGroqModel } from "@/lib/ai/Model"
+import { getChatModel } from "@/lib/ai/Model"
 import type { SendStreamEvent, StreamEvent } from "@/lib/StreamEvents"
 
 const MAX_AGENT_STEPS = 8
@@ -31,12 +31,12 @@ export async function streamAgentReply({
   sendEvent,
   abortSignal,
 }: StreamAgentReplyOptions) {
-  const model = getGroqModel()
+  const model = getChatModel()
   if (!model) {
     sendEvent({
       event: "error",
       data: {
-        message: "The AI isn't set up: GROQ_API_KEY is missing on the server (see .env.example).",
+        message: "The AI isn't set up: AI_API_KEY is missing on the server (see .env.example).",
         code: "missing_api_key",
       },
     })

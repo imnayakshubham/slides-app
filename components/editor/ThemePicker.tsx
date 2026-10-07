@@ -60,7 +60,7 @@ export function ThemePicker() {
 
 // A tiny slide: the background, "Aa" in the heading font and color, and
 // the card colors.
-export function ThemePreview({ themeId, className }: { themeId: ThemeId; className?: string }) {
+function ThemePreview({ themeId, className }: { themeId: ThemeId; className?: string }) {
   const { colors, headingFont } = THEMES[themeId]
   return (
     <span

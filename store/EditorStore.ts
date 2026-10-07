@@ -5,7 +5,6 @@ import type { ChatMessage } from "@/lib/schema/Conversation"
 import type { Outline } from "@/lib/schema/Outline"
 import { useDeckStore } from "@/store/DeckStore"
 
-// How long an element stays highlighted after the agent changes it.
 const AGENT_HIGHLIGHT_MS = 1500
 
 export type SlideBuildStatus = "waiting" | "filling" | "done" | "failed"
@@ -17,16 +16,13 @@ export type SlideBuild = {
   status: SlideBuildStatus
 }
 
-// An outline waiting for approval. slideKeys give each row a stable id
-// while it is reordered or removed.
 type OutlineReview = {
   messageId: string
   outline: Outline
+  // Stable row ids while slides are reordered or removed.
   slideKeys: string[]
 }
 
-// A deck being generated from an approved outline, shown as a checklist
-// under the chat message that proposed it.
 type DeckGeneration = {
   messageId: string
   outline: Outline
@@ -36,21 +32,17 @@ type DeckGeneration = {
 
 export type AgentRunKind = "chat" | "planning" | "generating"
 
-// One agent run on one deck.
 type AgentRun = {
   runId: string
   kind: AgentRunKind
-  // Slides changed during this run; they shimmer until it ends.
+  // Locked for the user until the run ends.
   editingSlideIds: string[]
 }
 
-// Everything the agent has going on for one deck.
 export type DeckAgentState = {
   run: AgentRun | null
-  // An outline waiting for the user to edit and approve it.
   outlineReview: OutlineReview | null
   generation: DeckGeneration | null
-  // The canvas follows the slide being written until the user takes over.
   isFollowingGeneration: boolean
 }
 
@@ -61,14 +53,12 @@ const NO_AGENT_ACTIVITY: DeckAgentState = {
   isFollowingGeneration: false,
 }
 
-// The agent state of one deck (nothing going on when it has none yet).
 export function deckAgentOf(agentByDeckId: Record<string, DeckAgentState>, deckId: string | undefined): DeckAgentState {
   if (!deckId) return NO_AGENT_ACTIVITY
   return agentByDeckId[deckId] ?? NO_AGENT_ACTIVITY
 }
 
-// What the agent is doing on one slide, as a short label, or null when it
-// isn't working on it. A slide with a label is locked for the user.
+// A label while the agent works on the slide (the slide is locked), else null.
 export function agentActivityOnSlide(agent: DeckAgentState, slideId: string) {
   const buildStatus = agent.generation?.slides.find((slideBuild) => slideBuild.slideId === slideId)?.status
   if (buildStatus === "filling") return "Writing this slide…"
@@ -77,11 +67,12 @@ export function agentActivityOnSlide(agent: DeckAgentState, slideId: string) {
   return null
 }
 
-// Where an "Add here" menu was opened: on screen (to place the menu) and on
-// the slide, in artboard units (where the new element goes).
+type Point = { x: number; y: number }
+
 type AddHereMenu = {
-  screenPoint: { x: number; y: number }
-  slidePoint: { x: number; y: number }
+  screenPoint: Point
+  // In artboard units: where the new element goes.
+  slidePoint: Point
 }
 
 type EditorStore = {
@@ -89,32 +80,28 @@ type EditorStore = {
   selectedElementIds: string[]
   goToSlide: (slideId: string) => void
   setSelectedElementIds: (elementIds: string[]) => void
-  // The text element being typed into on the canvas, if any.
   editingElementId: string | null
   setEditingElementId: (elementId: string | null) => void
-  // Style of the words highlighted in that text, or null when nothing is
-  // highlighted (then toolbar settings apply to the whole box).
+  // Null when no words are highlighted: toolbar settings then style the whole box.
   highlightedTextStyle: TextBoxStyle | null
   setHighlightedTextStyle: (style: TextBoxStyle | null) => void
-  // Opened by clicking an empty spot on the current slide.
   addHereMenu: AddHereMenu | null
   setAddHereMenu: (menu: AddHereMenu | null) => void
 
   chatMessages: ChatMessage[]
   loadChatMessages: (messages: ChatMessage[]) => void
   addChatMessage: (message: ChatMessage) => void
-  updateChatMessage: (messageId: string, update: (message: ChatMessage) => ChatMessage) => void
+  updateChatMessage: (messageId: string, changes: Partial<ChatMessage>) => void
   removeChatMessage: (messageId: string) => void
 
-  // Keyed by deck id, so a run, its statuses and its outline belong to
-  // exactly one deck and can never leak into another.
+  // Keyed by deck id, so one deck's run can never leak into another.
   agentByDeckId: Record<string, DeckAgentState>
-  updateDeckAgent: (deckId: string, update: (agent: DeckAgentState) => Partial<DeckAgentState>) => void
+  updateDeckAgent: (deckId: string, changes: Partial<DeckAgentState>) => void
   agentTouchedElementIds: string[]
   highlightAgentTouchedElements: (elementIds: string[]) => void
 }
 
-export const useEditorStore = create<EditorStore>()((set) => ({
+export const useEditorStore = create<EditorStore>()((set, get) => ({
   currentSlideId: null,
   selectedElementIds: [],
 
@@ -142,59 +129,55 @@ export const useEditorStore = create<EditorStore>()((set) => ({
 
   loadChatMessages: (messages) => set({ chatMessages: messages }),
 
-  addChatMessage: (message) => set((state) => ({ chatMessages: [...state.chatMessages, message] })),
+  addChatMessage: (message) => {
+    const chatMessages = [...get().chatMessages, message]
+    set({ chatMessages })
+  },
 
-  // Other messages keep their object identity, so only the changed one re-renders.
-  updateChatMessage: (messageId, update) =>
-    set((state) => ({
-      chatMessages: state.chatMessages.map((message) => (message.id === messageId ? update(message) : message)),
-    })),
+  updateChatMessage: (messageId, changes) => {
+    const chatMessages = get().chatMessages.map((message) => {
+      if (message.id !== messageId) return message
+      return { ...message, ...changes }
+    })
+    set({ chatMessages })
+  },
 
-  removeChatMessage: (messageId) =>
-    set((state) => ({
-      chatMessages: state.chatMessages.filter((message) => message.id !== messageId),
-    })),
+  removeChatMessage: (messageId) => {
+    const chatMessages = get().chatMessages.filter((message) => message.id !== messageId)
+    set({ chatMessages })
+  },
 
   agentByDeckId: {},
-  updateDeckAgent: (deckId, update) =>
-    set((state) => {
-      const agent = deckAgentOf(state.agentByDeckId, deckId)
-      return {
-        agentByDeckId: {
-          ...state.agentByDeckId,
-          [deckId]: { ...agent, ...update(agent) },
-        },
-      }
-    }),
+  updateDeckAgent: (deckId, changes) => {
+    const { agentByDeckId } = get()
+    const agent = deckAgentOf(agentByDeckId, deckId)
+    set({ agentByDeckId: { ...agentByDeckId, [deckId]: { ...agent, ...changes } } })
+  },
 
   agentTouchedElementIds: [],
   highlightAgentTouchedElements: (elementIds) => {
     if (elementIds.length === 0) return
-    set((state) => ({
-      agentTouchedElementIds: [...state.agentTouchedElementIds, ...elementIds],
-    }))
+    set({ agentTouchedElementIds: [...get().agentTouchedElementIds, ...elementIds] })
+
     setTimeout(() => {
-      set((state) => ({
-        agentTouchedElementIds: state.agentTouchedElementIds.filter((elementId) => !elementIds.includes(elementId)),
-      }))
+      const stillHighlighted = get().agentTouchedElementIds.filter((elementId) => !elementIds.includes(elementId))
+      set({ agentTouchedElementIds: stillHighlighted })
     }, AGENT_HIGHLIGHT_MS)
   },
 }))
 
-// Keep the editor pointing at things that still exist after any deck change
-// (hydrate, delete, undo, AI edits).
+// After any deck change (load, delete, undo, AI edits), keep the current
+// slide and selection pointing at things that still exist.
 useDeckStore.subscribe((deckState, previousDeckState) => {
   const slides = deckState.deck?.slides ?? []
   const { currentSlideId, selectedElementIds } = useEditorStore.getState()
   const currentSlide = slides.find((slide) => slide.id === currentSlideId)
 
   if (!currentSlide) {
-    const previousSlideIndex = previousDeckState.deck?.slides.findIndex((slide) => slide.id === currentSlideId) ?? -1
-    const nearestSlide = slides[Math.min(Math.max(previousSlideIndex, 0), slides.length - 1)]
-    useEditorStore.setState({
-      currentSlideId: nearestSlide?.id ?? null,
-      selectedElementIds: [],
-    })
+    // Open the slide that took the removed one's place.
+    const removedIndex = previousDeckState.deck?.slides.findIndex((slide) => slide.id === currentSlideId) ?? 0
+    const nearestIndex = Math.min(Math.max(removedIndex, 0), slides.length - 1)
+    useEditorStore.setState({ currentSlideId: slides[nearestIndex]?.id ?? null, selectedElementIds: [] })
     return
   }
 
