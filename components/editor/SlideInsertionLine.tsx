@@ -4,7 +4,7 @@ import type { SortingStrategy } from "@dnd-kit/sortable"
 export const keepSlidesInPlace: SortingStrategy = () => null
 
 export type SlideInsertion = {
-  // The line sits before the slide at this index; the slide count means after the last slide.
+  // Index of the slide the line sits before; the slide count means after the last one.
   lineIndex: number
   landingSlideNumber: number
 }
@@ -17,7 +17,6 @@ export function slideInsertionFor(activeIndex: number, overIndex: number): Slide
   return { lineIndex: isMovingDown ? overIndex + 1 : overIndex, landingSlideNumber: overIndex + 1 }
 }
 
-// The line for the slide at `index` in a list of `count` slides.
 export function insertionLineFor(insertion: SlideInsertion | null, index: number, count: number): InsertionLine | null {
   if (!insertion) return null
   const { lineIndex, landingSlideNumber } = insertion

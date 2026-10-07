@@ -23,8 +23,7 @@ export function TableElement({ element, isEditing = false, onFinishEditing }: Ta
     borderColor: "color-mix(in srgb, currentColor 20%, transparent)",
   }
 
-  // While editing, every cell is typed into directly; Tab and Enter move
-  // between cells. The rows are read back once focus leaves the table.
+  // While editing, cells are typed into directly and the rows are read back when focus leaves.
   const cellEditingProps = {
     contentEditable: isEditing,
     suppressContentEditableWarning: true,
@@ -47,8 +46,7 @@ export function TableElement({ element, isEditing = false, onFinishEditing }: Ta
 
   return (
     <table
-      // A fresh node per edit session, so React never has to reconcile
-      // cell text the browser changed while typing.
+      // A fresh node each edit, so React never fights the browser over typed cell text.
       key={isEditing ? "editing" : "viewing"}
       ref={isEditing ? focusFirstCell : undefined}
       onBlur={finishWhenFocusLeavesTable}

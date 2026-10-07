@@ -10,13 +10,12 @@ export type TextPreset = {
   fontSize: number
   bold: boolean
   listStyle: TextElement["listStyle"]
-  font?: TextElement["font"]
+  role: TextElement["role"]
   width: number
   height: number
 }
 
-// The text styles offered by "Add block" and "Turn into". Title and Body
-// match the title size and body slot that createSlide uses.
+// Text styles for "Add block" and "Turn into"; Title and Body match what createSlide uses.
 export const TEXT_PRESETS: Record<TextPresetName, TextPreset> = {
   title: {
     label: "Title",
@@ -24,7 +23,7 @@ export const TEXT_PRESETS: Record<TextPresetName, TextPreset> = {
     fontSize: 60,
     bold: true,
     listStyle: "none",
-    font: "heading",
+    role: "title",
     width: 1680,
     height: 140,
   },
@@ -34,6 +33,7 @@ export const TEXT_PRESETS: Record<TextPresetName, TextPreset> = {
     fontSize: 36,
     bold: false,
     listStyle: "none",
+    role: "subtitle",
     width: 1680,
     height: 100,
   },
@@ -43,6 +43,7 @@ export const TEXT_PRESETS: Record<TextPresetName, TextPreset> = {
     fontSize: 28,
     bold: false,
     listStyle: "none",
+    role: "body",
     width: 880,
     height: 300,
   },
@@ -52,6 +53,7 @@ export const TEXT_PRESETS: Record<TextPresetName, TextPreset> = {
     fontSize: 28,
     bold: false,
     listStyle: "bullet",
+    role: "body",
     width: 880,
     height: 300,
   },
@@ -61,6 +63,7 @@ export const TEXT_PRESETS: Record<TextPresetName, TextPreset> = {
     fontSize: 28,
     bold: false,
     listStyle: "number",
+    role: "body",
     width: 880,
     height: 300,
   },

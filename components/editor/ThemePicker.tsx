@@ -58,8 +58,7 @@ export function ThemePicker() {
   )
 }
 
-// A tiny slide: the background, "Aa" in the heading font and color, and
-// the card colors.
+// A tiny slide preview: background, "Aa" in the heading font, and the card colors.
 function ThemePreview({ themeId, className }: { themeId: ThemeId; className?: string }) {
   const { colors, headingFont } = THEMES[themeId]
   return (

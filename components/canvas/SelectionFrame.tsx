@@ -25,14 +25,12 @@ export const RESIZE_CURSORS: Record<ResizeHandle, string> = {
   w: "ew-resize",
 }
 
-// The artboard is scaled down; dividing by --artboard-scale keeps these
-// lines and handles the same size on screen at any zoom.
+// Dividing by --artboard-scale keeps lines and handles the same size on screen at any zoom.
 const LINE_WIDTH = "calc(1.5px / var(--artboard-scale))"
 const HANDLE_HIT_SIZE = "calc(16px / var(--artboard-scale))"
 const HANDLE_DOT_SIZE = "calc(10px / var(--artboard-scale))"
 
-// Drawn inside the current slide's artboard, in slide units: selection
-// frames, resize handles, snap guides and the selection box.
+// Selection frames, resize handles, snap guides and the selection box, drawn in slide units.
 export function SelectionFrame() {
   const selectedElementIds = useEditorStore((state) => state.selectedElementIds)
   const editingElementId = useEditorStore((state) => state.editingElementId)
@@ -166,8 +164,7 @@ function guideStyle(guide: SnapGuide): CSSProperties {
   }
 }
 
-// Text boxes grow with their text, so the frame follows the laid-out height
-// (it changes while resizing, typing or changing the font size).
+// Text boxes grow with their text, so the frame follows the height as it changes.
 function useTextHeights(textElementIds: string[]) {
   const [heights, setHeights] = useState<Record<string, number>>({})
   const idsKey = textElementIds.join(",")

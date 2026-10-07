@@ -22,9 +22,7 @@ const STATUS_LABELS: Record<SlideBuildStatus, string> = {
   failed: "Failed",
 }
 
-// A checklist of the slides being generated, under the message that
-// proposed the outline. Failed slides can be retried, and a stopped build
-// can continue with the slides that are left.
+// Checklist of slides being generated; failed slides can be retried and a stopped build continued.
 export function GenerationProgress({ messageId }: { messageId: string }) {
   const generation = useDeckAgent((agent) => (agent.generation?.messageId === messageId ? agent.generation : null))
   const isAgentRunning = useDeckAgent((agent) => agent.run !== null)

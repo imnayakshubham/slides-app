@@ -25,8 +25,7 @@ export type DeckEdit =
       x?: number
       y?: number
     }
-  // A copy on another (or the same) slide. The new id is passed in so this
-  // stays a pure, repeatable function.
+  // A copy of an element; the new id is passed in so the same edit always gives the same result.
   | {
       type: "copyElement"
       elementId: string
@@ -40,15 +39,13 @@ export type DeckEdit =
       elementId: string
       direction: "forward" | "backward" | "front" | "back"
     }
-  // Switches the theme and swaps every color that came from the old theme
-  // for the new theme's matching color. Colors picked by hand stay.
+  // Swaps colors that came from the old theme for the new theme's; hand-picked colors stay.
   | { type: "setTheme"; theme: Theme }
   | { type: "batch"; edits: DeckEdit[] }
 
 export type DeckEditResult = { ok: true; deck: Deck } | { ok: false; error: string }
 
-// Pure: never mutates `deck`, never throws. Unchanged slides and elements keep
-// their references so undo snapshots stay cheap and untouched UI does not re-render.
+// Never changes `deck` or throws; untouched slides stay the same objects, so they don't re-render.
 export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
   switch (edit.type) {
     case "updateDeck":

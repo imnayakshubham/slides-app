@@ -7,8 +7,7 @@ import type { SlideElement } from "@/lib/schema/Deck"
 
 type TableElementData = Extract<SlideElement, { type: "table" }>
 
-// Rows and columns are added and removed at the end; every row keeps the
-// same number of cells.
+// Rows and columns are added and removed at the end, so every row keeps the same cell count.
 export function TableControls({ element }: { element: TableElementData }) {
   const { rows } = element
   const columnCount = rows[0].length

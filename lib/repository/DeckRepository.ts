@@ -4,8 +4,7 @@ import type { DeckRecord, DeckSummary } from "@/lib/schema/DeckRecord"
 
 export type UploadedImage = { src: string; width: number; height: number }
 
-// Components talk only to this interface, so IndexedDB can later be swapped
-// for an HTTP backend without touching them.
+// Components use only this interface, so IndexedDB can later be swapped for a server backend.
 export interface DeckRepository {
   listDecks(): Promise<DeckSummary[]>
   // Resolves null when the deck does not exist; rejects when its saved data is invalid.

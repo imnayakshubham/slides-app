@@ -35,8 +35,7 @@ function sameMarks(run: TextRun, otherRun: TextRun) {
   return TEXT_MARKS.every((mark) => run[mark] === otherRun[mark])
 }
 
-// Drops marks that only repeat the box style, joins neighbours with the same
-// marks, and turns an unstyled paragraph back into a plain string.
+// Removes marks that repeat the box style, merges matching neighbours, unwraps unstyled paragraphs.
 export function normalizeRuns(runs: TextRun[], box: TextBoxStyle): Paragraph {
   const mergedRuns: TextRun[] = []
   for (const run of runs) {
@@ -57,8 +56,7 @@ export function normalizeRuns(runs: TextRun[], box: TextBoxStyle): Paragraph {
   return mergedRuns
 }
 
-// Applies the changes to the characters from start to end (end exclusive),
-// splitting runs where the highlight begins and ends.
+// Styles the characters from start up to end, splitting runs at the highlight's edges.
 export function styleRunRange(
   runs: TextRun[],
   start: number,
@@ -86,8 +84,7 @@ export function styleRunRange(
   return normalizeRuns(styledRuns, box)
 }
 
-// When a setting is applied to the whole text box, words that overrode that
-// setting follow the box again.
+// When a setting is applied to the whole box, words that overrode it follow the box again.
 export function clearRunMark(paragraphs: Paragraph[], mark: TextMark) {
   return paragraphs.map((paragraph) => {
     if (typeof paragraph === "string") return paragraph
@@ -101,9 +98,7 @@ export function clearRunMark(paragraphs: Paragraph[], mark: TextMark) {
   })
 }
 
-// Every run states its own weight, slant and underline, so a word can turn
-// underline off inside an underlined box (CSS underlines can't be undone by
-// a child element).
+// Every run sets its own weight, slant and underline, since CSS can't undo a parent's underline.
 export function runStyle(run: TextRun, box: TextBoxStyle): CSSProperties {
   return {
     fontWeight: (run.bold ?? box.bold) ? 700 : 400,

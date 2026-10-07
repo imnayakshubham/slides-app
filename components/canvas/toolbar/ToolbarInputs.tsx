@@ -38,9 +38,7 @@ export function ToolbarDivider() {
 
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i
 
-// Lets a control apply changes live (every color the picker passes through,
-// every number typed) while the whole adjustment stays one undo step.
-// If an agent turn already has a group open, its group covers these edits.
+// Applies changes live while the whole adjustment stays one undo step.
 function useSingleUndoStep() {
   const isGroupOpenRef = useRef(false)
 
@@ -58,8 +56,7 @@ function useSingleUndoStep() {
     useDeckStore.getState().endGroup()
   }
 
-  // The toolbar can disappear mid-adjustment (selection changed), so close
-  // the step on unmount too, or undo would stay blocked.
+  // The toolbar can vanish mid-adjustment, so end the undo step on unmount too.
   useEffect(() => {
     return () => {
       if (!isGroupOpenRef.current) return
@@ -84,8 +81,7 @@ export function ColorInput({
   const inputRef = useRef<HTMLInputElement>(null)
   const { startStep, finishStep } = useSingleUndoStep()
 
-  // React's onChange fires for every color; the native "change" event fires
-  // once when the picker closes, which is when the step ends.
+  // onChange fires for every color; the native "change" event fires once, when the picker closes.
   useEffect(() => {
     const input = inputRef.current
     if (!input) return
@@ -150,8 +146,7 @@ export function TextInput({
   )
 }
 
-// Typed values apply as soon as they are valid, as one undo step per edit.
-// Without a step it is a plain field, e.g. a cell in the chart data grid.
+// Typed values apply once valid; without an undo step it is a plain field (e.g. a chart cell).
 export function NumberInput({
   label,
   value,

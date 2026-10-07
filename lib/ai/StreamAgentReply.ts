@@ -13,8 +13,7 @@ type StreamAgentReplyOptions = {
   messages: ModelMessage[]
   tools: ToolSet
   toolChoice?: ToolChoice<ToolSet>
-  // A forced tool choice applies to every step, so a forced call needs 1,
-  // or an isFinished check that stops once the forced tool has succeeded.
+  // A forced tool runs on every step, so stop after one step or once that tool succeeds.
   maxSteps?: number
   isFinished?: () => boolean
   sendEvent: SendStreamEvent
@@ -58,7 +57,7 @@ export async function streamAgentReply({
       if (part.type === "text-delta") {
         sendEvent({ event: "text_delta", data: { text: part.text } })
       }
-      // Invalid tool input never reaches the tool's execute; it surfaces here.
+      // Bad tool input never reaches the tool's code; the error shows up here.
       if (part.type === "tool-error") {
         sendEvent({
           event: "tool_error",
@@ -108,7 +107,7 @@ function errorEventFor(error: unknown): StreamEvent {
 }
 
 function getProviderStatusCode(error: unknown) {
-  // After automatic retries, the SDK wraps the last error in a RetryError.
+  // After its own retries, the SDK wraps the last error in a RetryError.
   let providerError = error
   if (RetryError.isInstance(error)) {
     providerError = error.lastError

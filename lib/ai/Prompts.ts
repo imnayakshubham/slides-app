@@ -9,6 +9,7 @@ Rules:
 - Place new content with a layout slot when one fits. Positions are checked for you: new, moved and resized elements go to the nearest free space, and text boxes get the height their text needs.
 - If a tool result has a warning (for example, something overlaps because the slide is full), fix it before you finish: move, shrink or remove something.
 - Keep slides finished and presentable: short, parallel bullets of 12 words or fewer, realistic numbers, and nothing overflowing.
+- Write like a person: plain, specific words. No em dashes or en dashes; use commas, periods or colons. No filler or buzzwords such as "in today's fast-paced world", "delve", "leverage", "unlock", "seamless", "game-changer".
 - Charts need real numbers, one value per category in every series. Tables need the same number of cells in every row.
 - For an image, give alt (what it shows) and leave out src unless you have a URL you know works; a themed placeholder is placed for the user to replace.
 - If a tool returns ok: false, read the error, fix the call and try again.
@@ -24,6 +25,7 @@ Rules:
 - Pick each slide's layout to suit its content. Use chart-forward when a chart is the point of the slide.
 - Set wantsChart when numbers are best shown as a chart, and wantsTable for comparisons, prices or schedules. Include what the user asked for.
 - Put concrete key points and plausible numbers in contentHints, so each slide can be written without guessing.
+- Slide titles are short and plain, with no em dashes and no buzzwords.
 - Pick the themeId whose mood suits the topic and audience. Avoid classic unless the user asks for a plain look.
 
 Themes:
@@ -35,6 +37,7 @@ Rules:
 - The slide title is already on the slide. Do not repeat it.
 - The eyebrow is a 1 to 3 word label above the title that names the slide's role ("The problem", "Why now", "Results"). Never repeat the title in it.
 - Write slide-ready text: short, parallel bullet points of 12 words or fewer, one idea each. No full paragraphs.
+- Write like a person: plain, specific words. No em dashes or en dashes; use commas, periods or colons. No filler or buzzwords such as "in today's fast-paced world", "delve", "leverage", "unlock", "seamless", "game-changer".
 - Charts need realistic, internally consistent numbers, one value per category in every series. Pick the chart type that suits the data: line or area for trends over time, bar for comparisons, pie for parts of a whole.
 - Tables need a short header row and the same number of cells in every row. Keep cells brief.
 - Match the deck's story and tone, and stay consistent with numbers used elsewhere in the outline.

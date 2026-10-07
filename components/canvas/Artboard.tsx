@@ -25,7 +25,7 @@ export function Artboard({ slideId, isThumbnail = false, className, children }: 
   const { containerRef, scale } = useArtboardScale()
   const theme = useDeckStore((state) => state.deck?.theme)
   const background = useDeckStore((state) => findSlide(state.deck, slideId)?.background)
-  // useShallow: the list is rebuilt each time, so compare it by contents.
+  // The list is rebuilt every time, so compare it by its contents.
   const elementIds = useDeckStore(useShallow((state) => getElementIds(state.deck, slideId)))
 
   return (
@@ -43,8 +43,7 @@ export function Artboard({ slideId, isThumbnail = false, className, children }: 
             ...slideBackgroundStyle(background, theme),
             color: theme.colors.text,
             fontFamily: fontStack(theme.fontFamily),
-            // Theme values for elements drawn with HTML (text, tables),
-            // so they don't each need the theme passed in.
+            // Theme values for text and tables, so each element doesn't need the theme passed in.
             ...({
               "--slide-heading-font": fontStack(theme.headingFont),
               "--slide-heading": theme.colors.heading,
@@ -85,7 +84,6 @@ function PositionedElement({
   )
   const isEditing = useEditorStore((state) => !isThumbnail && state.editingElementId === elementId)
   const isAgentTouched = useEditorStore((state) => !isThumbnail && state.agentTouchedElementIds.includes(elementId))
-  // During a drag or resize the live box comes from the gesture store.
   // Dimmed while a drag would move it to another slide.
   const isBeingMovedAway = useDragPreviewStore(
     (state) => !isThumbnail && state.dropTarget !== null && !state.dropTarget.isCopy && elementId in state.previewBoxes
@@ -120,8 +118,7 @@ function PositionedElement({
     <div
       data-element-id={element.id}
       data-element-type={element.type}
-      // Content ignores the pointer so clicks and drags land on this box,
-      // except while it is being typed into.
+      // Content ignores the pointer so clicks land on this box, except while typing in it.
       className={cn(
         "absolute",
         !isEditing && "*:pointer-events-none",
@@ -145,9 +142,7 @@ function PositionedElement({
       ) : element.type === "table" && isEditing ? (
         <TableElement element={element} isEditing onFinishEditing={finishEditingTable} />
       ) : (
-        // A shape's SVG is drawn at the live size during a resize, so its
-        // outline doesn't stretch. Other types keep the stored element, so
-        // the memoized renderer skips them on every pointer move.
+        // Only shapes get the live size while resizing, so their outline doesn't stretch.
         <ElementRenderer
           element={previewBox && element.type === "shape" ? { ...element, ...previewBox } : element}
           theme={theme}

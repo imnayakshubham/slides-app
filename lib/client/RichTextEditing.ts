@@ -3,22 +3,16 @@ import type { TextBoxStyle, TextStyleChanges } from "@/lib/RichText"
 import type { Paragraph, TextRun } from "@/lib/schema/Deck"
 import { useEditorStore } from "@/store/EditorStore"
 
-// Reads and restyles the text box being typed into. Each paragraph (<p> or
-// <li>) is read back as runs from the browser's computed styles, so any
-// markup the browser creates while typing (Cmd+B adds <b>, Enter adds
-// elements) is read the same way.
+// Reads and restyles the text box being typed into, using the browser's computed styles.
 
-// The last highlight inside the text being edited. Kept here because
-// clicking the toolbar's color picker or font size box moves the browser
-// selection away from the text.
+// Last text highlight, kept because clicking the toolbar moves the browser's selection away.
 let highlightedRange: Range | null = null
 
 export function setHighlightedRange(range: Range | null) {
   highlightedRange = range
 }
 
-// Set by the text box being typed into. A whole-box setting ends the edit
-// first, so what was typed is saved before the box changes under it.
+// Set by the text box being typed into; box-wide changes save the typed text first.
 let finishActiveTextEdit: (() => void) | null = null
 
 export function setActiveTextEditFinisher(finish: (() => void) | null) {
@@ -42,8 +36,7 @@ function toHexColor(cssColor: string) {
   )
 }
 
-// Our own spans always set text-decoration-line; <u> comes from Cmd+U.
-// Without either, the text follows the box.
+// Our spans always set text-decoration-line and Cmd+U adds <u>; otherwise the box style applies.
 function isUnderlined(textNode: Node, block: Element, box: TextBoxStyle) {
   for (let element = textNode.parentElement; element && element !== block; element = element.parentElement) {
     if (element.tagName === "U") return true
@@ -65,8 +58,7 @@ function readTextStyle(textNode: Node, block: Element, box: TextBoxStyle) {
   }
 }
 
-// The box style as the browser computes it, so colors and sizes compare
-// exactly against what readTextStyle reports.
+// The box style as the browser computes it, so it compares exactly with readTextStyle.
 export function readBoxStyle(root: HTMLElement, underline: boolean) {
   const computed = getComputedStyle(root)
   return {
@@ -145,9 +137,7 @@ function renderBlockRuns(block: Element, paragraph: Paragraph, box: TextBoxStyle
   )
 }
 
-// Restyles the highlighted characters of every paragraph the highlight
-// touches, then highlights the same characters again so repeated presses
-// (e.g. "+" on font size) keep working on them.
+// Restyles the highlighted text, then highlights it again so repeated presses keep working.
 function styleHighlightedText(root: HTMLElement, changes: TextStyleChanges, box: TextBoxStyle) {
   const range = highlightedRange
   if (!range || range.collapsed) return
@@ -182,8 +172,7 @@ function styleHighlightedText(root: HTMLElement, changes: TextStyleChanges, box:
   }
 }
 
-// Styles the highlighted words of the text box being edited and refreshes
-// the toolbar's view of them.
+// Styles the highlighted words of the text box being edited and updates the toolbar.
 export function styleHighlightedWordsOf(elementId: string, changes: TextStyleChanges, boxUnderline: boolean) {
   const root = document.querySelector<HTMLElement>(
     `[data-canvas-slide-id] [data-element-id="${elementId}"] [contenteditable="true"]`

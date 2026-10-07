@@ -1,8 +1,6 @@
 import type { Theme } from "@/lib/schema/Deck"
 
-// The image the AI places when it has no real photo: a themed card with
-// what the image should show. It is a normal image element, so the user
-// swaps in a real picture with "Replace image".
+// Stand-in image the AI places when it has no photo; the user swaps it with "Replace image".
 
 const WIDTH = 1600
 const HEIGHT = 1200
@@ -13,8 +11,7 @@ function escapeXml(text: string) {
   return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;")
 }
 
-// Word-wrapped, at most MAX_LINES lines; the last line ends in "…" when
-// the description is longer.
+// Word-wrapped to MAX_LINES lines, ending in "…" when the description is longer.
 function wrapDescription(description: string) {
   const lines: string[] = []
   let currentLine = ""
@@ -40,8 +37,7 @@ export function imagePlaceholderSrc(description: string, theme: Theme) {
   const lines = wrapDescription(description)
   const firstLineY = HEIGHT / 2 + 40 - ((lines.length - 1) * 64) / 2
 
-  // Content stays in the middle, so cropping to the element's shape
-  // ("cover") only trims empty edges.
+  // Content stays centered, so cropping to the element's shape only trims empty edges.
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <rect width="${WIDTH}" height="${HEIGHT}" fill="${escapeXml(background)}"/>
   <g fill="${escapeXml(ink)}" opacity="0.35" transform="translate(${WIDTH / 2 - 90} ${HEIGHT / 2 - 230})">

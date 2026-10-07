@@ -27,15 +27,12 @@ import { cn } from "@/lib/utils"
 import { selectSlideIds, useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
-// A press only becomes a drag after this many screen pixels, so clicks
-// never nudge anything.
+// A press only becomes a drag after this many pixels, so clicks never nudge anything.
 const DRAG_START_DISTANCE_PX = 3
 // Matches the canvas list's gap-8, so the insertion line sits mid-gap.
 const SLIDE_GAP_PX = 32
 
-// One DndContext runs two kinds of drag: element gestures (each slide is a
-// draggable with its slide id) and slide reordering from the rail's handle
-// (sortable rows, whose drag data carries `reorderSlideId`).
+// One drag context for both element gestures and slide reordering from the rail handle.
 function slideOrderId(slideId: string) {
   return `slide-order:${slideId}`
 }
@@ -159,8 +156,7 @@ export function SlideCanvas({ onOpenAgent }: { onOpenAgent: () => void }) {
   )
 }
 
-// A slide with its rail. Only the rail's handle starts a reorder; presses on
-// the slide itself stay element gestures.
+// A slide with its rail; only the rail's handle starts a reorder.
 function SortableSlideRow({
   slideId,
   slideNumber,

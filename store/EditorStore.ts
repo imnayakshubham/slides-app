@@ -166,8 +166,7 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
   },
 }))
 
-// After any deck change (load, delete, undo, AI edits), keep the current
-// slide and selection pointing at things that still exist.
+// After any deck change, keep the current slide and selection pointing at things that still exist.
 useDeckStore.subscribe((deckState, previousDeckState) => {
   const slides = deckState.deck?.slides ?? []
   const { currentSlideId, selectedElementIds } = useEditorStore.getState()

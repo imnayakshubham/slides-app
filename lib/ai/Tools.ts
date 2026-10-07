@@ -9,7 +9,14 @@ import type { Box } from "@/lib/edits/Geometry"
 import { createId } from "@/lib/Ids"
 import { imagePlaceholderSrc } from "@/lib/layouts/ImagePlaceholder"
 import { createSlide, duplicateSlide, slideLayoutSlots } from "@/lib/layouts/SlideLayouts"
-import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, MIN_ELEMENT_SIZE, slideLayoutSchema } from "@/lib/schema/Deck"
+import {
+  ARTBOARD_HEIGHT,
+  ARTBOARD_WIDTH,
+  MIN_ELEMENT_SIZE,
+  TEXT_ROLES,
+  slideLayoutSchema,
+  usesHeadingFont,
+} from "@/lib/schema/Deck"
 import type { Deck, ElementChanges, Slide, SlideElement } from "@/lib/schema/Deck"
 import { paragraphText } from "@/lib/RichText"
 import type { SendStreamEvent } from "@/lib/StreamEvents"
@@ -56,6 +63,10 @@ const chartSeriesInput = z
 
 // All optional, so one tool covers text, image and shape elements.
 const elementStyleInputs = {
+  role: z
+    .enum(TEXT_ROLES)
+    .optional()
+    .describe("Text: what the box is for. title and heading use the heading font. Default body."),
   paragraphs: z.array(z.string()).optional().describe("Text: one string per paragraph or list item."),
   fontSize: z.number().positive().optional().describe("Text: font size in px."),
   bold: z.boolean().optional().describe("Text"),
@@ -77,8 +88,7 @@ const elementStyleInputs = {
   strokeWidth: z.number().min(0).optional().describe("Shape: outline width."),
 }
 
-// A warning means the change was made but needs a follow-up, e.g. the new
-// element overlaps others because the slide had no free space.
+// A warning means the change was made but needs a fix, e.g. it overlaps because the slide is full.
 type ToolResult = { ok: true; createdIds: string[]; warning?: string } | { ok: false; error: string }
 
 function overlapWarning(overlapsWith: string[]) {
@@ -91,8 +101,7 @@ function withWarning(result: ToolResult, warning: string | undefined) {
   return { ...result, warning }
 }
 
-// Text boxes are saved as tall as their text will render, so placement
-// sees their real size.
+// Text boxes are saved as tall as their text, so placement sees their real size.
 function withTextHeight(element: SlideElement): SlideElement {
   if (element.type !== "text") return element
   const height = estimateTextHeight(
@@ -176,7 +185,7 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         background: z.string().optional().describe("CSS color."),
         notes: z.string().optional().describe("Speaker notes."),
       }),
-      // Rest spread keeps unsent fields out, so they aren't overwritten with undefined.
+      // Leaves out fields that weren't sent, so they aren't overwritten with undefined.
       execute: ({ slideId, background, ...otherChanges }, { toolCallId }) => {
         const changes = background
           ? {
@@ -268,15 +277,17 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         let element: SlideElement
 
         if (type === "text") {
+          const role = style.role ?? "body"
           element = {
             id: elementId,
             type: "text",
+            role,
             ...position,
             paragraphs: style.paragraphs ?? [""],
             fontSize: style.fontSize ?? DEFAULT_TEXT_FONT_SIZE,
             bold: style.bold ?? false,
             italic: style.italic ?? false,
-            color: style.color ?? colors.text,
+            color: style.color ?? (usesHeadingFont(role) ? colors.heading : colors.text),
             align: style.align ?? "left",
             listStyle: style.listStyle ?? "none",
           }
@@ -327,8 +338,7 @@ export function createAgentTools(deck: Deck, sendEvent: SendStreamEvent): ToolSe
         let fullChanges = changes as ElementChanges
         let warning: string | undefined
 
-        // Rewritten or restyled text gets its new height, and the model hears
-        // about it if the taller text now runs into something.
+        // Rewritten text gets its new height, and the model is told if it now overlaps something.
         const changesTextSize = changes.paragraphs || changes.fontSize || changes.listStyle
         if (location?.element.type === "text" && changesTextSize) {
           const resizedText = withTextHeight({

@@ -13,8 +13,7 @@ type ElementRendererProps = {
   animate: boolean
 }
 
-// memo: moving an element changes only its wrapper's position, so its
-// content (e.g. a chart) doesn't need to render again.
+// Moving an element only changes its wrapper, so its content (e.g. a chart) doesn't redraw.
 export const ElementRenderer = memo(function ElementRenderer({ element, theme, animate }: ElementRendererProps) {
   switch (element.type) {
     case "text":

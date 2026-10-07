@@ -10,6 +10,7 @@ import {
   setHighlightedRange,
 } from "@/lib/client/RichTextEditing"
 import { paragraphRuns, runStyle, type TextBoxStyle } from "@/lib/RichText"
+import { usesHeadingFont } from "@/lib/schema/Deck"
 import type { Paragraph, SlideElement } from "@/lib/schema/Deck"
 import { cn } from "@/lib/utils"
 import { useEditorStore } from "@/store/EditorStore"
@@ -22,8 +23,7 @@ type TextElementProps = {
   onFinishEditing?: (paragraphs: Paragraph[], height: number) => void
 }
 
-// Focus can move into the floating toolbar (color picker, font size box)
-// without ending the edit, so its settings can style the highlighted words.
+// Moving focus into the toolbar doesn't end the edit, so it can style the highlighted words.
 function isInsideSelectionToolbar(node: EventTarget | null) {
   return node instanceof Element && node.closest("[data-selection-toolbar]")
 }
@@ -44,11 +44,10 @@ export function TextElement({ element, isEditing = false, onFinishEditing }: Tex
     fontStyle: element.italic ? "italic" : "normal",
     color: element.color,
     textAlign: element.align,
-    fontFamily: element.font === "heading" ? "var(--slide-heading-font)" : undefined,
+    fontFamily: usesHeadingFont(element.role) ? "var(--slide-heading-font)" : undefined,
   }
 
-  // Ends the edit exactly once, however it ends (blur, Escape, a press
-  // outside), and reads the paragraphs back from the screen.
+  // Ends the edit once, however it ends, and reads the paragraphs back from the page.
   function finishEditing() {
     const root = rootRef.current
     if (!root || hasFinishedRef.current) return
@@ -94,8 +93,7 @@ export function TextElement({ element, isEditing = false, onFinishEditing }: Tex
     }
   }, [isEditing])
 
-  // A new root node per edit session (see the key below), so this runs once
-  // when each session starts.
+  // A new node per edit (see the key below), so this runs once when each edit starts.
   function startEditingSession(root: HTMLElement | null) {
     rootRef.current = root
     if (!root) return
@@ -127,8 +125,7 @@ export function TextElement({ element, isEditing = false, onFinishEditing }: Tex
   if (element.listStyle === "none") {
     return (
       <div
-        // A fresh node per edit session, so React never has to reconcile
-        // paragraphs the browser added while typing.
+        // A fresh node each edit, so React never fights the browser over typed paragraphs.
         key={isEditing ? "editing" : "viewing"}
         className={cn("leading-tight wrap-anywhere outline-none", isEditing && "select-text")}
         style={textStyle}

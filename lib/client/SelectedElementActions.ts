@@ -5,8 +5,7 @@ import type { ElementChanges } from "@/lib/schema/Deck"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
-// Actions on the selected canvas elements, shared by the floating toolbar
-// and the keyboard shortcuts. Each one is a single undo step.
+// Selected-element actions for the toolbar and keyboard shortcuts; each is one undo step.
 
 function getSelectedElements() {
   const deck = useDeckStore.getState().deck

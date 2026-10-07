@@ -2,8 +2,7 @@ import { create } from "zustand"
 
 import type { Box, SnapGuide } from "@/lib/edits/Geometry"
 
-// The slide an element would land on if dropped now: another slide's
-// thumbnail or another slide on the canvas.
+// The slide an element would land on if dropped now (a thumbnail or another canvas slide).
 export type DropTarget = {
   slideId: string
   slideNumber: number
@@ -13,9 +12,7 @@ export type DropTarget = {
   itemLabel: string
 }
 
-// Live state of a drag, resize or selection box on the canvas. Kept apart
-// from the deck so a gesture re-renders only the moving elements and the
-// overlay; the deck is written once, when the gesture ends.
+// Live drag, resize and selection-box state, kept out of the deck so only moving parts re-render.
 type DragPreviewStore = {
   isActive: boolean
   previewBoxes: Record<string, Box>

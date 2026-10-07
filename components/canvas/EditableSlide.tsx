@@ -12,8 +12,7 @@ import { cn } from "@/lib/utils"
 import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useEditorStore } from "@/store/EditorStore"
 
-// A press that moves further than this is a drag (selection box), not a
-// click, so it never opens the "Add here" menu.
+// A press that moves further than this draws a selection box instead of opening "Add here".
 const CLICK_MOVE_TOLERANCE_PX = 4
 
 type EditableSlideProps = {
@@ -22,9 +21,7 @@ type EditableSlideProps = {
   prepareGesture: (event: PointerEvent<HTMLElement>, slideId: string) => boolean
 }
 
-// One slide on the canvas. The whole slide is a single dnd-kit draggable:
-// prepareGesture picks what the drag does (move, resize or selection box)
-// before dnd-kit starts tracking the pointer.
+// One slide on the canvas. A press on it moves, resizes or draws a selection box.
 export function EditableSlide({ slideId, slideNumber, prepareGesture }: EditableSlideProps) {
   const isCurrentSlide = useEditorStore((state) => state.currentSlideId === slideId)
   const { setNodeRef, listeners } = useDraggable({ id: slideId })
@@ -32,9 +29,7 @@ export function EditableSlide({ slideId, slideNumber, prepareGesture }: Editable
   // Locked while the agent changes this slide, so edits can't collide.
   const isLockedByAgent = agentActivity !== null
   const dropTarget = useDragPreviewStore((state) => (state.dropTarget?.slideId === slideId ? state.dropTarget : null))
-  // Where the last press started, and whether it may open "Add here":
-  // only on the current slide with nothing selected or being edited, so
-  // a click that deselects or ends an edit stays just that.
+  // "Add here" opens only if nothing was selected or edited, so a deselect click stays a deselect.
   const pressRef = useRef<{
     x: number
     y: number

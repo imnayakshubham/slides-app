@@ -2,8 +2,7 @@ import { createSlide, duplicateSlide } from "@/lib/layouts/SlideLayouts"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
-// Slide actions shared by the navigator and the canvas. Each one is a
-// single undo step and opens the new slide.
+// Slide actions for the navigator and canvas; each is one undo step and opens the new slide.
 
 // `index` is where the new slide goes; the slide count adds it at the end.
 export function addBlankSlideAt(index: number) {

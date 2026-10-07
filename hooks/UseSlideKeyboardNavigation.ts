@@ -7,7 +7,7 @@ import { useEditorStore } from "@/store/EditorStore"
 const PREVIOUS_SLIDE_KEYS = ["ArrowUp", "PageUp"]
 const NEXT_SLIDE_KEYS = ["ArrowDown", "PageDown"]
 
-// Skipped while an element is selected: the arrows will move it (Phase 8).
+// Skipped while an element is selected, because the arrow keys move it instead.
 export function useSlideKeyboardNavigation() {
   useEffect(() => {
     function goToNeighborSlide(event: KeyboardEvent) {

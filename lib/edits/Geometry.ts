@@ -28,8 +28,7 @@ export function boxesOverlap(a: Box, b: Box) {
   return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
 }
 
-// Nearest spot of the same size that covers no other element. Falls back
-// to the requested (clamped) box when the slide has no room for it.
+// Nearest free spot of the same size; falls back to the asked box when nothing is free.
 export function findFreeSpot(slide: Slide, box: Box, ignoreElementId?: string): Box {
   const requestedBox = clampBox(box)
   const isFree = (candidate: Box) => overlappingElementIds(slide, candidate, ignoreElementId).length === 0
@@ -63,9 +62,7 @@ export function overlappingElementIds(slide: Slide, box: Box, ignoreElementId?: 
 // Sizes tried, in order, when the requested size has no free spot.
 const SHRINK_SCALES = [1, 0.75, 0.5]
 
-// Where the agent's new or changed element goes: the requested box if it
-// is free, else the nearest free spot, else the same shape smaller. When
-// nothing fits, the box is kept and the elements it covers are reported.
+// Places an agent's element: asked box, nearest free spot, or smaller; reports overlaps if none fit.
 export function placeWithoutOverlap(
   slide: Slide,
   box: Box,
@@ -85,18 +82,15 @@ export function placeWithoutOverlap(
   }
 }
 
-// Text sizes, matching how TextElement renders: `leading-tight` lines,
-// list items indented 1.25em with a 0.4em gap after each.
+// Text sizes that match how TextElement draws lines and list items.
 const LINE_HEIGHT = 1.25
 const AVERAGE_CHARACTER_WIDTH = 0.52
-// Words wrap before the line is full, so lines hold a bit less than the
-// average width suggests.
+// Lines hold a bit less than the average width suggests, since words wrap early.
 const WORD_WRAP_ALLOWANCE = 0.9
 const LIST_INDENT = 1.25
 const LIST_ITEM_GAP = 0.4
 
-// A close estimate of a text box's rendered height, for placing text
-// before the browser has laid it out.
+// Guesses a text box's height before the browser has drawn it.
 export function estimateTextHeight(
   paragraphs: string[],
   fontSize: number,
@@ -117,11 +111,9 @@ export function estimateTextHeight(
   return Math.ceil(lineCount * LINE_HEIGHT * fontSize + listGaps)
 }
 
-// Where a resize handle sits on the box: four corners and four edge
-// middles, named by compass direction.
+// Resize handle positions: four corners and four edge middles, named by compass direction.
 export type ResizeHandle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w"
 
-// Which edges of the box a handle drags.
 function edgesMovedBy(handle: ResizeHandle) {
   return {
     left: handle.includes("w"),
@@ -136,8 +128,7 @@ export type SnapGuide = {
   position: number
 }
 
-// Drags the handle's edges while the opposite edges stay put. An edge
-// handle changes one dimension only.
+// Moves the dragged edges while the opposite ones stay put; edge handles change one side only.
 export function resizeBox(
   startBox: Box,
   handle: ResizeHandle,

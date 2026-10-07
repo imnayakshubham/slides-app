@@ -1,14 +1,11 @@
 import { estimateTextHeight, findFreeSpot, type Box } from "@/lib/edits/Geometry"
 import { createId } from "@/lib/Ids"
 import { slideLayoutSlots } from "@/lib/layouts/SlideLayouts"
-import { ARTBOARD_HEIGHT, MIN_ELEMENT_SIZE, type Deck, type Slide, type SlideElement } from "@/lib/schema/Deck"
+import { ARTBOARD_HEIGHT, MIN_ELEMENT_SIZE, usesHeadingFont } from "@/lib/schema/Deck"
+import type { Deck, Slide, SlideElement, TextRole } from "@/lib/schema/Deck"
 import type { SlideContent } from "@/lib/schema/SlideContent"
 
-// Turns the AI's content for one slide into finished, placed elements.
-// Pieces are laid out relative to each other inside the layout's slots
-// (a heading's height decides where its bullets start, a takeaway line
-// shrinks the chart above it), text shrinks until it fits, and a final
-// pass makes sure nothing overlaps.
+// Turns the AI's content for one slide into placed elements, shrinking text until it all fits.
 
 type Theme = Deck["theme"]
 
@@ -30,13 +27,12 @@ type TextStyle = {
   italic?: boolean
   listStyle?: "none" | "bullet"
   align?: "left" | "center"
-  // Headings use the theme's heading font and color.
-  isHeading?: boolean
+  role: TextRole
+  // Left out: the theme's heading color for title and heading roles, text color otherwise.
   color?: string
 }
 
-// Starts at the wanted size and steps down until the text fits the area;
-// the box is as tall as the text actually needs.
+// Steps the font size down until the text fits the area; the box is as tall as the text.
 function fittedText(paragraphs: string[], area: Box, style: TextStyle, theme: Theme): SlideElement {
   const listStyle = style.listStyle ?? "none"
   let fontSize = style.fontSize
@@ -47,6 +43,7 @@ function fittedText(paragraphs: string[], area: Box, style: TextStyle, theme: Th
   return {
     id: createId(),
     type: "text",
+    role: style.role,
     x: area.x,
     y: area.y,
     w: area.w,
@@ -55,10 +52,9 @@ function fittedText(paragraphs: string[], area: Box, style: TextStyle, theme: Th
     fontSize,
     bold: style.bold ?? false,
     italic: style.italic ?? false,
-    color: style.color ?? (style.isHeading ? theme.colors.heading : theme.colors.text),
+    color: style.color ?? (usesHeadingFont(style.role) ? theme.colors.heading : theme.colors.text),
     align: style.align ?? "left",
     listStyle,
-    font: style.isHeading ? "heading" : undefined,
   }
 }
 
@@ -102,13 +98,13 @@ function column(content: NonNullable<SlideContent["left"]>, area: Box, theme: Th
   const heading = fittedText(
     [content.heading],
     { ...area, h: COLUMN_HEADING_FONT_SIZE * 3 },
-    { fontSize: COLUMN_HEADING_FONT_SIZE, bold: true, isHeading: true },
+    { fontSize: COLUMN_HEADING_FONT_SIZE, bold: true, role: "heading" },
     theme
   )
   const bullets = fittedText(
     content.bullets,
     areaBelow(area, heading),
-    { fontSize: BODY_FONT_SIZE, listStyle: "bullet" },
+    { fontSize: BODY_FONT_SIZE, listStyle: "bullet", role: "body" },
     theme
   )
   return [heading, bullets]
@@ -117,7 +113,7 @@ function column(content: NonNullable<SlideContent["left"]>, area: Box, theme: Th
 // A visual with an optional one-line takeaway under it.
 function visualWithTakeaway(content: SlideContent, area: Box, theme: Theme): SlideElement[] {
   const takeaway = content.takeaway
-    ? fittedText([content.takeaway], area, { fontSize: TAKEAWAY_FONT_SIZE, italic: true }, theme)
+    ? fittedText([content.takeaway], area, { fontSize: TAKEAWAY_FONT_SIZE, italic: true, role: "body" }, theme)
     : null
   const visualArea = takeaway ? { ...area, h: area.h - takeaway.h - GAP } : area
 
@@ -145,7 +141,7 @@ function layoutContent(slide: Slide, content: SlideContent, theme: Theme) {
         fittedText(
           [content.subtitle],
           { ...subtitleArea, h: ARTBOARD_HEIGHT - 60 - subtitleArea.y },
-          { fontSize: SUBTITLE_FONT_SIZE },
+          { fontSize: SUBTITLE_FONT_SIZE, role: "subtitle" },
           theme
         ),
       ]
@@ -169,7 +165,7 @@ function layoutContent(slide: Slide, content: SlideContent, theme: Theme) {
       // A chart sits beside the bullets.
       if (content.chart) {
         return [
-          fittedText(bullets, slots.body, { fontSize: BODY_FONT_SIZE, listStyle: "bullet" }, theme),
+          fittedText(bullets, slots.body, { fontSize: BODY_FONT_SIZE, listStyle: "bullet", role: "body" }, theme),
           chartElement(content.chart, slots.visual),
         ]
       }
@@ -178,13 +174,13 @@ function layoutContent(slide: Slide, content: SlideContent, theme: Theme) {
         const bulletText = fittedText(
           bullets,
           { ...fullWidth, h: fullWidth.h / 3 },
-          { fontSize: BODY_FONT_SIZE, listStyle: "bullet" },
+          { fontSize: BODY_FONT_SIZE, listStyle: "bullet", role: "body" },
           theme
         )
         return [bulletText, tableElement(content.table, areaBelow(fullWidth, bulletText))]
       }
       // Text alone uses the whole width.
-      return [fittedText(bullets, fullWidth, { fontSize: BODY_FONT_SIZE, listStyle: "bullet" }, theme)]
+      return [fittedText(bullets, fullWidth, { fontSize: BODY_FONT_SIZE, listStyle: "bullet", role: "body" }, theme)]
     }
 
     case "blank":
@@ -202,15 +198,14 @@ function eyebrowElement(slide: Slide, content: SlideContent, theme: Theme): Slid
     fittedText(
       [content.eyebrow.toUpperCase()],
       area,
-      { fontSize: EYEBROW_FONT_SIZE, bold: true, color: theme.colors.accent },
+      { fontSize: EYEBROW_FONT_SIZE, bold: true, role: "eyebrow", color: theme.colors.accent },
       theme
     ),
   ]
 }
 
 export function buildSlideElements(slide: Slide, content: SlideContent, theme: Theme): SlideElement[] {
-  // Safety net: each piece is checked against everything already on the
-  // slide (its title) and the pieces placed before it.
+  // Safety net: each piece is checked against the title and the pieces placed before it.
   const placedElements: SlideElement[] = []
   const elements = [...eyebrowElement(slide, content, theme), ...layoutContent(slide, content, theme)]
   for (const element of elements) {

@@ -47,8 +47,7 @@ type Block = {
   label: string
   category: BlockCategory
   Icon: typeof TextIcon
-  // `at` is the top-left corner in slide units ("Add here" menu); left out,
-  // the block goes to a free spot. "upload" opens the file picker first.
+  // `at` is the top-left corner in slide units; without it the block goes to a free spot.
   insert: ((at?: SlidePoint) => void) | "upload"
 }
 
@@ -249,8 +248,7 @@ export function AddBlockMenu() {
   )
 }
 
-// Adds blocks to the current slide. An image block opens the file picker
-// first; render `imageInput` once wherever the hook is used.
+// Adds blocks to the current slide; render `imageInput` once wherever this hook is used.
 function useBlockAdder() {
   const imageInputRef = useRef<HTMLInputElement>(null)
   // Where the picked image goes once the file is read.
@@ -293,8 +291,7 @@ function useBlockAdder() {
   return { addBlock, imageInput, uploadError }
 }
 
-// Opened by clicking an empty spot on the current slide: the new block's
-// top-left corner goes where the click was.
+// Opened by clicking an empty spot on the slide; the new block goes where the click was.
 export function AddHereMenu() {
   const addHereMenu = useEditorStore((state) => state.addHereMenu)
   const setAddHereMenu = useEditorStore((state) => state.setAddHereMenu)
@@ -349,7 +346,6 @@ export function AddHereMenu() {
   )
 }
 
-// Blocks grouped under their category name, in the category list's order.
 function BlockGroups({
   blocks,
   onAddBlock,

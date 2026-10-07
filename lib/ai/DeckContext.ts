@@ -58,8 +58,8 @@ function describeElementContent(element: SlideElement) {
   switch (element.type) {
     case "text": {
       const text = shortenText(element.paragraphs.map(paragraphText).join(" / "))
-      if (element.listStyle === "none") return `"${text}"`
-      return `${element.listStyle} list "${text}"`
+      if (element.listStyle === "none") return `${element.role} "${text}"`
+      return `${element.role} ${element.listStyle} list "${text}"`
     }
 
     case "image":

@@ -4,12 +4,10 @@ import { CopyIcon, MoveRightIcon } from "lucide-react"
 
 import { useDragPreviewStore } from "@/store/DragPreviewStore"
 
-// Gap between the pointer and the badge, so the badge never hides what is
-// under the pointer.
+// Gap so the badge never covers what is under the pointer.
 const OFFSET_FROM_POINTER_PX = 14
 
-// Follows the pointer through two CSS variables written by the drag
-// handler, so moving the pointer never re-renders React.
+// Follows the pointer through CSS variables, so moving it never re-renders React.
 export function positionDropCursorBadge(pointer: { x: number; y: number }) {
   const rootStyle = document.documentElement.style
   rootStyle.setProperty("--drop-cursor-x", `${pointer.x + OFFSET_FROM_POINTER_PX}px`)

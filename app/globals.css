@@ -137,8 +137,7 @@
   outline: calc(1px / var(--artboard-scale)) solid color-mix(in oklab, var(--primary) 45%, transparent);
 }
 
-/* Faint dot grid over the whole slide, with a brighter band of the same
-   dots sweeping across it. */
+/* Faint dot grid over the slide, with a brighter band sweeping across it. */
 .agent-working-overlay {
   --dot-color: var(--primary);
   background-image: radial-gradient(

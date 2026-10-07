@@ -33,9 +33,7 @@ function getSelectedElementNodes() {
     .filter((node) => node !== null)
 }
 
-// Floats above the selection (below it when there's no room) and offers the
-// controls for that element type. It lives inside the canvas scroll area,
-// so it scrolls with the slide without listening to scroll events.
+// Floats above the selection (below if there's no room) with controls for that element type.
 export function SelectionToolbar() {
   const isGestureActive = useDragPreviewStore((state) => state.isActive)
   const toolbarRef = useRef<HTMLDivElement>(null)
@@ -48,7 +46,7 @@ export function SelectionToolbar() {
     )
   )
 
-  // Positioned by writing to the DOM directly: no extra React render.
+  // Moved by setting its style directly, so it doesn't re-render.
   useLayoutEffect(() => {
     function placeToolbar() {
       const toolbar = toolbarRef.current

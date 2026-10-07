@@ -12,8 +12,7 @@ const AUTOSAVE_DELAY_MS = 1000
 
 export type SaveStatus = "saved" | "saving" | "error"
 
-// Saves the open deck 1s after the last change, when the tab is hidden, and on unmount.
-// While the agent runs it waits, then saves once when the agent finishes.
+// Saves 1s after the last change, when the tab is hidden, on close, and once the agent finishes.
 export function useAutosave() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved")
   const unsavedDeckRef = useRef<Deck | null>(null)
@@ -28,7 +27,6 @@ export function useAutosave() {
     try {
       const savedRecord = await deckRepository.saveDeck(deckToSave)
       if (process.env.NODE_ENV === "development") {
-        // The exact record now stored in IndexedDB ("ai-slides" → "decks").
         console.log(`[deck saved] ${savedRecord.deck.title} v${savedRecord.version}`, savedRecord)
       }
       const changedWhileSaving = unsavedDeckRef.current !== null

@@ -2,9 +2,7 @@ import "server-only"
 
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
 
-// Any OpenAI-compatible API works through AI_BASE_URL: Groq (the default),
-// OpenAI, OpenRouter, Gemini, Mistral, Ollama or Anthropic's compatibility
-// endpoint. The model must support tool calling.
+// AI_BASE_URL can point at any OpenAI-compatible API with tool calling (Groq by default).
 const DEFAULT_BASE_URL = "https://api.groq.com/openai/v1"
 const DEFAULT_MODEL = "openai/gpt-oss-120b"
 

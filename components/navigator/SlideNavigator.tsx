@@ -37,9 +37,7 @@ import { selectSlideIds, useDeckStore } from "@/store/DeckStore"
 import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useEditorStore } from "@/store/EditorStore"
 
-// A mouse press only becomes a drag after this many pixels, so clicking a
-// thumbnail still opens the slide. On touch a short hold starts the drag,
-// so a swipe still scrolls the list.
+// Mouse drags start after a few pixels and touch drags after a short hold, so taps and swipes work.
 const DRAG_START_DISTANCE_PX = 3
 const TOUCH_DRAG_HOLD_MS = 250
 const TOUCH_DRAG_TOLERANCE_PX = 5

@@ -9,8 +9,7 @@ type DeckStore = {
   deck: Deck | null
   past: Deck[]
   future: Deck[]
-  // Deck as it was when a group (e.g. one AI turn) began; edits applied inside a
-  // group skip history so the whole group undoes in one step.
+  // Deck at the start of a group (e.g. one AI turn), so the whole group undoes in one step.
   groupStart: Deck | null
   hydrate: (deck: Deck) => void
   applyEdit: (edit: DeckEdit) => DeckEditResult

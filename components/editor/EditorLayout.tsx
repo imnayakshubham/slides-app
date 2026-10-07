@@ -32,8 +32,7 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
   const router = useRouter()
   const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(true)
   const [isMobileAgentOpen, setIsMobileAgentOpen] = useState(false)
-  // The navigator gives way to the agent panel: hidden while the panel is
-  // open (still openable by hand), shown once the panel is closed.
+  // The navigator hides while the agent panel is open (still openable by hand).
   const [isSlideNavigatorOpen, setIsSlideNavigatorOpen] = useState(false)
   const [exportStatus, setExportStatus] = useState<ExportStatus>("idle")
 
@@ -64,9 +63,7 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
     else setIsMobileAgentOpen(true)
   }
 
-  // A prompt from /new becomes the first chat message. It is removed from
-  // the URL first, so a refresh never runs it twice. Deferred one tick so a
-  // development double mount (React StrictMode) doesn't start it twice.
+  // Sends the /new prompt once: cleared from the URL and delayed a tick so dev double mounts skip it.
   const startPromptFromUrl = useEffectEvent(() => {
     const prompt = new URLSearchParams(window.location.search).get("prompt")
     if (!prompt) return
@@ -78,8 +75,7 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
     return () => clearTimeout(timeoutId)
   }, [])
 
-  // The outline review lives in the agent panel, which may be closed (it is
-  // a sheet on small screens), so it opens when there is an outline to approve.
+  // Opens the agent panel when there is an outline to approve, since the review lives there.
   const showAgentForReview = useEffectEvent(() => openAgent())
   useEffect(
     () =>
@@ -92,8 +88,7 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
     []
   )
 
-  // Any click or scroll in the editor means the user is driving now, so the
-  // canvas stops jumping to the slide being generated.
+  // Any click or scroll means the user is in control, so stop jumping to the slide being generated.
   function stopFollowingGeneration() {
     const deckId = useDeckStore.getState().deck?.id
     const { agentByDeckId, updateDeckAgent } = useEditorStore.getState()

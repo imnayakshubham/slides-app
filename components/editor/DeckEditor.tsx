@@ -62,7 +62,7 @@ export function DeckEditor({ deckId }: { deckId: string }) {
   return <LoadedDeckEditor />
 }
 
-// Mounted only after hydrate, so autosave never sees the initial load as an edit.
+// Mounted only after the deck loads, so autosave doesn't treat loading as an edit.
 function LoadedDeckEditor() {
   const { saveStatus, retrySave } = useAutosave()
   return <EditorLayout saveStatus={saveStatus} onRetrySave={retrySave} />

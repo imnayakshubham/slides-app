@@ -32,8 +32,7 @@ const LAYOUT_LABELS: Record<OutlineSlide["layout"], string> = {
   "chart-forward": "Chart",
 }
 
-// The planned slides, editable before anything is added to the deck:
-// rename, drag to reorder, remove, then Generate (or Cmd/Ctrl+Enter).
+// The planned slides: rename, reorder, remove, then Generate (or Cmd/Ctrl+Enter).
 export function OutlineReview({ messageId }: { messageId: string }) {
   const outlineReview = useDeckAgent((agent) =>
     agent.outlineReview?.messageId === messageId ? agent.outlineReview : null

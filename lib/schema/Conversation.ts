@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 const chatMessageSchema = z.strictObject({
-  id: z.string().min(1),
+  id: z.uuid(),
   role: z.enum(["user", "assistant"]),
   content: z.string(),
   createdAt: z.string(),
@@ -12,7 +12,7 @@ const chatMessageSchema = z.strictObject({
 
 export const conversationRecordSchema = z.strictObject({
   schemaVersion: z.literal(1),
-  deckId: z.string().min(1),
+  deckId: z.uuid(),
   updatedAt: z.string(),
   messages: z.array(chatMessageSchema),
 })

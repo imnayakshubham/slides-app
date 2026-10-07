@@ -24,8 +24,7 @@ type SlideRailProps = {
 
 const RAIL_BUTTON_CLASS = "rounded-xl bg-card shadow-sm"
 
-// The buttons beside a slide on the canvas: drag to reorder, ask the AI
-// about this slide.
+// Buttons beside a slide: drag to reorder, or ask the AI about this slide.
 export function SlideRail({ slideId, slideNumber, dragHandleListeners, setDragHandleRef, className }: SlideRailProps) {
   return (
     <div className={cn("flex gap-2 sm:flex-col", className)}>
@@ -45,8 +44,7 @@ export function SlideRail({ slideId, slideNumber, dragHandleListeners, setDragHa
   )
 }
 
-// The chat already treats the current slide as "this slide", so the
-// request is sent as a normal chat message right after opening the slide.
+// The chat already treats the open slide as "this slide", so a normal message is enough.
 function EditWithAgentPopover({ slideId, slideNumber }: { slideId: string; slideNumber: number }) {
   const isAgentBusy = useDeckAgent((agent) => agent.run !== null)
   const [isOpen, setIsOpen] = useState(false)

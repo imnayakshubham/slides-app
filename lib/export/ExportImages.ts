@@ -1,5 +1,4 @@
-// PowerPoint can't use CSS gradients, SVG or cross-site URLs, so these are
-// drawn into PNGs in the browser, already fitted to their box.
+// PowerPoint can't use CSS gradients, SVG or cross-site URLs, so these are drawn as fitted PNGs.
 
 const MAX_IMAGE_SIDE_PX = 1600
 
@@ -46,8 +45,7 @@ function canvasSizeFor(boxWidth: number, boxHeight: number) {
   return { width: boxWidth * scale, height: boxHeight * scale }
 }
 
-// Remote images are fetched into a blob first; drawing a cross-site image
-// directly would taint the canvas and block reading it back.
+// Remote images are fetched first; drawing them directly would block reading the canvas back.
 async function loadImage(src: string) {
   const isRemote = /^https?:/i.test(src)
   const objectUrl = isRemote ? URL.createObjectURL(await (await fetch(src)).blob()) : null
@@ -80,7 +78,7 @@ export async function imageToPngData(src: string, boxWidth: number, boxHeight: n
   return canvasToPngData(canvas)
 }
 
-// Same geometry as CSS linear-gradient(angle): the line reaches the corners.
+// Same angle math as CSS linear-gradient: the gradient line reaches the corners.
 export function gradientToPngData(from: string, to: string, angleDegrees: number, boxWidth: number, boxHeight: number) {
   const { width, height } = canvasSizeFor(boxWidth, boxHeight)
   const canvas = createCanvas(width, height)

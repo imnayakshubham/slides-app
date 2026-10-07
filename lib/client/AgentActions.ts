@@ -15,12 +15,7 @@ import { useDeckStore } from "@/store/DeckStore"
 import { agentActivityOnSlide, deckAgentOf, useEditorStore } from "@/store/EditorStore"
 import type { AgentRunKind, DeckAgentState, SlideBuild, SlideBuildStatus } from "@/store/EditorStore"
 
-// Everything the agent does from the browser: chat edits, planning a deck,
-// building it slide by slide, retrying a slide and continuing after Stop.
-// Each action belongs to the deck that was open when it started (its id is
-// captured up front) and only ever changes that deck's agent state. All of
-// it goes through runAgentWork (one run per deck, one undo step) and
-// streamRequest (one streamed API call into a chat message).
+// Everything the agent does from the browser: chat edits, planning, building and retrying slides.
 
 const CONNECTION_ERROR_MESSAGE = "Couldn't reach the agent. Check your connection and try again."
 const NO_OUTLINE_MESSAGE = "The agent didn't return an outline. Please try again."
@@ -40,17 +35,14 @@ function updateDeckAgent(deckId: string, changes: Partial<DeckAgentState>) {
   useEditorStore.getState().updateDeckAgent(deckId, changes)
 }
 
-// True while the agent is changing this slide of the open deck (or has
-// yet to write it). The user can't edit a locked slide.
+// True while the agent is changing (or has yet to write) this slide; the user can't edit it then.
 export function isSlideLockedByAgent(slideId: string) {
   const deckId = openDeckId()
   if (!deckId) return false
   return agentActivityOnSlide(deckAgent(deckId), slideId) !== null
 }
 
-// Called just before the agent starts on these slides: finishes (and so
-// saves) any typing on them and drops their elements from the selection,
-// so the user's work can't collide with the agent's.
+// Saves any typing on these slides and unselects their elements before the agent changes them.
 function releaseSlidesToAgent(slideIds: string[]) {
   const deck = useDeckStore.getState().deck
   if (!deck) return
@@ -221,8 +213,7 @@ export function discardOutline() {
   saveConversation(deckId)
 }
 
-// Phase two: every planned slide is added at once (with its title), then
-// filled one by one. The whole build is one undo step.
+// Phase two: adds every planned slide at once, then fills them one by one, as one undo step.
 export async function generateApprovedOutline() {
   const deck = useDeckStore.getState().deck
   if (!deck || isAgentBusyOn(deck.id)) return
@@ -340,10 +331,7 @@ async function fillSlides(deckId: string, slideBuilds: SlideBuild[], abortSignal
   updateDeckAgent(deckId, { isFollowingGeneration: false })
 }
 
-// One run per deck at a time. Everything it changes is one undo step, and
-// the deck is saved once it ends (see useAutosave). Its cleanup only
-// touches its own run: a run that was stopped when the user left this deck
-// can't end a newer run, or close another deck's undo step.
+// One run per deck and one undo step; its cleanup never ends a newer run or another deck's.
 async function runAgentWork(deckId: string, kind: AgentRunKind, work: (abortSignal: AbortSignal) => Promise<void>) {
   const runId = createId()
   const abortController = new AbortController()
@@ -369,13 +357,11 @@ type StreamRequest = {
   url: string
   body: unknown
   abortSignal: AbortSignal
-  // A chat reply shows the agent's text, lists its changes and marks the
-  // slides it edits. Planning and generation show their own progress.
+  // Chat replies show text, changes and edited slides; planning and building show their own.
   isChatReply: boolean
 }
 
-// Streams one API call: deck edits are applied as they arrive, and the
-// reply text goes into the chat message.
+// Streams one API call: deck edits apply as they arrive and the reply text goes into the chat.
 async function streamRequest(request: StreamRequest) {
   const { deckId, messageId, url, body, abortSignal, isChatReply } = request
   let errorMessage: string | undefined
@@ -396,13 +382,11 @@ async function streamRequest(request: StreamRequest) {
     if (streamEvent.event === "text_delta" && isChatReply) {
       textBuffer.add(streamEvent.data.text)
     }
-    // The user may have opened another deck: never apply this deck's edits
-    // to it.
+    // The user may have opened another deck: never apply this deck's edits to it.
     if (streamEvent.event === "edit" && openDeckId() === deckId) {
       const { edit, label } = streamEvent.data
       const deckBeforeEdit = useDeckStore.getState().deck
-      // Lock the slides first, so the user's unsaved typing is saved before
-      // the agent's change lands on top of it.
+      // Lock the slides first so the user's typing is saved before the agent's change lands.
       if (isChatReply && deckBeforeEdit) {
         markSlidesBeingEdited(deckId, slideIdsChangedBy(edit, deckBeforeEdit))
       }
@@ -463,8 +447,7 @@ function markSlidesBeingEdited(deckId: string, slideIds: string[]) {
   updateDeckAgent(deckId, { run: { ...run, editingSlideIds: [...run.editingSlideIds, ...newSlideIds] } })
 }
 
-// Read from the deck before the edit, so a moved element marks both the
-// slide it left and the slide it landed on.
+// Read before the edit, so a moved element marks both the slide it left and the one it joined.
 function slideIdsChangedBy(edit: DeckEdit, deckBeforeEdit: Deck): string[] {
   const slideOfElement = (elementId: string) => findElementLocation(deckBeforeEdit, elementId)?.slide.id
   switch (edit.type) {
@@ -532,8 +515,7 @@ function createMessage(role: ChatMessage["role"], content: string): ChatMessage 
   }
 }
 
-// The agent also sees what it changed before, so follow-ups like
-// "move it back" make sense to it.
+// The agent also sees its past changes, so follow-ups like "move it back" make sense.
 function toAgentHistoryMessage(message: ChatMessage) {
   if (message.actions.length === 0) {
     return { role: message.role, content: message.content }
@@ -545,8 +527,7 @@ function toAgentHistoryMessage(message: ChatMessage) {
   }
 }
 
-// Text arrives in many tiny pieces; writing them to the store at most once
-// per frame keeps streaming from re-rendering the chat for every piece.
+// Text arrives in tiny pieces, so it is saved at most once per frame to avoid constant re-renders.
 function createTextBuffer(writeText: (text: string) => void) {
   let pendingText = ""
   let frameId: number | null = null

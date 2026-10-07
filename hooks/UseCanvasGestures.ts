@@ -21,8 +21,7 @@ type Gesture = { scale: number; artboard: HTMLElement; slideId: string } & (
       kind: "move"
       startBoxes: Map<string, Box>
       snapTargets: Box[]
-      // Where the pointer grabbed, in slide units, so a drop on another
-      // slide keeps the element under the pointer the same way.
+      // Grab point in slide units, so a drop on another slide keeps the element under the pointer.
       grabPoint: { x: number; y: number }
       itemLabel: string
     }
@@ -41,14 +40,11 @@ type Gesture = { scale: number; artboard: HTMLElement; slideId: string } & (
     }
 )
 
-// dnd-kit reports how far the pointer moved; this turns that into element
-// boxes with the pure functions in Geometry.ts. Boxes are previewed in the
-// gesture store and written to the deck once, when the pointer is released.
+// Turns pointer movement into element boxes, previews them, and saves them once on release.
 export function useCanvasGestures() {
   const gestureRef = useRef<Gesture | null>(null)
   const heldKeysRef = useRef({ shift: false, alt: false })
-  // The pointer's real screen position. dnd-kit's delta also counts
-  // scrolling, so it can't tell which slide is under the pointer.
+  // Real pointer position: dnd-kit's delta includes scrolling, so it can't find the slide under it.
   const pointerRef = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
@@ -71,8 +67,7 @@ export function useCanvasGestures() {
     }
   }, [])
 
-  // Runs on pointerdown on a slide: updates the selection and decides which
-  // gesture a drag would be. Returns false when there is nothing to drag.
+  // On pointer down: updates the selection and picks the gesture; false when there is nothing to drag.
   function prepareGesture(event: PointerEvent<HTMLElement>, slideId: string) {
     if (event.button !== 0) return false
     const artboard = event.currentTarget.querySelector<HTMLElement>("[data-artboard]")
@@ -176,8 +171,7 @@ export function useCanvasGestures() {
     const { setPreview, setMarquee, setDropTarget } = useDragPreviewStore.getState()
 
     if (gesture.kind === "move") {
-      // Over another slide (thumbnail or canvas): the elements stay where
-      // they are while the target shows what a drop would do.
+      // Over another slide: elements stay put while that slide shows what a drop would do.
       const target = findSlideUnderPointer(pointerRef.current, gesture.slideId)
       if (target) {
         setDropTarget({
@@ -311,9 +305,7 @@ type MoveGesture = Extract<Gesture, { kind: "move" }>
 
 // One edit for the whole selection, so a single Undo brings it all back.
 function dropOnOtherSlide(gesture: MoveGesture, dropTarget: DropTarget, pointer: { x: number; y: number }) {
-  // Dropped on a canvas slide: land where the pointer let go, keeping
-  // each element's offset from the grab point. Dropped on a thumbnail:
-  // keep the element's own position on the slide.
+  // On a canvas slide, land under the pointer; on a thumbnail, keep each element's own position.
   const target = findSlideUnderPointer(pointer, gesture.slideId)
   let pointerOnTarget: { x: number; y: number } | null = null
   if (target?.artboard) {
@@ -354,8 +346,7 @@ function dropOnOtherSlide(gesture: MoveGesture, dropTarget: DropTarget, pointer:
   }
 }
 
-// Another slide under the pointer: its thumbnail in the navigator, or the
-// slide itself on the canvas (with its artboard, to place the drop).
+// The other slide under the pointer: a navigator thumbnail, or a canvas slide with its artboard.
 function findSlideUnderPointer(
   pointer: { x: number; y: number },
   sourceSlideId: string

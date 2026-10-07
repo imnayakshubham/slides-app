@@ -3,7 +3,7 @@ import type PptxGenJS from "pptxgenjs"
 import { colorToHex, gradientToPngData, imageToPngData } from "@/lib/export/ExportImages"
 import { imagePlaceholderSrc } from "@/lib/layouts/ImagePlaceholder"
 import { paragraphRuns } from "@/lib/RichText"
-import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH } from "@/lib/schema/Deck"
+import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, usesHeadingFont } from "@/lib/schema/Deck"
 import type { Deck, Slide, SlideElement, Theme } from "@/lib/schema/Deck"
 import { seriesColorFor } from "@/lib/themes/Themes"
 
@@ -18,7 +18,7 @@ type ShapeElement = Extract<SlideElement, { type: "shape" }>
 // The 1920×1080 artboard maps onto PowerPoint's 13.333×7.5in wide layout.
 const PIXELS_PER_INCH = ARTBOARD_WIDTH / 13.333
 const POINTS_PER_PIXEL = 72 / PIXELS_PER_INCH
-// Match the canvas renderers.
+// Same sizes the canvas uses, so the export looks the same.
 const LINE_SPACING = 1.25
 const TABLE_FONT_SIZE_PX = 28
 const CHART_LABEL_FONT_SIZE_PX = 24
@@ -69,7 +69,7 @@ function addText(pptxSlide: PptxSlide, element: TextElement, theme: Theme) {
     color: element.color,
     fontSize: element.fontSize,
   }
-  const fontFace = element.font === "heading" ? theme.headingFont : theme.fontFamily
+  const fontFace = usesHeadingFont(element.role) ? theme.headingFont : theme.fontFamily
   const bullet = BULLET_BY_LIST_STYLE[element.listStyle]
 
   const textRuns = element.paragraphs.flatMap((paragraph, paragraphIndex) => {
@@ -116,8 +116,7 @@ function addShape(presentation: Presentation, pptxSlide: PptxSlide, element: Sha
   })
 }
 
-// An unreadable image (broken link, blocked site) becomes a placeholder
-// rather than failing the whole export.
+// A broken or blocked image becomes a placeholder instead of failing the whole export.
 async function addImage(pptxSlide: PptxSlide, element: ImageElement, theme: Theme) {
   let data: string
   try {

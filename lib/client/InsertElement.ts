@@ -2,7 +2,8 @@ import { clampBox, findFreeSpot } from "@/lib/edits/Geometry"
 import { createId } from "@/lib/Ids"
 import { TEXT_PRESETS, type TextPresetName } from "@/lib/layouts/TextPresets"
 import type { UploadedImage } from "@/lib/repository/DeckRepository"
-import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, MIN_ELEMENT_SIZE, type Deck, type SlideElement } from "@/lib/schema/Deck"
+import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, MIN_ELEMENT_SIZE, usesHeadingFont } from "@/lib/schema/Deck"
+import type { Deck, SlideElement } from "@/lib/schema/Deck"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
@@ -14,8 +15,7 @@ const TABLE_SIZE = { width: 960, height: 300 }
 const SHAPE_SIZE = { width: 400, height: 400 }
 const MAX_IMAGE_WIDTH = 800
 
-// Starts centered on the slide; insertElement then moves it to the nearest
-// spot that doesn't cover other elements.
+// Starts centered; insertElement then moves it to the nearest spot that covers nothing.
 function centeredBox(width: number, height: number) {
   return {
     x: (ARTBOARD_WIDTH - width) / 2,
@@ -30,15 +30,15 @@ export function createTextBlock(presetName: TextPresetName, theme: Theme): Slide
   return {
     id: createId(),
     type: "text",
+    role: preset.role,
     ...centeredBox(preset.width, preset.height),
     paragraphs: preset.startingParagraphs,
     fontSize: preset.fontSize,
     bold: preset.bold,
     italic: false,
-    color: preset.font === "heading" ? theme.colors.heading : theme.colors.text,
+    color: usesHeadingFont(preset.role) ? theme.colors.heading : theme.colors.text,
     align: "left",
     listStyle: preset.listStyle,
-    font: preset.font,
   }
 }
 
@@ -46,8 +46,7 @@ type ChartElement = Extract<SlideElement, { type: "chart" }>
 
 export function createChartBlock(chartType: ChartElement["chartType"], theme: Theme): SlideElement {
   const series: ChartElement["series"] = [{ name: "Value", data: [10, 14, 19, 24], color: theme.colors.accent }]
-  // A stacked bar with one series looks like a plain bar chart. The second
-  // series has no color, so the chart picks one that differs from the first.
+  // One stacked series looks like a plain bar; the uncolored second series gets a different color.
   if (chartType === "stackedBar") {
     series.push({ name: "Other", data: [6, 8, 9, 12] })
   }
@@ -102,9 +101,7 @@ export function createImageBlock(image: UploadedImage): SlideElement {
   }
 }
 
-// Adds the element to the current slide as one undo step and selects it.
-// With `at` (slide units), its top-left corner goes there, kept inside the
-// slide; otherwise it goes to the nearest spot that covers nothing.
+// Adds and selects the element in one undo step, at `at` (slide units) or the nearest free spot.
 export function insertElement(element: SlideElement, at?: Point) {
   const { deck, applyEdit } = useDeckStore.getState()
   const { currentSlideId, setSelectedElementIds } = useEditorStore.getState()

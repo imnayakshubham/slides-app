@@ -2,8 +2,7 @@ import { z } from "zod"
 
 import type { OutlineSlide } from "@/lib/schema/Outline"
 
-// What the AI writes for one slide. It only writes content; the layout code
-// (lib/layouts/BuildSlideElements.ts) decides where everything goes.
+// What the AI writes for one slide; the layout code decides where everything goes.
 
 const speakerNotesSchema = z.string().max(600).describe("What the presenter says on this slide, 2 to 4 sentences.")
 
@@ -74,8 +73,7 @@ export type SlideContent = {
   speakerNotes: string
 }
 
-// The exact content this slide needs, so the AI can't skip the chart the
-// outline promised or send fields its layout has no room for.
+// Only the fields this slide's layout needs, so the AI can't skip a promised chart or add extras.
 export function slideContentSchema(outlineSlide: OutlineSlide): z.ZodType<SlideContent> {
   switch (outlineSlide.layout) {
     case "title":

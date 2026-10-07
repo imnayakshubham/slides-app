@@ -5,15 +5,14 @@ export const ARTBOARD_HEIGHT = 1080
 export const MIN_ELEMENT_SIZE = 40
 
 const boxFields = {
-  id: z.string().min(1),
+  id: z.uuid(),
   x: z.number(),
   y: z.number(),
   w: z.number().min(MIN_ELEMENT_SIZE),
   h: z.number().min(MIN_ELEMENT_SIZE),
 }
 
-// Styling for some words of a paragraph. A mark left out means "same as the
-// text box".
+// Styling for some words of a paragraph; a missing mark means "same as the text box".
 const textRunSchema = z.strictObject({
   text: z.string(),
   bold: z.boolean().optional(),
@@ -23,12 +22,21 @@ const textRunSchema = z.strictObject({
   fontSize: z.number().positive().optional(),
 })
 
+// What a text box is for. Titles and headings use the theme's heading font.
+export const TEXT_ROLES = ["title", "heading", "subtitle", "body", "eyebrow"] as const
+export type TextRole = (typeof TEXT_ROLES)[number]
+
+export function usesHeadingFont(role: TextRole) {
+  return role === "title" || role === "heading"
+}
+
 // A plain string is a paragraph without word-level styling.
 const paragraphSchema = z.union([z.string(), z.array(textRunSchema).min(1)])
 
 const textElementSchema = z.strictObject({
   ...boxFields,
   type: z.literal("text"),
+  role: z.enum(TEXT_ROLES),
   paragraphs: z.array(paragraphSchema),
   fontSize: z.number().positive(),
   bold: z.boolean(),
@@ -37,7 +45,6 @@ const textElementSchema = z.strictObject({
   color: z.string(),
   align: z.enum(["left", "center", "right"]),
   listStyle: z.enum(["none", "bullet", "number"]),
-  font: z.literal("heading").optional(),
 })
 
 const imageElementSchema = z.strictObject({
@@ -123,8 +130,7 @@ const slideBackgroundSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("image"), src: z.string().min(1) }),
 ])
 
-// Decks saved before backgrounds were typed stored a plain CSS color string,
-// where "" meant the theme background.
+// Older decks saved the background as a plain CSS color, with "" meaning the theme's own.
 function upgradeColorStringBackground(background: unknown) {
   if (background === "") return undefined
   if (typeof background === "string") return { type: "color", color: background }
@@ -132,7 +138,7 @@ function upgradeColorStringBackground(background: unknown) {
 }
 
 export const slideSchema = z.strictObject({
-  id: z.string().min(1),
+  id: z.uuid(),
   title: z.string(),
   layout: slideLayoutSchema,
   background: z.preprocess(upgradeColorStringBackground, slideBackgroundSchema.optional()),
@@ -161,8 +167,7 @@ const themeSchema = z.strictObject({
 // The card colors of the original default theme.
 export const CLASSIC_CARD_COLORS = ["#818CF8", "#F472B6", "#FBBF24", "#34D399"]
 
-// Decks saved before themes had headings and cards keep their look: the
-// heading uses the body font and text color.
+// Older decks without heading and card colors keep their look: headings use the body font and color.
 function upgradeTheme(theme: unknown) {
   const savedTheme = theme as {
     fontFamily?: string
@@ -184,7 +189,7 @@ function upgradeTheme(theme: unknown) {
 }
 
 export const deckSchema = z.strictObject({
-  id: z.string().min(1),
+  id: z.uuid(),
   title: z.string(),
   aspectRatio: z.literal("16:9"),
   theme: z.preprocess(upgradeTheme, themeSchema),

@@ -56,8 +56,7 @@ const titleFontSizeByLayout: Record<SlideLayout, number> = {
   blank: 60,
 }
 
-// The title is in the theme's heading font and color, and its box is as
-// tall as the text needs, so content placed under it never overlaps.
+// The title box is only as tall as its text, so content placed under it never overlaps.
 export function createSlide(layout: SlideLayout, title: string, theme: Deck["theme"]): Slide {
   const titleSlot = slideLayoutSlots[layout].title
   const fontSize = titleFontSizeByLayout[layout]
@@ -72,6 +71,7 @@ export function createSlide(layout: SlideLayout, title: string, theme: Deck["the
           {
             id: createId(),
             type: "text",
+            role: "title",
             ...titleSlot,
             h: Math.max(MIN_ELEMENT_SIZE, estimateTextHeight([title], fontSize, titleSlot.w, "none")),
             paragraphs: [title],
@@ -81,7 +81,6 @@ export function createSlide(layout: SlideLayout, title: string, theme: Deck["the
             color: theme.colors.heading,
             align: "left",
             listStyle: "none",
-            font: "heading",
           },
         ]
       : [],

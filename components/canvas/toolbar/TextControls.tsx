@@ -30,8 +30,7 @@ const ALIGN_OPTIONS = [
   { align: "right", label: "Align right", Icon: AlignRightIcon },
 ] as const
 
-// Saves any edit in progress, then changes the whole box. A style mark
-// (bold, color…) also replaces the words that overrode it.
+// Saves the edit in progress, then styles the whole box, replacing any per-word style.
 function updateWholeTextBox(elementId: string, changes: ElementChanges, markToClear?: TextMark) {
   endActiveTextEdit()
   const deck = useDeckStore.getState().deck
@@ -47,8 +46,7 @@ function updateWholeTextBox(elementId: string, changes: ElementChanges, markToCl
 }
 
 export function TextControls({ element }: { element: TextElementData }) {
-  // Highlighted words while this box is being typed into; then the style
-  // settings below apply to those words only.
+  // Words highlighted while typing; the style settings then apply only to those words.
   const highlightStyle = useEditorStore((state) =>
     state.editingElementId === element.id ? state.highlightedTextStyle : null
   )
@@ -76,8 +74,8 @@ export function TextControls({ element }: { element: TextElementData }) {
   }
 
   function turnInto(presetName: TextPresetName) {
-    const { fontSize, bold, listStyle, font } = TEXT_PRESETS[presetName]
-    updateWholeTextBox(element.id, { fontSize, bold, listStyle, font })
+    const { fontSize, bold, listStyle, role } = TEXT_PRESETS[presetName]
+    updateWholeTextBox(element.id, { fontSize, bold, listStyle, role })
   }
 
   return (

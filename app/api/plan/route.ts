@@ -13,8 +13,7 @@ const planRequestSchema = z.object({
   prompt: z.string().trim().min(1),
 })
 
-// Phase one of generation: the outline only. Nothing is added to the deck
-// until the user approves it in the chat.
+// Phase one: the outline only; nothing is added to the deck until the user approves it.
 export async function POST(request: Request) {
   const requestBody = await request.json().catch(() => null)
   const parsedRequest = planRequestSchema.safeParse(requestBody)

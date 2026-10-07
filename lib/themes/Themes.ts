@@ -1,8 +1,6 @@
 import { CLASSIC_CARD_COLORS, type Theme } from "@/lib/schema/Deck"
 
-// The built-in deck themes. The planner picks one per deck; the toolbar's
-// theme picker switches between them. Card colors double as chart series
-// colors, and cardText must read well on every card.
+// Built-in themes; card colors are also chart colors, so cardText must read well on every card.
 
 export const THEME_IDS = ["classic", "sunrise", "midnight", "editorial", "forest", "electric", "graphite"] as const
 

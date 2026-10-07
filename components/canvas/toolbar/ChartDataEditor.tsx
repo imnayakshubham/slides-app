@@ -12,9 +12,7 @@ import { useDeckStore } from "@/store/DeckStore"
 
 type ChartElementData = Extract<SlideElement, { type: "chart" }>
 
-// Title, axis labels, series colors and the data grid of the selected chart.
-// Categories and series are always replaced whole, so every series keeps
-// exactly one value per category.
+// Categories and series are replaced whole, so each series keeps one value per category.
 export function ChartDataEditor({ element }: { element: ChartElementData }) {
   const theme = useDeckStore((state) => state.deck?.theme)
   const { categories, series } = element

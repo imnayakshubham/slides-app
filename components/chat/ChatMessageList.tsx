@@ -21,13 +21,12 @@ type ChatMessageListProps = {
   className?: string
 }
 
-// Virtualized: only messages near the visible area are rendered, so long
-// chats stay fast while a reply streams in.
+// Only messages near the visible area are drawn, so long chats stay fast.
 export function ChatMessageList({ onRetry, className }: ChatMessageListProps) {
   const chatMessages = useEditorStore((state) => state.chatMessages)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-  // The React Compiler can't memoize this hook's result; it just skips it.
+  // The React Compiler can't handle this hook's result, so it just skips it.
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: chatMessages.length,
@@ -69,7 +68,7 @@ export function ChatMessageList({ onRetry, className }: ChatMessageListProps) {
   )
 }
 
-// memo: while a reply streams, only that message re-renders.
+// While a reply streams, only that message re-renders.
 const ChatMessageItem = memo(function ChatMessageItem({
   message,
   onRetry,

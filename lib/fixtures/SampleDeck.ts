@@ -1,24 +1,23 @@
 import { deckSchema } from "@/lib/schema/Deck"
+import { deckThemeFor } from "@/lib/themes/Themes"
 
-// Fixed ids so manual checks and screenshots stay comparable between runs.
+// Fixed uuids so manual checks and screenshots stay comparable between runs.
 export const sampleDeck = deckSchema.parse({
-  id: "deck_sample",
+  id: "01990000-0000-7000-8000-000000000001",
   title: "Q3 Product Roadmap",
   aspectRatio: "16:9",
-  theme: {
-    fontFamily: "Inter",
-    colors: { background: "#FFFFFF", text: "#111827", accent: "#4F46E5" },
-  },
+  theme: deckThemeFor("classic"),
   slides: [
     {
-      id: "slide_intro",
+      id: "01990000-0000-7000-8000-000000000002",
       title: "Q3 Product Roadmap",
       layout: "title",
       notes: "Welcome everyone.",
       elements: [
         {
-          id: "el_intro_title",
+          id: "01990000-0000-7000-8000-000000000003",
           type: "text",
+          role: "title",
           x: 160,
           y: 380,
           w: 1600,
@@ -32,8 +31,9 @@ export const sampleDeck = deckSchema.parse({
           listStyle: "none",
         },
         {
-          id: "el_intro_subtitle",
+          id: "01990000-0000-7000-8000-000000000004",
           type: "text",
+          role: "subtitle",
           x: 160,
           y: 600,
           w: 1600,
@@ -49,14 +49,15 @@ export const sampleDeck = deckSchema.parse({
       ],
     },
     {
-      id: "slide_goals",
+      id: "01990000-0000-7000-8000-000000000005",
       title: "Goals",
       layout: "content",
       notes: "",
       elements: [
         {
-          id: "el_goals_body",
+          id: "01990000-0000-7000-8000-000000000006",
           type: "text",
+          role: "body",
           x: 120,
           y: 260,
           w: 880,
@@ -70,7 +71,7 @@ export const sampleDeck = deckSchema.parse({
           listStyle: "bullet",
         },
         {
-          id: "el_goals_image",
+          id: "01990000-0000-7000-8000-000000000007",
           type: "image",
           x: 1060,
           y: 260,
@@ -83,13 +84,13 @@ export const sampleDeck = deckSchema.parse({
       ],
     },
     {
-      id: "slide_revenue",
+      id: "01990000-0000-7000-8000-000000000008",
       title: "Revenue",
       layout: "chart-forward",
       notes: "",
       elements: [
         {
-          id: "el_revenue_chart",
+          id: "01990000-0000-7000-8000-000000000009",
           type: "chart",
           x: 120,
           y: 260,
@@ -106,13 +107,13 @@ export const sampleDeck = deckSchema.parse({
       ],
     },
     {
-      id: "slide_pricing",
+      id: "01990000-0000-7000-8000-000000000010",
       title: "Pricing",
       layout: "comparison",
       notes: "",
       elements: [
         {
-          id: "el_pricing_table",
+          id: "01990000-0000-7000-8000-000000000011",
           type: "table",
           x: 120,
           y: 260,
@@ -126,7 +127,7 @@ export const sampleDeck = deckSchema.parse({
           headerRow: true,
         },
         {
-          id: "el_pricing_highlight",
+          id: "01990000-0000-7000-8000-000000000012",
           type: "shape",
           x: 980,
           y: 260,

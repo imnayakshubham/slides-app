@@ -6,8 +6,7 @@ import { cn } from "@/lib/utils"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
-// Slide theme fonts (lib/themes/Themes.ts). Not preloaded: most pages
-// only need the theme the open deck uses.
+// Slide theme fonts; not preloaded since most pages only need the open deck's theme font.
 const fredoka = Fredoka({
   subsets: ["latin"],
   variable: "--font-fredoka",

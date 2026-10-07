@@ -7,8 +7,7 @@ import { MIN_ELEMENT_SIZE, type SlideElement } from "@/lib/schema/Deck"
 
 type ShapeElementData = Extract<SlideElement, { type: "shape" }>
 
-// Picking an outline color on a shape without an outline gives it one,
-// otherwise the new color would not show.
+// Picking an outline color adds an outline if the shape had none, so the color shows.
 const DEFAULT_OUTLINE_WIDTH = 4
 
 export function ShapeControls({ element }: { element: ShapeElementData }) {
@@ -53,11 +52,9 @@ export function ShapeControls({ element }: { element: ShapeElementData }) {
   )
 }
 
-// Width and height in slide units (the slide is 1920×1080). With the lock
-// on, changing one keeps the shape's proportions.
+// Width and height in slide units (1920×1080); with the lock on, proportions stay the same.
 function ShapeSizeInputs({ element }: { element: ShapeElementData }) {
-  // Saved when the lock is turned on, so typing a size digit by digit
-  // doesn't let rounding drift the proportions.
+  // Saved when the lock turns on, so typing digit by digit doesn't let rounding drift the ratio.
   const [lockedRatio, setLockedRatio] = useState<number | null>(null)
 
   function changeWidth(width: number) {

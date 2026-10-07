@@ -19,8 +19,7 @@ const MAX_FILL_ATTEMPTS = 3
 
 const populateRequestSchema = z.object({
   deck: deckSchema,
-  // The theme is already applied to the deck, so it isn't needed here
-  // (outlines planned before themes existed don't have one).
+  // The theme is already on the deck, so it isn't needed here.
   outline: outlineSchema.partial({ themeId: true }),
   slideId: z.string().min(1),
   outlineSlideIndex: z.number().int().min(0),
@@ -43,8 +42,7 @@ function describeOutline(outline: Pick<Outline, "title" | "slides">, targetIndex
   ].join("\n")
 }
 
-// Phase two of generation: the AI writes one slide's content in a single
-// tool call, and the layout code places it, so the slide comes out finished.
+// Phase two: the AI writes one slide in a single tool call, and layout code places it.
 export async function POST(request: Request) {
   const requestBody = await request.json().catch(() => null)
   const parsedRequest = populateRequestSchema.safeParse(requestBody)
