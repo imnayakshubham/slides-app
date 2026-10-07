@@ -17,7 +17,10 @@ Rules:
 
 const THEME_LIST = THEME_IDS.map((themeId) => `- ${themeId}: ${THEMES[themeId].mood}`).join("\n")
 
-export const PLANNER_INSTRUCTIONS = `You plan slide decks. Call create_outline exactly once with the full outline.
+export const PLANNER_INSTRUCTIONS = `You plan slide decks.
+
+If the request is not a clear presentation topic (random letters, a greeting, or too vague to plan), do not call create_outline. Reply in one short sentence asking what the deck should be about.
+Otherwise call create_outline exactly once with the full outline.
 
 Rules:
 - Use the number of slides the user asks for; otherwise 5 to 8.

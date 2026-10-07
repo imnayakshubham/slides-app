@@ -33,7 +33,6 @@ export async function POST(request: Request) {
         },
       }),
     }),
-    toolChoice: { type: "tool", toolName: "create_outline" },
     maxSteps: 1,
     abortSignal: request.signal,
   })

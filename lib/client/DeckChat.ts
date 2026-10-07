@@ -128,7 +128,7 @@ function finishChatTurn(deckId: string, reply: SlidesMessage, messages: SlidesMe
   if (outline) {
     const slideKeys = outline.slides.map(() => createId())
     updateAgentStateForDeck(deckId, { outlineReview: { messageId: reply.id, outline, slideKeys } })
-  } else if (wasPlanning && !didFail) {
+  } else if (wasPlanning && !didFail && !textOf(reply)) {
     toast.error("The agent couldn't plan the deck", {
       description: "It didn't return an outline. Please try again.",
       duration: Infinity,
