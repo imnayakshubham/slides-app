@@ -12,13 +12,28 @@ const boxFields = {
   h: z.number().min(MIN_ELEMENT_SIZE),
 }
 
+// Styling for some words of a paragraph. A mark left out means "same as the
+// text box".
+const textRunSchema = z.strictObject({
+  text: z.string(),
+  bold: z.boolean().optional(),
+  italic: z.boolean().optional(),
+  underline: z.boolean().optional(),
+  color: z.string().optional(),
+  fontSize: z.number().positive().optional(),
+})
+
+// A plain string is a paragraph without word-level styling.
+const paragraphSchema = z.union([z.string(), z.array(textRunSchema).min(1)])
+
 const textElementSchema = z.strictObject({
   ...boxFields,
   type: z.literal("text"),
-  paragraphs: z.array(z.string()),
+  paragraphs: z.array(paragraphSchema),
   fontSize: z.number().positive(),
   bold: z.boolean(),
   italic: z.boolean(),
+  underline: z.boolean().optional(),
   color: z.string(),
   align: z.enum(["left", "center", "right"]),
   listStyle: z.enum(["none", "bullet", "number"]),
@@ -102,11 +117,36 @@ export const slideLayoutSchema = z.enum([
   "blank",
 ])
 
+export const slideBackgroundSchema = z.discriminatedUnion("type", [
+  z.strictObject({ type: z.literal("color"), color: z.string().min(1) }),
+  z.strictObject({
+    type: z.literal("gradient"),
+    from: z.string().min(1),
+    to: z.string().min(1),
+    angle: z.number().min(0).max(360),
+  }),
+  // Drawn covering the whole slide, centered.
+  z.strictObject({ type: z.literal("image"), src: z.string().min(1) }),
+])
+
+// Decks saved before backgrounds were typed stored a plain CSS color string,
+// where "" meant the theme background.
+function upgradeColorStringBackground(background: unknown) {
+  if (background === "") return undefined
+  if (typeof background === "string")
+    return { type: "color", color: background }
+  return background
+}
+
 export const slideSchema = z.strictObject({
   id: z.string().min(1),
   title: z.string(),
   layout: slideLayoutSchema,
-  background: z.string(),
+  // Left out = the theme background.
+  background: z.preprocess(
+    upgradeColorStringBackground,
+    slideBackgroundSchema.optional()
+  ),
   notes: z.string(),
   elements: z.array(slideElementSchema),
 })
@@ -129,6 +169,9 @@ export const deckSchema = z.strictObject({
 export type Deck = z.infer<typeof deckSchema>
 export type Slide = z.infer<typeof slideSchema>
 export type SlideLayout = z.infer<typeof slideLayoutSchema>
+export type SlideBackground = z.infer<typeof slideBackgroundSchema>
+export type TextRun = z.infer<typeof textRunSchema>
+export type Paragraph = z.infer<typeof paragraphSchema>
 export type SlideElement = z.infer<typeof slideElementSchema>
 
 type FieldsExceptIdAndType<Element> = Element extends SlideElement

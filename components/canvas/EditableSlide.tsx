@@ -27,12 +27,16 @@ export function EditableSlide({
   )
   const { setNodeRef, listeners } = useDraggable({ id: slideId })
 
-  function startEditingText(event: MouseEvent<HTMLElement>) {
+  // Text boxes and tables are typed into in place.
+  function startEditingInPlace(event: MouseEvent<HTMLElement>) {
     const elementNode = (event.target as HTMLElement).closest<HTMLElement>(
       "[data-element-id]"
     )
     const elementId = elementNode?.dataset.elementId
-    if (!elementId || elementNode.dataset.elementType !== "text") return
+    const elementType = elementNode?.dataset.elementType
+    if (!elementId || (elementType !== "text" && elementType !== "table")) {
+      return
+    }
     const { setSelectedElementIds, setEditingElementId } =
       useEditorStore.getState()
     setSelectedElementIds([elementId])
@@ -48,7 +52,7 @@ export function EditableSlide({
       onPointerDown={(event) => {
         if (prepareGesture(event, slideId)) listeners?.onPointerDown?.(event)
       }}
-      onDoubleClick={startEditingText}
+      onDoubleClick={startEditingInPlace}
       className={cn(
         "w-full max-w-5xl shrink-0 scroll-m-4 rounded-sm shadow-md ring-offset-4 ring-offset-muted select-none md:scroll-m-8",
         isCurrentSlide && "ring-2 ring-primary"

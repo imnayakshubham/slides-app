@@ -42,6 +42,11 @@ export const useDeckStore = create<DeckStore>()((set, get) => ({
     if (!deck) return { ok: false, error: "No deck is loaded." }
 
     const result = applyDeckEdit(deck, edit)
+    if (process.env.NODE_ENV === "development") {
+      if (result.ok) console.log(`[deck edit] ${edit.type}`, edit)
+      else
+        console.log(`[deck edit] ${edit.type} rejected: ${result.error}`, edit)
+    }
     if (!result.ok) return result
 
     if (groupStart) {

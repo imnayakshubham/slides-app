@@ -10,8 +10,15 @@ import {
 import { useShallow } from "zustand/react/shallow"
 
 import { ElementRenderer } from "@/components/elements/ElementRenderer"
+import { TableElement } from "@/components/elements/TableElement"
 import { TextElement } from "@/components/elements/TextElement"
-import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, type Deck } from "@/lib/schema/Deck"
+import {
+  ARTBOARD_HEIGHT,
+  ARTBOARD_WIDTH,
+  type Deck,
+  type Paragraph,
+  type SlideBackground,
+} from "@/lib/schema/Deck"
 import { cn } from "@/lib/utils"
 import { useCanvasGestureStore } from "@/store/CanvasGestureStore"
 import { useDeckStore } from "@/store/DeckStore"
@@ -56,7 +63,7 @@ export function Artboard({
             transform: `scale(${scale})`,
             // Lets the overlay keep lines and handles a fixed size on screen.
             ...({ "--artboard-scale": scale } as CSSProperties),
-            background: background || theme.colors.background,
+            ...slideBackgroundStyle(background, theme),
             color: theme.colors.text,
             fontFamily: `${theme.fontFamily}, var(--font-sans)`,
           }}
@@ -94,7 +101,7 @@ function PositionedElement({
       (slideElement) => slideElement.id === elementId
     )
   )
-  const isEditingText = useEditorStore(
+  const isEditing = useEditorStore(
     (state) => !isThumbnail && state.editingElementId === elementId
   )
   // During a drag or resize the live box comes from the gesture store.
@@ -104,7 +111,17 @@ function PositionedElement({
   if (!element) return null
   const box = previewBox ?? element
 
-  function finishEditingText(paragraphs: string[], height: number) {
+  function finishEditingTable(rows: string[][]) {
+    useEditorStore.getState().setEditingElementId(null)
+    if (element?.type === "table" && sameRows(element.rows, rows)) return
+    useDeckStore.getState().applyEdit({
+      type: "updateElement",
+      elementId,
+      changes: { rows },
+    })
+  }
+
+  function finishEditingText(paragraphs: Paragraph[], height: number) {
     useEditorStore.getState().setEditingElementId(null)
     if (element?.type === "text" && sameText(element.paragraphs, paragraphs)) {
       return
@@ -121,12 +138,12 @@ function PositionedElement({
       data-element-id={element.id}
       data-element-type={element.type}
       // Content ignores the pointer so clicks and drags land on this box,
-      // except while its text is being typed into.
+      // except while it is being typed into.
       className={cn(
         "absolute",
-        !isEditingText && "*:pointer-events-none",
+        !isEditing && "*:pointer-events-none",
         !isThumbnail && "touch-none",
-        !isThumbnail && (isEditingText ? "cursor-text" : "cursor-move")
+        !isThumbnail && (isEditing ? "cursor-text" : "cursor-move")
       )}
       style={{
         left: box.x,
@@ -139,8 +156,15 @@ function PositionedElement({
       {element.type === "text" ? (
         <TextElement
           element={element}
-          isEditing={isEditingText}
+          isEditing={isEditing}
           onFinishEditing={finishEditingText}
+        />
+      ) : element.type === "table" && isEditing ? (
+        <TableElement
+          element={element}
+          theme={theme}
+          isEditing
+          onFinishEditing={finishEditingTable}
         />
       ) : (
         <ElementRenderer
@@ -153,8 +177,32 @@ function PositionedElement({
   )
 }
 
-function sameText(paragraphs: string[], otherParagraphs: string[]) {
-  return paragraphs.join("\n") === otherParagraphs.join("\n")
+function sameRows(rows: string[][], otherRows: string[][]) {
+  return JSON.stringify(rows) === JSON.stringify(otherRows)
+}
+
+// Compares styling too, so restyling words without retyping still saves.
+function sameText(paragraphs: Paragraph[], otherParagraphs: Paragraph[]) {
+  return JSON.stringify(paragraphs) === JSON.stringify(otherParagraphs)
+}
+
+function slideBackgroundStyle(
+  background: SlideBackground | undefined,
+  theme: Deck["theme"]
+): CSSProperties {
+  if (!background) return { background: theme.colors.background }
+  if (background.type === "color") return { background: background.color }
+  if (background.type === "gradient") {
+    return {
+      background: `linear-gradient(${background.angle}deg, ${background.from}, ${background.to})`,
+    }
+  }
+  return {
+    backgroundColor: theme.colors.background,
+    backgroundImage: `url("${background.src}")`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }
 }
 
 function findSlide(deck: Deck | null, slideId: string) {

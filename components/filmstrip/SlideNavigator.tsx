@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   DndContext,
   MouseSensor,
@@ -16,10 +16,11 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { CopyIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react"
+import { CopyIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react"
 import { useShallow } from "zustand/react/shallow"
 
 import { Artboard } from "@/components/canvas/Artboard"
+import { DeckTitleInput } from "@/components/editor/DeckTitleInput"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -136,6 +137,7 @@ function SlideThumbnail({
   )
   const goToSlide = useEditorStore((state) => state.goToSlide)
   const thumbnailRef = useRef<HTMLButtonElement>(null)
+  const [isRenaming, setIsRenaming] = useState(false)
   const { setNodeRef, listeners, transform, transition, isDragging } =
     useSortable({ id: slideId })
 
@@ -160,7 +162,7 @@ function SlideThumbnail({
         data-slide-drop-id={slideId}
         aria-current={isCurrentSlide ? "true" : undefined}
         onClick={() => goToSlide(slideId)}
-        className="flex w-full flex-col gap-1 rounded-md text-start outline-none"
+        className="block w-full rounded-md outline-none"
       >
         <Artboard
           slideId={slideId}
@@ -170,14 +172,42 @@ function SlideThumbnail({
             isCurrentSlide && "ring-2 ring-primary"
           )}
         />
-        <span className="flex min-w-0 gap-1.5 px-0.5 text-xs">
-          <span className="shrink-0 text-muted-foreground tabular-nums">
-            {slideNumber}
-          </span>
-          <span className="truncate">{slideName}</span>
-        </span>
       </button>
+      <div className="mt-1 flex min-w-0 items-center gap-1.5 px-0.5 text-xs">
+        <span className="shrink-0 text-muted-foreground tabular-nums">
+          {slideNumber}
+        </span>
+        {isRenaming ? (
+          <DeckTitleInput
+            title={slideTitle ?? ""}
+            label={`Slide ${slideNumber} name`}
+            autoFocus
+            onRename={(title) =>
+              useDeckStore.getState().applyEdit({
+                type: "updateSlide",
+                slideId,
+                changes: { title },
+              })
+            }
+            onFinishEditing={() => setIsRenaming(false)}
+            className="-my-0.5 w-full px-1 py-0 font-normal"
+          />
+        ) : (
+          <span className="truncate" onDoubleClick={() => setIsRenaming(true)}>
+            {slideName}
+          </span>
+        )}
+      </div>
       <div className="absolute end-1 top-1 flex gap-0.5 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100">
+        <Button
+          variant="secondary"
+          size="icon-xs"
+          aria-label={`Rename slide ${slideNumber}`}
+          title="Rename"
+          onClick={() => setIsRenaming(true)}
+        >
+          <PencilIcon />
+        </Button>
         <Button
           variant="secondary"
           size="icon-xs"

@@ -59,7 +59,6 @@ export function createSlide(
     id: createId(),
     title,
     layout,
-    background: theme.colors.background,
     notes: "",
     elements: titleSlot
       ? [

@@ -190,12 +190,19 @@ export function createAgentTools(
         notes: z.string().optional().describe("Speaker notes."),
       }),
       // Rest spread keeps unsent fields out, so they aren't overwritten with undefined.
-      execute: ({ slideId, ...changes }, { toolCallId }) =>
-        applyChange(
+      execute: ({ slideId, background, ...otherChanges }, { toolCallId }) => {
+        const changes = background
+          ? {
+              ...otherChanges,
+              background: { type: "color" as const, color: background },
+            }
+          : otherChanges
+        return applyChange(
           { type: "updateSlide", slideId, changes },
           `Updated ${describeSlide(workingDeck, slideId)}`,
           toolCallId
-        ),
+        )
+      },
     }),
 
     delete_slide: tool({

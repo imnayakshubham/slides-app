@@ -1,6 +1,7 @@
 import "server-only"
 
 import { slideLayoutSlots } from "@/lib/layouts/SlideLayouts"
+import { paragraphText } from "@/lib/RichText"
 import type { Deck, SlideElement } from "@/lib/schema/Deck"
 
 const MAX_TEXT_PREVIEW_LENGTH = 120
@@ -62,7 +63,9 @@ export function recentMessages(messages: AgentHistoryMessage[]) {
 function describeElementContent(element: SlideElement) {
   switch (element.type) {
     case "text": {
-      const text = shortenText(element.paragraphs.join(" / "))
+      const text = shortenText(
+        element.paragraphs.map(paragraphText).join(" / ")
+      )
       if (element.listStyle === "none") return `"${text}"`
       return `${element.listStyle} list "${text}"`
     }

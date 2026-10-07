@@ -25,7 +25,14 @@ export function useAutosave() {
 
     unsavedDeckRef.current = null
     try {
-      await deckRepository.saveDeck(deckToSave)
+      const savedRecord = await deckRepository.saveDeck(deckToSave)
+      if (process.env.NODE_ENV === "development") {
+        // The exact record now stored in IndexedDB ("ai-slides" → "decks").
+        console.log(
+          `[deck saved] ${savedRecord.deck.title} v${savedRecord.version}`,
+          savedRecord
+        )
+      }
       const changedWhileSaving = unsavedDeckRef.current !== null
       setSaveStatus(changedWhileSaving ? "saving" : "saved")
     } catch {

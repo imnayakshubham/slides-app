@@ -1,7 +1,10 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb"
 import { z } from "zod"
 
-import type { DeckRepository } from "@/lib/repository/DeckRepository"
+import type {
+  DeckRepository,
+  UploadedImage,
+} from "@/lib/repository/DeckRepository"
 import {
   conversationRecordSchema,
   type ChatMessage,
@@ -16,6 +19,8 @@ import {
 
 const DATABASE_NAME = "ai-slides"
 const DATABASE_VERSION = 2
+const MAX_IMAGE_SIDE_PX = 1600
+const JPEG_QUALITY = 0.9
 
 interface SlidesDatabase extends DBSchema {
   decks: { key: string; value: DeckRecord }
@@ -147,5 +152,30 @@ export class IndexedDbDeckRepository implements DeckRepository {
     })
     const database = await this.openDatabase()
     await database.put("conversations", record)
+  }
+
+  // There is no file storage yet, so the image is downscaled and kept inside
+  // the deck as a data URL.
+  async uploadImage(file: File): Promise<UploadedImage> {
+    const bitmap = await createImageBitmap(file)
+    const scale = Math.min(
+      1,
+      MAX_IMAGE_SIDE_PX / Math.max(bitmap.width, bitmap.height)
+    )
+    const width = Math.round(bitmap.width * scale)
+    const height = Math.round(bitmap.height * scale)
+
+    const canvas = document.createElement("canvas")
+    canvas.width = width
+    canvas.height = height
+    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, width, height)
+    bitmap.close()
+
+    // PNG keeps transparency; everything else becomes a smaller JPEG.
+    const src =
+      file.type === "image/png"
+        ? canvas.toDataURL("image/png")
+        : canvas.toDataURL("image/jpeg", JPEG_QUALITY)
+    return { src, width, height }
   }
 }

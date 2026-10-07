@@ -14,7 +14,6 @@ export const sampleDeck = deckSchema.parse({
       id: "slide_intro",
       title: "Q3 Product Roadmap",
       layout: "title",
-      background: "#FFFFFF",
       notes: "Welcome everyone.",
       elements: [
         {
@@ -53,7 +52,6 @@ export const sampleDeck = deckSchema.parse({
       id: "slide_goals",
       title: "Goals",
       layout: "content",
-      background: "#FFFFFF",
       notes: "",
       elements: [
         {
@@ -92,7 +90,6 @@ export const sampleDeck = deckSchema.parse({
       id: "slide_revenue",
       title: "Revenue",
       layout: "chart-forward",
-      background: "#FFFFFF",
       notes: "",
       elements: [
         {
@@ -116,7 +113,6 @@ export const sampleDeck = deckSchema.parse({
       id: "slide_pricing",
       title: "Pricing",
       layout: "comparison",
-      background: "#FFFFFF",
       notes: "",
       elements: [
         {

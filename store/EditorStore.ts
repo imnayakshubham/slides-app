@@ -1,5 +1,6 @@
 import { create } from "zustand"
 
+import type { TextBoxStyle } from "@/lib/RichText"
 import type { ChatMessage } from "@/lib/schema/Conversation"
 import { useDeckStore } from "@/store/DeckStore"
 
@@ -11,6 +12,10 @@ type EditorStore = {
   // The text element being typed into on the canvas, if any.
   editingElementId: string | null
   setEditingElementId: (elementId: string | null) => void
+  // Style of the words highlighted in that text, or null when nothing is
+  // highlighted (then toolbar settings apply to the whole box).
+  highlightedTextStyle: TextBoxStyle | null
+  setHighlightedTextStyle: (style: TextBoxStyle | null) => void
 
   chatMessages: ChatMessage[]
   isAgentRunning: boolean
@@ -33,13 +38,18 @@ export const useEditorStore = create<EditorStore>()((set) => ({
       currentSlideId: slideId,
       selectedElementIds: [],
       editingElementId: null,
+      highlightedTextStyle: null,
     }),
 
   setSelectedElementIds: (elementIds) =>
     set({ selectedElementIds: elementIds }),
 
   editingElementId: null,
-  setEditingElementId: (elementId) => set({ editingElementId: elementId }),
+  setEditingElementId: (elementId) =>
+    set({ editingElementId: elementId, highlightedTextStyle: null }),
+
+  highlightedTextStyle: null,
+  setHighlightedTextStyle: (style) => set({ highlightedTextStyle: style }),
 
   chatMessages: [],
   isAgentRunning: false,

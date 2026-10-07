@@ -2,6 +2,8 @@ import type { ChatMessage } from "@/lib/schema/Conversation"
 import type { Deck } from "@/lib/schema/Deck"
 import type { DeckRecord, DeckSummary } from "@/lib/schema/DeckRecord"
 
+export type UploadedImage = { src: string; width: number; height: number }
+
 // Components talk only to this interface, so IndexedDB can later be swapped
 // for an HTTP backend without touching them.
 export interface DeckRepository {
@@ -18,4 +20,6 @@ export interface DeckRepository {
     deckId: string,
     messages: ChatMessage[]
   ): Promise<void>
+  // Resolves the image's address and its size after any downscaling.
+  uploadImage(file: File): Promise<UploadedImage>
 }

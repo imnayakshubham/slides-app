@@ -1,0 +1,129 @@
+import { findFreeSpot } from "@/lib/edits/Geometry"
+import { createId } from "@/lib/Ids"
+import { TEXT_PRESETS, type TextPresetName } from "@/lib/layouts/TextPresets"
+import type { UploadedImage } from "@/lib/repository/DeckRepository"
+import {
+  ARTBOARD_HEIGHT,
+  ARTBOARD_WIDTH,
+  MIN_ELEMENT_SIZE,
+  type Deck,
+  type SlideElement,
+} from "@/lib/schema/Deck"
+import { useDeckStore } from "@/store/DeckStore"
+import { useEditorStore } from "@/store/EditorStore"
+
+type Theme = Deck["theme"]
+
+const CHART_SIZE = { width: 960, height: 540 }
+const TABLE_SIZE = { width: 960, height: 300 }
+const SHAPE_SIZE = { width: 400, height: 400 }
+const MAX_IMAGE_WIDTH = 800
+
+// Starts centered on the slide; insertElement then moves it to the nearest
+// spot that doesn't cover other elements.
+function centeredBox(width: number, height: number) {
+  return {
+    x: (ARTBOARD_WIDTH - width) / 2,
+    y: (ARTBOARD_HEIGHT - height) / 2,
+    w: width,
+    h: height,
+  }
+}
+
+export function createTextBlock(
+  presetName: TextPresetName,
+  theme: Theme
+): SlideElement {
+  const preset = TEXT_PRESETS[presetName]
+  return {
+    id: createId(),
+    type: "text",
+    ...centeredBox(preset.width, preset.height),
+    paragraphs: preset.startingParagraphs,
+    fontSize: preset.fontSize,
+    bold: preset.bold,
+    italic: false,
+    color: theme.colors.text,
+    align: "left",
+    listStyle: preset.listStyle,
+  }
+}
+
+export function createChartBlock(theme: Theme): SlideElement {
+  return {
+    id: createId(),
+    type: "chart",
+    ...centeredBox(CHART_SIZE.width, CHART_SIZE.height),
+    chartType: "bar",
+    title: "",
+    categories: ["Q1", "Q2", "Q3", "Q4"],
+    series: [
+      { name: "Value", data: [10, 14, 19, 24], color: theme.colors.accent },
+    ],
+    showLegend: false,
+  }
+}
+
+export function createTableBlock(): SlideElement {
+  return {
+    id: createId(),
+    type: "table",
+    ...centeredBox(TABLE_SIZE.width, TABLE_SIZE.height),
+    rows: [
+      ["Column 1", "Column 2", "Column 3"],
+      ["", "", ""],
+      ["", "", ""],
+    ],
+    headerRow: true,
+  }
+}
+
+export function createShapeBlock(
+  shape: "rect" | "ellipse",
+  theme: Theme
+): SlideElement {
+  return {
+    id: createId(),
+    type: "shape",
+    ...centeredBox(SHAPE_SIZE.width, SHAPE_SIZE.height),
+    shape,
+    fill: theme.colors.accent,
+    stroke: theme.colors.accent,
+    strokeWidth: 0,
+  }
+}
+
+export function createImageBlock(image: UploadedImage): SlideElement {
+  const width = Math.max(
+    MIN_ELEMENT_SIZE,
+    Math.min(image.width, MAX_IMAGE_WIDTH)
+  )
+  const height = Math.max(
+    MIN_ELEMENT_SIZE,
+    (width / image.width) * image.height
+  )
+  return {
+    id: createId(),
+    type: "image",
+    ...centeredBox(width, height),
+    src: image.src,
+    alt: "",
+    fit: "cover",
+  }
+}
+
+// Adds the element to the current slide as one undo step and selects it.
+export function insertElement(element: SlideElement) {
+  const { deck, applyEdit } = useDeckStore.getState()
+  const { currentSlideId, setSelectedElementIds } = useEditorStore.getState()
+  const currentSlide = deck?.slides.find((slide) => slide.id === currentSlideId)
+  if (!currentSlide) return
+
+  const freeSpot = findFreeSpot(currentSlide, element)
+  const result = applyEdit({
+    type: "addElement",
+    slideId: currentSlide.id,
+    element: { ...element, ...freeSpot },
+  })
+  if (result.ok) setSelectedElementIds([element.id])
+}

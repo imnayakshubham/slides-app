@@ -11,6 +11,10 @@ import type { SlideElement } from "@/lib/schema/Deck"
 
 type ShapeElementData = Extract<SlideElement, { type: "shape" }>
 
+// Picking an outline color on a shape without an outline gives it one,
+// otherwise the new color would not show.
+const DEFAULT_OUTLINE_WIDTH = 4
+
 export function ShapeControls({ element }: { element: ShapeElementData }) {
   return (
     <>
@@ -37,7 +41,12 @@ export function ShapeControls({ element }: { element: ShapeElementData }) {
       <ColorInput
         label="Outline color"
         color={element.stroke}
-        onChange={(stroke) => updateSelectedElement({ stroke })}
+        onChange={(stroke) =>
+          updateSelectedElement({
+            stroke,
+            strokeWidth: element.strokeWidth || DEFAULT_OUTLINE_WIDTH,
+          })
+        }
       />
       <NumberInput
         label="Outline width"

@@ -70,7 +70,7 @@ export function ChartElement({ element, theme, animate }: ChartElementProps) {
 }
 
 // Hue steps from the accent color, so default colors match the theme.
-function defaultSeriesColor(accentColor: string, seriesIndex: number) {
+export function defaultSeriesColor(accentColor: string, seriesIndex: number) {
   if (seriesIndex === 0) return accentColor
   const hueShift = seriesIndex * HUE_STEP_BETWEEN_SERIES
   return `oklch(from ${accentColor} l c calc(h + ${hueShift}))`

@@ -1,16 +1,27 @@
+"use client"
+
+import type { FocusEvent, KeyboardEvent } from "react"
+
+import { focusAtEnd } from "@/components/elements/TextElement"
 import type { Deck, SlideElement } from "@/lib/schema/Deck"
 
 type TableElementData = Extract<SlideElement, { type: "table" }>
 
 const TABLE_FONT_SIZE = 28
 
+type TableElementProps = {
+  element: TableElementData
+  theme: Deck["theme"]
+  isEditing?: boolean
+  onFinishEditing?: (rows: string[][]) => void
+}
+
 export function TableElement({
   element,
   theme,
-}: {
-  element: TableElementData
-  theme: Deck["theme"]
-}) {
+  isEditing = false,
+  onFinishEditing,
+}: TableElementProps) {
   const [firstRow, ...otherRows] = element.rows
   const headerCells = element.headerRow ? firstRow : null
   const bodyRows = element.headerRow ? otherRows : element.rows
@@ -18,9 +29,36 @@ export function TableElement({
     borderColor: `color-mix(in srgb, ${theme.colors.text} 20%, transparent)`,
   }
 
+  // While editing, every cell is typed into directly; Tab and Enter move
+  // between cells. The rows are read back once focus leaves the table.
+  const cellEditingProps = {
+    contentEditable: isEditing,
+    suppressContentEditableWarning: true,
+    onKeyDown: (event: KeyboardEvent<HTMLTableCellElement>) => {
+      if (event.key === "Escape") event.currentTarget.blur()
+      if (event.key === "Enter") {
+        event.preventDefault()
+        focusNextCell(event.currentTarget)
+      }
+    },
+  }
+
+  function finishWhenFocusLeavesTable(event: FocusEvent<HTMLTableElement>) {
+    if (!isEditing) return
+    const table = event.currentTarget
+    const nextFocus = event.relatedTarget
+    if (nextFocus instanceof Node && table.contains(nextFocus)) return
+    onFinishEditing?.(readRows(table))
+  }
+
   return (
     <table
-      className="size-full table-fixed border-collapse"
+      // A fresh node per edit session, so React never has to reconcile
+      // cell text the browser changed while typing.
+      key={isEditing ? "editing" : "viewing"}
+      ref={isEditing ? focusFirstCell : undefined}
+      onBlur={finishWhenFocusLeavesTable}
+      className="size-full table-fixed border-collapse wrap-anywhere"
       style={{ fontSize: TABLE_FONT_SIZE, color: theme.colors.text }}
     >
       {headerCells && (
@@ -33,8 +71,9 @@ export function TableElement({
             {headerCells.map((cell, cellIndex) => (
               <th
                 key={cellIndex}
-                className="border px-[0.6em] py-[0.4em] text-start font-semibold"
+                className="border px-[0.6em] py-[0.4em] text-start font-semibold outline-none focus:bg-accent/40"
                 style={cellStyle}
+                {...cellEditingProps}
               >
                 {cell}
               </th>
@@ -48,8 +87,9 @@ export function TableElement({
             {row.map((cell, cellIndex) => (
               <td
                 key={cellIndex}
-                className="border px-[0.6em] py-[0.4em]"
+                className="border px-[0.6em] py-[0.4em] outline-none focus:bg-accent/40"
                 style={cellStyle}
+                {...cellEditingProps}
               >
                 {cell}
               </td>
@@ -59,4 +99,29 @@ export function TableElement({
       </tbody>
     </table>
   )
+}
+
+function readRows(table: HTMLTableElement) {
+  return Array.from(table.rows).map((row) =>
+    Array.from(row.cells).map((cell) => cell.textContent ?? "")
+  )
+}
+
+function getCells(table: HTMLTableElement) {
+  return Array.from(table.querySelectorAll<HTMLElement>("th, td"))
+}
+
+function focusFirstCell(table: HTMLTableElement | null) {
+  if (!table || table.contains(document.activeElement)) return
+  const firstCell = getCells(table)[0]
+  if (firstCell) focusAtEnd(firstCell)
+}
+
+function focusNextCell(cell: HTMLElement) {
+  const table = cell.closest("table")
+  if (!table) return
+  const cells = getCells(table)
+  const nextCell = cells[cells.indexOf(cell) + 1]
+  if (nextCell) focusAtEnd(nextCell)
+  else cell.blur()
 }

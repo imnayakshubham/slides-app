@@ -1,5 +1,7 @@
-import { FilmIcon, LayoutGridIcon, Redo2Icon, Undo2Icon } from "lucide-react"
+import { FilmIcon, Redo2Icon, Undo2Icon } from "lucide-react"
 
+import { AddBlockMenu } from "@/components/editor/AddBlockMenu"
+import { SlideBackgroundPicker } from "@/components/editor/SlideBackgroundPicker"
 import { Button } from "@/components/ui/button"
 import { useDeckStore } from "@/store/DeckStore"
 
@@ -54,10 +56,8 @@ export function EditorToolbar({
         <Redo2Icon />
       </Button>
       <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-      <Button variant="ghost">
-        <LayoutGridIcon />
-        Add block
-      </Button>
+      <AddBlockMenu />
+      <SlideBackgroundPicker />
     </div>
   )
 }

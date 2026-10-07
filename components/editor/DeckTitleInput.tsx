@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils"
 
 type DeckTitleInputProps = {
   title: string
+  // Read by screen readers; this input also renames slides.
+  label?: string
   onRename: (title: string) => void
   onFinishEditing?: () => void
   autoFocus?: boolean
@@ -14,6 +16,7 @@ type DeckTitleInputProps = {
 
 export function DeckTitleInput({
   title,
+  label = "Deck title",
   onRename,
   onFinishEditing,
   autoFocus,
@@ -25,7 +28,7 @@ export function DeckTitleInput({
 
   return (
     <input
-      aria-label="Deck title"
+      aria-label={label}
       value={draftTitle ?? title}
       autoFocus={autoFocus}
       onChange={(event) => setDraftTitle(event.target.value)}
