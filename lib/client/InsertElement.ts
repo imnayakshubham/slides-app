@@ -43,9 +43,10 @@ export function createTextBlock(
     fontSize: preset.fontSize,
     bold: preset.bold,
     italic: false,
-    color: theme.colors.text,
+    color: preset.font === "heading" ? theme.colors.heading : theme.colors.text,
     align: "left",
     listStyle: preset.listStyle,
+    font: preset.font,
   }
 }
 

@@ -18,6 +18,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { GripVerticalIcon, SparklesIcon, XIcon } from "lucide-react"
 
+import { ThemePreview } from "@/components/editor/ThemePicker"
 import { Button } from "@/components/ui/button"
 import {
   discardOutline,
@@ -27,6 +28,7 @@ import {
   renameOutlineSlide,
 } from "@/lib/client/AgentActions"
 import type { OutlineSlide } from "@/lib/schema/Outline"
+import { THEMES } from "@/lib/themes/Themes"
 import { cn } from "@/lib/utils"
 import { useDeckAgent } from "@/hooks/UseDeckAgent"
 
@@ -77,6 +79,12 @@ export function OutlineReview({ messageId }: { messageId: string }) {
       }}
       className="flex flex-col gap-2 rounded-xl border bg-card p-2"
     >
+      {outline.themeId && (
+        <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+          <ThemePreview themeId={outline.themeId} className="w-12 p-1" />
+          Theme: {THEMES[outline.themeId].name} · you can change it later
+        </div>
+      )}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

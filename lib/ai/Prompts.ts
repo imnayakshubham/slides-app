@@ -1,3 +1,5 @@
+import { THEME_IDS, THEMES } from "@/lib/themes/Themes"
+
 export const EDITOR_INSTRUCTIONS = `You edit an existing slide deck by calling tools. Each tool call is one small change, applied immediately.
 
 Rules:
@@ -11,6 +13,10 @@ Rules:
 - If a tool returns ok: false, read the error, fix the call and try again.
 - When you are done, reply with one or two short sentences saying what you changed. If the request is unclear, ask instead of guessing.`
 
+const THEME_LIST = THEME_IDS.map(
+  (themeId) => `- ${themeId}: ${THEMES[themeId].mood}`
+).join("\n")
+
 export const PLANNER_INSTRUCTIONS = `You plan slide decks. Call create_outline exactly once with the full outline.
 
 Rules:
@@ -18,12 +24,17 @@ Rules:
 - Tell one coherent story: open with a title slide, end with a summary or next steps.
 - Pick each slide's layout to suit its content. Use chart-forward when a chart is the point of the slide.
 - Set wantsChart when numbers are best shown as a chart, and wantsTable for comparisons, prices or schedules. Include what the user asked for.
-- Put concrete key points and plausible numbers in contentHints, so each slide can be written without guessing.`
+- Put concrete key points and plausible numbers in contentHints, so each slide can be written without guessing.
+- Pick the themeId whose mood suits the topic and audience. Avoid classic unless the user asks for a plain look.
+
+Themes:
+${THEME_LIST}`
 
 export const POPULATOR_INSTRUCTIONS = `You write the content of one slide in a deck by calling fill_slide once. The layout is done for you: never think about positions or sizes, only the words and numbers.
 
 Rules:
 - The slide title is already on the slide. Do not repeat it.
+- The eyebrow is a 1 to 3 word label above the title that names the slide's role ("The problem", "Why now", "Results"). Never repeat the title in it.
 - Write slide-ready text: short, parallel bullet points of 12 words or fewer, one idea each. No full paragraphs.
 - Charts need realistic, internally consistent numbers, one value per category in every series. Pick the chart type that suits the data: line or area for trends over time, bar for comparisons, pie for parts of a whole.
 - Tables need a short header row and the same number of cells in every row. Keep cells brief.

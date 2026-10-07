@@ -55,6 +55,8 @@ export function TextElement({
     fontStyle: element.italic ? "italic" : "normal",
     color: element.color,
     textAlign: element.align,
+    fontFamily:
+      element.font === "heading" ? "var(--slide-heading-font)" : undefined,
   }
 
   // Ends the edit exactly once, however it ends (blur, Escape, a press

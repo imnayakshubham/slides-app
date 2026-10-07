@@ -99,8 +99,8 @@ export function TextControls({ element }: { element: TextElementData }) {
   }
 
   function turnInto(presetName: TextPresetName) {
-    const { fontSize, bold, listStyle } = TEXT_PRESETS[presetName]
-    updateWholeTextBox(element.id, { fontSize, bold, listStyle })
+    const { fontSize, bold, listStyle, font } = TEXT_PRESETS[presetName]
+    updateWholeTextBox(element.id, { fontSize, bold, listStyle, font })
   }
 
   return (

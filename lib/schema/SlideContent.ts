@@ -10,6 +10,13 @@ const speakerNotesSchema = z
   .max(600)
   .describe("What the presenter says on this slide, 2 to 4 sentences.")
 
+const eyebrowSchema = z
+  .string()
+  .max(30)
+  .describe(
+    "A 1 to 3 word label shown small above the title, naming the slide's role, e.g. 'The problem', 'Why now', 'Results'."
+  )
+
 const bulletsSchema = z
   .array(z.string().max(100))
   .min(2)
@@ -66,6 +73,7 @@ const columnSchema = z.strictObject({
 
 // Everything a slide can hold. Each layout asks for its own subset.
 export type SlideContent = {
+  eyebrow?: string
   subtitle?: string
   bullets?: string[]
   chart?: z.infer<typeof chartSchema>
@@ -85,6 +93,7 @@ export function slideContentSchema(
     case "title":
     case "section":
       return z.strictObject({
+        eyebrow: eyebrowSchema,
         subtitle: z.string().max(120).describe("One line under the title."),
         speakerNotes: speakerNotesSchema,
       })
@@ -92,6 +101,7 @@ export function slideContentSchema(
     case "two-column":
     case "comparison":
       return z.strictObject({
+        eyebrow: eyebrowSchema,
         left: columnSchema,
         right: columnSchema,
         speakerNotes: speakerNotesSchema,
@@ -100,12 +110,14 @@ export function slideContentSchema(
     case "chart-forward":
       if (outlineSlide.wantsTable && !outlineSlide.wantsChart) {
         return z.strictObject({
+          eyebrow: eyebrowSchema,
           table: tableSchema,
           takeaway: z.string().max(140).optional(),
           speakerNotes: speakerNotesSchema,
         })
       }
       return z.strictObject({
+        eyebrow: eyebrowSchema,
         chart: chartSchema,
         takeaway: z
           .string()
@@ -118,6 +130,7 @@ export function slideContentSchema(
     case "content":
       if (outlineSlide.wantsChart) {
         return z.strictObject({
+          eyebrow: eyebrowSchema,
           bullets: bulletsSchema.max(4),
           chart: chartSchema,
           speakerNotes: speakerNotesSchema,
@@ -125,12 +138,14 @@ export function slideContentSchema(
       }
       if (outlineSlide.wantsTable) {
         return z.strictObject({
+          eyebrow: eyebrowSchema,
           bullets: bulletsSchema.max(4),
           table: tableSchema,
           speakerNotes: speakerNotesSchema,
         })
       }
       return z.strictObject({
+        eyebrow: eyebrowSchema,
         bullets: bulletsSchema,
         speakerNotes: speakerNotesSchema,
       })

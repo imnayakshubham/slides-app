@@ -2,13 +2,16 @@ import { z } from "zod"
 
 import { clampBox, placeWithoutOverlap } from "@/lib/edits/Geometry"
 import {
+  deckSchema,
   slideElementSchema,
   slideSchema,
   type Deck,
   type ElementChanges,
   type Slide,
   type SlideElement,
+  type Theme,
 } from "@/lib/schema/Deck"
+import { recolorDeck } from "@/lib/themes/Recolor"
 
 export type DeckEdit =
   | { type: "updateDeck"; changes: { title?: string } }
@@ -45,6 +48,9 @@ export type DeckEdit =
       elementId: string
       direction: "forward" | "backward" | "front" | "back"
     }
+  // Switches the theme and swaps every color that came from the old theme
+  // for the new theme's matching color. Colors picked by hand stay.
+  | { type: "setTheme"; theme: Theme }
   | { type: "batch"; edits: DeckEdit[] }
 
 export type DeckEditResult =
@@ -56,6 +62,14 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
   switch (edit.type) {
     case "updateDeck":
       return succeed({ ...deck, ...edit.changes })
+
+    case "setTheme": {
+      const parsedDeck = deckSchema.safeParse({ ...deck, theme: edit.theme })
+      if (!parsedDeck.success) {
+        return fail(`Theme is invalid: ${z.prettifyError(parsedDeck.error)}`)
+      }
+      return succeed(recolorDeck(deck, parsedDeck.data.theme))
+    }
 
     case "addSlide": {
       const parsedSlide = slideSchema.safeParse(edit.slide)

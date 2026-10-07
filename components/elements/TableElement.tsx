@@ -3,7 +3,7 @@
 import type { FocusEvent, KeyboardEvent } from "react"
 
 import { focusAtEnd } from "@/components/elements/TextElement"
-import type { Deck, SlideElement } from "@/lib/schema/Deck"
+import type { SlideElement } from "@/lib/schema/Deck"
 
 type TableElementData = Extract<SlideElement, { type: "table" }>
 
@@ -11,14 +11,12 @@ const TABLE_FONT_SIZE = 28
 
 type TableElementProps = {
   element: TableElementData
-  theme: Deck["theme"]
   isEditing?: boolean
   onFinishEditing?: (rows: string[][]) => void
 }
 
 export function TableElement({
   element,
-  theme,
   isEditing = false,
   onFinishEditing,
 }: TableElementProps) {
@@ -26,7 +24,7 @@ export function TableElement({
   const headerCells = element.headerRow ? firstRow : null
   const bodyRows = element.headerRow ? otherRows : element.rows
   const cellStyle = {
-    borderColor: `color-mix(in srgb, ${theme.colors.text} 20%, transparent)`,
+    borderColor: "color-mix(in srgb, currentColor 20%, transparent)",
   }
 
   // While editing, every cell is typed into directly; Tab and Enter move
@@ -59,12 +57,14 @@ export function TableElement({
       ref={isEditing ? focusFirstCell : undefined}
       onBlur={finishWhenFocusLeavesTable}
       className="size-full table-fixed border-collapse wrap-anywhere"
-      style={{ fontSize: TABLE_FONT_SIZE, color: theme.colors.text }}
+      style={{ fontSize: TABLE_FONT_SIZE }}
     >
       {headerCells && (
         <thead
           style={{
-            background: `color-mix(in srgb, ${theme.colors.accent} 12%, transparent)`,
+            background:
+              "color-mix(in srgb, var(--slide-accent) 18%, transparent)",
+            color: "var(--slide-heading)",
           }}
         >
           <tr>

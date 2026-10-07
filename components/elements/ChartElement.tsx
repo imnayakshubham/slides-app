@@ -18,6 +18,7 @@ import {
 } from "recharts"
 
 import type { Deck, SlideElement } from "@/lib/schema/Deck"
+import { seriesColorFor } from "@/lib/themes/Themes"
 
 type ChartElementData = Extract<SlideElement, { type: "chart" }>
 
@@ -25,7 +26,6 @@ type ChartElementData = Extract<SlideElement, { type: "chart" }>
 const TITLE_FONT_SIZE = 36
 const LABEL_FONT_SIZE = 24
 const LINE_WIDTH = 4
-const HUE_STEP_BETWEEN_SERIES = 55
 const CHART_MARGIN = { top: 8, right: 16, bottom: 8, left: 16 }
 
 type ChartElementProps = {
@@ -69,13 +69,6 @@ export function ChartElement({ element, theme, animate }: ChartElementProps) {
   )
 }
 
-// Hue steps from the accent color, so default colors match the theme.
-export function defaultSeriesColor(accentColor: string, seriesIndex: number) {
-  if (seriesIndex === 0) return accentColor
-  const hueShift = seriesIndex * HUE_STEP_BETWEEN_SERIES
-  return `oklch(from ${accentColor} l c calc(h + ${hueShift}))`
-}
-
 // Keyed by position because series names can repeat.
 function dataKeyForSeries(seriesIndex: number) {
   return `series${seriesIndex}`
@@ -96,8 +89,7 @@ function AxisChartContent({ element, theme, animate }: ChartElementProps) {
   const textColor = theme.colors.text
   const labelStyle = { fill: textColor, fontSize: LABEL_FONT_SIZE }
   const seriesColors = element.series.map(
-    (series, seriesIndex) =>
-      series.color ?? defaultSeriesColor(theme.colors.accent, seriesIndex)
+    (series, seriesIndex) => series.color ?? seriesColorFor(theme, seriesIndex)
   )
 
   let xAxisLabel = undefined
@@ -236,10 +228,7 @@ function PieChartContent({ element, theme, animate }: ChartElementProps) {
         isAnimationActive={animate}
       >
         {slices.map((slice, sliceIndex) => (
-          <Cell
-            key={sliceIndex}
-            fill={defaultSeriesColor(theme.colors.accent, sliceIndex)}
-          />
+          <Cell key={sliceIndex} fill={seriesColorFor(theme, sliceIndex)} />
         ))}
       </Pie>
       {element.showLegend && (

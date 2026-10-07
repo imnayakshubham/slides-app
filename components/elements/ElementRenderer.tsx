@@ -28,7 +28,7 @@ export const ElementRenderer = memo(function ElementRenderer({
     case "chart":
       return <ChartElement element={element} theme={theme} animate={animate} />
     case "table":
-      return <TableElement element={element} theme={theme} />
+      return <TableElement element={element} />
     case "shape":
       return <ShapeElement element={element} />
   }

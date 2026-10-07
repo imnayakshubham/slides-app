@@ -37,6 +37,7 @@ const textElementSchema = z.strictObject({
   color: z.string(),
   align: z.enum(["left", "center", "right"]),
   listStyle: z.enum(["none", "bullet", "number"]),
+  font: z.literal("heading").optional(),
 })
 
 const imageElementSchema = z.strictObject({
@@ -151,22 +152,59 @@ export const slideSchema = z.strictObject({
   elements: z.array(slideElementSchema),
 })
 
+const themeSchema = z.strictObject({
+  // Which built-in theme this came from (lib/themes/Themes.ts).
+  id: z.string(),
+  // The body font.
+  fontFamily: z.string(),
+  headingFont: z.string(),
+  colors: z.strictObject({
+    background: z.string(),
+    text: z.string(),
+    heading: z.string(),
+    accent: z.string(),
+    // Fills for cards, and chart series after the first.
+    card: z.array(z.string()).min(1),
+    // Text on top of a card.
+    cardText: z.string(),
+  }),
+})
+
+// The card colors of the original default theme.
+export const CLASSIC_CARD_COLORS = ["#818CF8", "#F472B6", "#FBBF24", "#34D399"]
+
+// Decks saved before themes had headings and cards keep their look: the
+// heading uses the body font and text color.
+function upgradeTheme(theme: unknown) {
+  const savedTheme = theme as {
+    fontFamily?: string
+    headingFont?: string
+    colors?: Record<string, unknown>
+  }
+  if (!savedTheme?.colors || savedTheme.headingFont) return theme
+  return {
+    id: "classic",
+    ...savedTheme,
+    headingFont: savedTheme.fontFamily,
+    colors: {
+      heading: savedTheme.colors.text,
+      card: CLASSIC_CARD_COLORS,
+      cardText: savedTheme.colors.text,
+      ...savedTheme.colors,
+    },
+  }
+}
+
 export const deckSchema = z.strictObject({
   id: z.string().min(1),
   title: z.string(),
   aspectRatio: z.literal("16:9"),
-  theme: z.strictObject({
-    fontFamily: z.string(),
-    colors: z.strictObject({
-      background: z.string(),
-      text: z.string(),
-      accent: z.string(),
-    }),
-  }),
+  theme: z.preprocess(upgradeTheme, themeSchema),
   slides: z.array(slideSchema),
 })
 
 export type Deck = z.infer<typeof deckSchema>
+export type Theme = z.infer<typeof themeSchema>
 export type Slide = z.infer<typeof slideSchema>
 export type SlideLayout = z.infer<typeof slideLayoutSchema>
 export type SlideBackground = z.infer<typeof slideBackgroundSchema>

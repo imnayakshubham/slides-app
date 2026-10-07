@@ -65,12 +65,12 @@ export function EditableSlide({
       }}
       onDoubleClick={startEditingInPlace}
       className={cn(
-        "relative w-full max-w-5xl shrink-0 scroll-m-4 rounded-sm shadow-md ring-offset-4 ring-offset-muted select-none md:scroll-m-8",
-        isCurrentSlide && "ring-2 ring-primary",
+        "relative w-full max-w-5xl shrink-0 scroll-m-4 rounded-lg shadow-sm ring-1 ring-foreground/10 transition-shadow select-none md:scroll-m-8",
+        isCurrentSlide && "shadow-lg ring-2 ring-primary/60",
         dropTarget && "ring-4 ring-primary"
       )}
     >
-      <Artboard slideId={slideId} className="rounded-sm">
+      <Artboard slideId={slideId} className="rounded-lg">
         {isCurrentSlide && <SelectionFrame />}
       </Artboard>
       {agentActivity && (
@@ -79,7 +79,7 @@ export function EditableSlide({
       {dropTarget && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 grid place-items-center rounded-sm bg-primary/10"
+          className="pointer-events-none absolute inset-0 grid place-items-center rounded-lg bg-primary/10"
         >
           <span className="rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-md">
             {dropTarget.isCopy ? "Copy" : "Move"} to slide{" "}

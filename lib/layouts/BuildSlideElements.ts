@@ -6,6 +6,7 @@ import {
 import { createId } from "@/lib/Ids"
 import { slideLayoutSlots } from "@/lib/layouts/SlideLayouts"
 import {
+  ARTBOARD_HEIGHT,
   MIN_ELEMENT_SIZE,
   type Deck,
   type Slide,
@@ -25,6 +26,7 @@ const SUBTITLE_FONT_SIZE = 36
 const BODY_FONT_SIZE = 32
 const COLUMN_HEADING_FONT_SIZE = 36
 const TAKEAWAY_FONT_SIZE = 28
+const EYEBROW_FONT_SIZE = 26
 const MIN_FONT_SIZE = 20
 const FONT_SIZE_STEP = 2
 // Space between pieces stacked in one slot.
@@ -38,6 +40,9 @@ type TextStyle = {
   italic?: boolean
   listStyle?: "none" | "bullet"
   align?: "left" | "center"
+  // Headings use the theme's heading font and color.
+  isHeading?: boolean
+  color?: string
 }
 
 // Starts at the wanted size and steps down until the text fits the area;
@@ -68,9 +73,12 @@ function fittedText(
     fontSize,
     bold: style.bold ?? false,
     italic: style.italic ?? false,
-    color: theme.colors.text,
+    color:
+      style.color ??
+      (style.isHeading ? theme.colors.heading : theme.colors.text),
     align: style.align ?? "left",
     listStyle,
+    font: style.isHeading ? "heading" : undefined,
   }
 }
 
@@ -124,7 +132,7 @@ function column(
   const heading = fittedText(
     [content.heading],
     { ...area, h: COLUMN_HEADING_FONT_SIZE * 3 },
-    { fontSize: COLUMN_HEADING_FONT_SIZE, bold: true },
+    { fontSize: COLUMN_HEADING_FONT_SIZE, bold: true, isHeading: true },
     theme
   )
   const bullets = fittedText(
@@ -167,16 +175,22 @@ function layoutContent(slide: Slide, content: SlideContent, theme: Theme) {
 
   switch (slide.layout) {
     case "title":
-    case "section":
+    case "section": {
       if (!content.subtitle) return []
+      // Right under the title, however many lines the title took.
+      const title = slide.elements.find((element) => element.type === "text")
+      const subtitleArea = title
+        ? { ...slots.subtitle, y: bottomOf(title) + GAP }
+        : slots.subtitle
       return [
         fittedText(
           [content.subtitle],
-          slots.subtitle,
-          { fontSize: SUBTITLE_FONT_SIZE, align: "center" },
+          { ...subtitleArea, h: ARTBOARD_HEIGHT - 60 - subtitleArea.y },
+          { fontSize: SUBTITLE_FONT_SIZE },
           theme
         ),
       ]
+    }
 
     case "two-column":
     case "comparison":
@@ -237,6 +251,26 @@ function layoutContent(slide: Slide, content: SlideContent, theme: Theme) {
   }
 }
 
+// A small uppercase label in the accent color, just above the title.
+function eyebrowElement(
+  slide: Slide,
+  content: SlideContent,
+  theme: Theme
+): SlideElement[] {
+  const slot = slideLayoutSlots[slide.layout].eyebrow
+  const title = slide.elements.find((element) => element.type === "text")
+  if (!content.eyebrow || !slot) return []
+  const area = title ? { ...slot, y: title.y - slot.h - 12 } : slot
+  return [
+    fittedText(
+      [content.eyebrow.toUpperCase()],
+      area,
+      { fontSize: EYEBROW_FONT_SIZE, bold: true, color: theme.colors.accent },
+      theme
+    ),
+  ]
+}
+
 export function buildSlideElements(
   slide: Slide,
   content: SlideContent,
@@ -245,7 +279,11 @@ export function buildSlideElements(
   // Safety net: each piece is checked against everything already on the
   // slide (its title) and the pieces placed before it.
   const placedElements: SlideElement[] = []
-  for (const element of layoutContent(slide, content, theme)) {
+  const elements = [
+    ...eyebrowElement(slide, content, theme),
+    ...layoutContent(slide, content, theme),
+  ]
+  for (const element of elements) {
     const slideSoFar = {
       ...slide,
       elements: [...slide.elements, ...placedElements],

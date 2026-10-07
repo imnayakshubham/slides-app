@@ -1,17 +1,14 @@
 import { createId } from "@/lib/Ids"
 import type { Deck } from "@/lib/schema/Deck"
+import { deckThemeFor } from "@/lib/themes/Themes"
 
-const DEFAULT_THEME: Deck["theme"] = {
-  fontFamily: "Inter",
-  colors: { background: "#FFFFFF", text: "#111827", accent: "#4F46E5" },
-}
-
+// A blank deck starts plain; generating from a prompt picks a theme.
 export function createEmptyDeck(): Deck {
   return {
     id: createId(),
     title: "Untitled deck",
     aspectRatio: "16:9",
-    theme: DEFAULT_THEME,
+    theme: deckThemeFor("classic"),
     slides: [],
   }
 }

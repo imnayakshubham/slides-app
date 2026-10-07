@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { THEME_IDS } from "@/lib/themes/Themes"
+
 // The layouts the planner may pick; "blank" is left to the user.
 const outlineLayoutSchema = z.enum([
   "title",
@@ -25,6 +27,9 @@ export const outlineSlideSchema = z.strictObject({
 
 export const outlineSchema = z.strictObject({
   title: z.string().min(1).describe("Title of the whole deck."),
+  themeId: z
+    .enum(THEME_IDS)
+    .describe("The visual theme that best suits the topic and audience."),
   slides: z.array(outlineSlideSchema).min(1).max(10),
 })
 

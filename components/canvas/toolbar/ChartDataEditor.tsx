@@ -7,7 +7,6 @@ import {
   NumberInput,
   TextInput,
 } from "@/components/canvas/toolbar/ToolbarInputs"
-import { defaultSeriesColor } from "@/components/elements/ChartElement"
 import { Button } from "@/components/ui/button"
 import {
   Popover,
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/popover"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
 import type { SlideElement } from "@/lib/schema/Deck"
+import { seriesColorFor } from "@/lib/themes/Themes"
 import { useDeckStore } from "@/store/DeckStore"
 
 type ChartElementData = Extract<SlideElement, { type: "chart" }>
@@ -24,7 +24,7 @@ type ChartElementData = Extract<SlideElement, { type: "chart" }>
 // Categories and series are always replaced whole, so every series keeps
 // exactly one value per category.
 export function ChartDataEditor({ element }: { element: ChartElementData }) {
-  const accentColor = useDeckStore((state) => state.deck?.theme.colors.accent)
+  const theme = useDeckStore((state) => state.deck?.theme)
   const { categories, series } = element
   const isPie = element.chartType === "pie"
 
@@ -151,7 +151,7 @@ export function ChartDataEditor({ element }: { element: ChartElementData }) {
                           label={`Color of ${oneSeries.name}`}
                           color={
                             oneSeries.color ??
-                            defaultSeriesColor(accentColor ?? "", seriesIndex)
+                            (theme ? seriesColorFor(theme, seriesIndex) : "")
                           }
                           onChange={(color) =>
                             updateSeries(seriesIndex, { color })

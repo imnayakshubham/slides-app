@@ -31,7 +31,7 @@ export function AgentWorkingOverlay({
         isLocked ? "Locked while the agent works on this slide" : undefined
       }
       className={cn(
-        "absolute inset-0 overflow-hidden rounded-sm bg-primary/10",
+        "absolute inset-0 overflow-hidden rounded-[inherit] bg-primary/10",
         isLocked ? "cursor-not-allowed" : "pointer-events-none"
       )}
     >
@@ -44,7 +44,7 @@ export function AgentWorkingOverlay({
           } as CSSProperties
         }
       />
-      <div className="absolute inset-0 animate-pulse rounded-sm ring-2 ring-primary ring-inset motion-reduce:animate-none" />
+      <div className="absolute inset-0 animate-pulse rounded-[inherit] ring-2 ring-primary ring-inset motion-reduce:animate-none" />
       {label && (
         <span className="absolute end-3 bottom-3 flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-md">
           <Loader2Icon className="size-3.5 animate-spin motion-reduce:animate-none" />

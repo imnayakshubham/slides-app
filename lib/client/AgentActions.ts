@@ -10,6 +10,7 @@ import type { ChatMessage } from "@/lib/schema/Conversation"
 import type { Deck } from "@/lib/schema/Deck"
 import type { Outline, OutlineSlide } from "@/lib/schema/Outline"
 import type { StreamEvent } from "@/lib/StreamEvents"
+import { deckThemeFor } from "@/lib/themes/Themes"
 import { useDeckStore } from "@/store/DeckStore"
 import {
   agentActivityOnSlide,
@@ -290,11 +291,14 @@ export async function generateApprovedOutline() {
   updateDeckAgent(deckId, () => ({ outlineReview: null }))
 
   await runAgentWork(deckId, "generating", async (abortSignal) => {
+    // Outlines planned before themes existed keep the deck's theme.
+    const theme = outline.themeId ? deckThemeFor(outline.themeId) : deck.theme
     const plannedSlides = outline.slides.map((outlineSlide) =>
-      createSlide(outlineSlide.layout, outlineSlide.title, deck.theme)
+      createSlide(outlineSlide.layout, outlineSlide.title, theme)
     )
     const edits: DeckEdit[] = [
       { type: "updateDeck", changes: { title: outline.title } },
+      { type: "setTheme", theme },
       ...plannedSlides.map((slide) => ({ type: "addSlide" as const, slide })),
     ]
     const result = useDeckStore.getState().applyEdit({ type: "batch", edits })

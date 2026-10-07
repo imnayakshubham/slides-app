@@ -19,6 +19,7 @@ import {
   type Paragraph,
   type SlideBackground,
 } from "@/lib/schema/Deck"
+import { fontStack } from "@/lib/themes/Themes"
 import { cn } from "@/lib/utils"
 import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useDeckStore } from "@/store/DeckStore"
@@ -65,7 +66,14 @@ export function Artboard({
             ...({ "--artboard-scale": scale } as CSSProperties),
             ...slideBackgroundStyle(background, theme),
             color: theme.colors.text,
-            fontFamily: `${theme.fontFamily}, var(--font-sans)`,
+            fontFamily: fontStack(theme.fontFamily),
+            // Theme values for elements drawn with HTML (text, tables),
+            // so they don't each need the theme passed in.
+            ...({
+              "--slide-heading-font": fontStack(theme.headingFont),
+              "--slide-heading": theme.colors.heading,
+              "--slide-accent": theme.colors.accent,
+            } as CSSProperties),
           }}
         >
           {elementIds.map((elementId) => (
@@ -177,7 +185,6 @@ function PositionedElement({
       ) : element.type === "table" && isEditing ? (
         <TableElement
           element={element}
-          theme={theme}
           isEditing
           onFinishEditing={finishEditingTable}
         />

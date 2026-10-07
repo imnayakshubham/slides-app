@@ -1,59 +1,76 @@
 import { createId } from "@/lib/Ids"
-import type { Box } from "@/lib/edits/Geometry"
-import type { Deck, Slide, SlideElement, SlideLayout } from "@/lib/schema/Deck"
+import { estimateTextHeight, type Box } from "@/lib/edits/Geometry"
+import {
+  MIN_ELEMENT_SIZE,
+  type Deck,
+  type Slide,
+  type SlideElement,
+  type SlideLayout,
+} from "@/lib/schema/Deck"
 
-const standardTitleSlot: Box = { x: 120, y: 80, w: 1680, h: 140 }
-const leftColumnSlot: Box = { x: 120, y: 260, w: 820, h: 740 }
-const rightColumnSlot: Box = { x: 980, y: 260, w: 820, h: 740 }
+// Every layout with a title leaves room for a short eyebrow label above it.
+const standardEyebrowSlot: Box = { x: 120, y: 64, w: 1680, h: 48 }
+const standardTitleSlot: Box = { x: 120, y: 120, w: 1680, h: 130 }
+const leftColumnSlot: Box = { x: 120, y: 290, w: 820, h: 710 }
+const rightColumnSlot: Box = { x: 980, y: 290, w: 820, h: 710 }
 
 export const slideLayoutSlots: Record<SlideLayout, Record<string, Box>> = {
+  // Cover and section slides sit low and left, like a magazine cover.
   title: {
-    title: { x: 160, y: 380, w: 1600, h: 200 },
-    subtitle: { x: 160, y: 600, w: 1600, h: 120 },
+    eyebrow: { x: 160, y: 420, w: 1600, h: 48 },
+    title: { x: 160, y: 480, w: 1600, h: 240 },
+    subtitle: { x: 160, y: 750, w: 1400, h: 140 },
   },
   section: {
-    title: { x: 160, y: 420, w: 1600, h: 160 },
-    subtitle: { x: 160, y: 600, w: 1600, h: 100 },
+    eyebrow: { x: 160, y: 440, w: 1600, h: 48 },
+    title: { x: 160, y: 500, w: 1600, h: 200 },
+    subtitle: { x: 160, y: 730, w: 1400, h: 120 },
   },
   content: {
+    eyebrow: standardEyebrowSlot,
     title: standardTitleSlot,
-    body: { x: 120, y: 260, w: 880, h: 740 },
-    visual: { x: 1060, y: 260, w: 740, h: 740 },
+    body: { x: 120, y: 290, w: 880, h: 710 },
+    visual: { x: 1060, y: 290, w: 740, h: 710 },
   },
   "two-column": {
+    eyebrow: standardEyebrowSlot,
     title: standardTitleSlot,
     left: leftColumnSlot,
     right: rightColumnSlot,
   },
   comparison: {
+    eyebrow: standardEyebrowSlot,
     title: standardTitleSlot,
     left: leftColumnSlot,
     right: rightColumnSlot,
   },
   "chart-forward": {
+    eyebrow: standardEyebrowSlot,
     title: standardTitleSlot,
-    chart: { x: 120, y: 260, w: 1680, h: 740 },
+    chart: { x: 120, y: 290, w: 1680, h: 710 },
   },
   blank: {},
 }
 
 const titleFontSizeByLayout: Record<SlideLayout, number> = {
-  title: 96,
-  section: 80,
-  content: 56,
-  "two-column": 56,
-  comparison: 56,
-  "chart-forward": 56,
-  blank: 56,
+  title: 104,
+  section: 88,
+  content: 60,
+  "two-column": 60,
+  comparison: 60,
+  "chart-forward": 60,
+  blank: 60,
 }
 
+// The title is in the theme's heading font and color, and its box is as
+// tall as the text needs, so content placed under it never overlaps.
 export function createSlide(
   layout: SlideLayout,
   title: string,
   theme: Deck["theme"]
 ): Slide {
   const titleSlot = slideLayoutSlots[layout].title
-  const isCenteredLayout = layout === "title" || layout === "section"
+  const fontSize = titleFontSizeByLayout[layout]
 
   return {
     id: createId(),
@@ -66,13 +83,18 @@ export function createSlide(
             id: createId(),
             type: "text",
             ...titleSlot,
+            h: Math.max(
+              MIN_ELEMENT_SIZE,
+              estimateTextHeight([title], fontSize, titleSlot.w, "none")
+            ),
             paragraphs: [title],
-            fontSize: titleFontSizeByLayout[layout],
+            fontSize,
             bold: true,
             italic: false,
-            color: theme.colors.text,
-            align: isCenteredLayout ? "center" : "left",
+            color: theme.colors.heading,
+            align: "left",
             listStyle: "none",
+            font: "heading",
           },
         ]
       : [],

@@ -19,13 +19,18 @@ const MAX_FILL_ATTEMPTS = 3
 
 const populateRequestSchema = z.object({
   deck: deckSchema,
-  outline: outlineSchema,
+  // The theme is already applied to the deck, so it isn't needed here
+  // (outlines planned before themes existed don't have one).
+  outline: outlineSchema.partial({ themeId: true }),
   slideId: z.string().min(1),
   outlineSlideIndex: z.number().int().min(0),
 })
 
 // The whole story, so each slide is written to fit the deck around it.
-function describeOutline(outline: Outline, targetIndex: number) {
+function describeOutline(
+  outline: Pick<Outline, "title" | "slides">,
+  targetIndex: number
+) {
   const slideLines = outline.slides.map((slide, slideIndex) => {
     const marker = slideIndex === targetIndex ? "  <- write this one" : ""
     return `${slideIndex + 1}. ${slide.title} (${slide.layout})${marker}`

@@ -11,6 +11,7 @@ export type TextPreset = {
   fontSize: number
   bold: boolean
   listStyle: TextElement["listStyle"]
+  font?: TextElement["font"]
   width: number
   height: number
 }
@@ -21,9 +22,10 @@ export const TEXT_PRESETS: Record<TextPresetName, TextPreset> = {
   title: {
     label: "Title",
     startingParagraphs: ["Title"],
-    fontSize: 56,
+    fontSize: 60,
     bold: true,
     listStyle: "none",
+    font: "heading",
     width: 1680,
     height: 140,
   },
