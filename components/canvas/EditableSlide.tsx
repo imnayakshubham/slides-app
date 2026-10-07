@@ -6,7 +6,7 @@ import { useDraggable } from "@dnd-kit/core"
 import { AgentWorkingOverlay } from "@/components/canvas/AgentWorkingOverlay"
 import { Artboard } from "@/components/canvas/Artboard"
 import { SelectionFrame } from "@/components/canvas/SelectionFrame"
-import { useAgentSlideActivity } from "@/hooks/UseAgentSlideActivity"
+import { useAgentLabel } from "@/hooks/UseAgentLabel"
 import { ARTBOARD_WIDTH } from "@/lib/schema/Deck"
 import { cn } from "@/lib/utils"
 import { useDragPreviewStore } from "@/store/DragPreviewStore"
@@ -25,7 +25,7 @@ type EditableSlideProps = {
 export function EditableSlide({ slideId, slideNumber, prepareGesture }: EditableSlideProps) {
   const isCurrentSlide = useEditorStore((state) => state.currentSlideId === slideId)
   const { setNodeRef, listeners } = useDraggable({ id: slideId })
-  const agentActivity = useAgentSlideActivity(slideId)
+  const agentActivity = useAgentLabel(slideId)
   // Locked while the agent changes this slide, so edits can't collide.
   const isLockedByAgent = agentActivity !== null
   const dropTarget = useDragPreviewStore((state) => (state.dropTarget?.slideId === slideId ? state.dropTarget : null))

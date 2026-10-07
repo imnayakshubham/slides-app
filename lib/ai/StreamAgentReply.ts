@@ -1,9 +1,10 @@
 import "server-only"
 
-import { APICallError, isStepCount, RetryError, StreamProviderError, streamText } from "ai"
+import { isStepCount, RetryError, streamText } from "ai"
 import type { ModelMessage, ToolChoice, ToolSet } from "ai"
 
 import { getChatModel } from "@/lib/ai/Model"
+import { messageFromError } from "@/lib/ErrorMessage"
 import type { SendStreamEvent, StreamEvent } from "@/lib/StreamEvents"
 
 const MAX_AGENT_STEPS = 8
@@ -34,10 +35,7 @@ export async function streamAgentReply({
   if (!model) {
     sendEvent({
       event: "error",
-      data: {
-        message: "The AI isn't set up: AI_API_KEY is missing on the server (see .env.example).",
-        code: "missing_api_key",
-      },
+      data: { message: "The AI isn't set up: AI_API_KEY is missing on the server (see .env.example)." },
     })
     return
   }
@@ -79,43 +77,8 @@ export async function streamAgentReply({
   }
 }
 
+// The SDK wraps the last failed attempt in a RetryError; its message is the provider's own reason.
 function errorEventFor(error: unknown): StreamEvent {
-  const statusCode = getProviderStatusCode(error)
-
-  if (statusCode === 401) {
-    return {
-      event: "error",
-      data: { message: "API key invalid", code: "invalid_api_key" },
-    }
-  }
-  if (statusCode === 429) {
-    return {
-      event: "error",
-      data: {
-        message: "Rate limited, try again shortly",
-        code: "rate_limited",
-      },
-    }
-  }
-  return {
-    event: "error",
-    data: {
-      message: "The AI request failed. Please try again.",
-      code: "provider_error",
-    },
-  }
-}
-
-function getProviderStatusCode(error: unknown) {
-  // After its own retries, the SDK wraps the last error in a RetryError.
-  let providerError = error
-  if (RetryError.isInstance(error)) {
-    providerError = error.lastError
-  }
-
-  if (APICallError.isInstance(providerError)) return providerError.statusCode
-  if (StreamProviderError.isInstance(providerError)) {
-    return providerError.statusCode
-  }
-  return undefined
+  const lastError = RetryError.isInstance(error) ? error.lastError : error
+  return { event: "error", data: { message: messageFromError(lastError) } }
 }

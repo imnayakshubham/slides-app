@@ -10,7 +10,7 @@ import type { DeckEdit } from "@/lib/edits/DeckEdits"
 import { deckRepository } from "@/lib/repository"
 import type { SlideBackground } from "@/lib/schema/Deck"
 import { cn } from "@/lib/utils"
-import { useAgentSlideActivity } from "@/hooks/UseAgentSlideActivity"
+import { useAgentLabel } from "@/hooks/UseAgentLabel"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
@@ -72,7 +72,7 @@ function applyCurrentBackgroundToAllSlides() {
 
 export function SlideBackgroundPicker() {
   const currentSlideId = useEditorStore((state) => state.currentSlideId)
-  const isCurrentSlideLocked = useAgentSlideActivity(currentSlideId) !== null
+  const isCurrentSlideLocked = useAgentLabel(currentSlideId) !== null
   const currentSlideIndex = useDeckStore(
     (state) => state.deck?.slides.findIndex((slide) => slide.id === currentSlideId) ?? -1
   )

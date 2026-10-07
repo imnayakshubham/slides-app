@@ -2,6 +2,7 @@
 
 import { useEffect, useEffectEvent, useState } from "react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 import { SlideCanvas } from "@/components/canvas/SlideCanvas"
 import { AgentPanel } from "@/components/chat/AgentPanel"
@@ -12,10 +13,11 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { useAgentChat } from "@/hooks/UseAgentChat"
 import { useCanvasShortcuts } from "@/hooks/UseCanvasShortcuts"
 import type { SaveStatus } from "@/hooks/UseAutosave"
+import { messageFromError } from "@/lib/ErrorMessage"
 import { exportDeckToPptx } from "@/lib/export/ExportPptx"
 import { useSlideKeyboardNavigation } from "@/hooks/UseSlideKeyboardNavigation"
 import { useDeckStore } from "@/store/DeckStore"
-import { deckAgentOf, useEditorStore } from "@/store/EditorStore"
+import { agentFor, useAgentStore } from "@/store/AgentStore"
 
 type EditorLayoutProps = {
   saveStatus: SaveStatus
@@ -52,8 +54,9 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
     try {
       await exportDeckToPptx(deck)
       setExportStatus("idle")
-    } catch {
+    } catch (error) {
       setExportStatus("error")
+      toast.error("Export failed", { description: messageFromError(error) })
     }
   }
 
@@ -79,10 +82,10 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
   const showAgentForReview = useEffectEvent(() => openAgent())
   useEffect(
     () =>
-      useEditorStore.subscribe((state, previousState) => {
+      useAgentStore.subscribe((state, previousState) => {
         const deckId = useDeckStore.getState().deck?.id
-        const hasReview = deckAgentOf(state.agentByDeckId, deckId).outlineReview
-        const hadReview = deckAgentOf(previousState.agentByDeckId, deckId).outlineReview
+        const hasReview = agentFor(state.agents, deckId).outlineReview
+        const hadReview = agentFor(previousState.agents, deckId).outlineReview
         if (hasReview && !hadReview) showAgentForReview()
       }),
     []
@@ -91,9 +94,9 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
   // Any click or scroll means the user is in control, so stop jumping to the slide being generated.
   function stopFollowingGeneration() {
     const deckId = useDeckStore.getState().deck?.id
-    const { agentByDeckId, updateDeckAgent } = useEditorStore.getState()
-    if (deckId && deckAgentOf(agentByDeckId, deckId).isFollowingGeneration) {
-      updateDeckAgent(deckId, { isFollowingGeneration: false })
+    const { agents, updateAgent } = useAgentStore.getState()
+    if (deckId && agentFor(agents, deckId).isFollowingGeneration) {
+      updateAgent(deckId, { isFollowingGeneration: false })
     }
   }
 

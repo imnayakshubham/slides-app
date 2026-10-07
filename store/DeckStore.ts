@@ -1,6 +1,7 @@
 import { create } from "zustand"
 
-import { applyDeckEdit, type DeckEditResult, type DeckEdit } from "@/lib/edits/DeckEdits"
+import { applyDeckEdit } from "@/lib/edits/DeckEdits"
+import type { DeckEdit, DeckEditResult } from "@/lib/edits/DeckEdits"
 import type { Deck } from "@/lib/schema/Deck"
 
 const MAX_UNDO_STEPS = 100
@@ -9,14 +10,14 @@ type DeckStore = {
   deck: Deck | null
   past: Deck[]
   future: Deck[]
-  // Deck at the start of a group (e.g. one AI turn), so the whole group undoes in one step.
-  groupStart: Deck | null
-  hydrate: (deck: Deck) => void
+  // Saved when an undo group starts (e.g. one AI reply), so the whole group undoes in one step.
+  deckBeforeGroup: Deck | null
+  loadDeck: (deck: Deck) => void
   applyEdit: (edit: DeckEdit) => DeckEditResult
   undo: () => void
   redo: () => void
-  beginGroup: () => void
-  endGroup: () => void
+  startUndoGroup: () => void
+  finishUndoGroup: () => void
 }
 
 export function selectSlideIds(state: DeckStore) {
@@ -24,75 +25,69 @@ export function selectSlideIds(state: DeckStore) {
   return state.deck.slides.map((slide) => slide.id)
 }
 
+function addToHistory(past: Deck[], deck: Deck) {
+  return [...past, deck].slice(-MAX_UNDO_STEPS)
+}
+
+function logEdit(edit: DeckEdit, result: DeckEditResult) {
+  if (process.env.NODE_ENV !== "development") return
+  if (result.ok) console.log(`[deck edit] ${edit.type}`, edit)
+  else console.log(`[deck edit] ${edit.type} rejected: ${result.error}`, edit)
+}
+
 export const useDeckStore = create<DeckStore>()((set, get) => ({
   deck: null,
   past: [],
   future: [],
-  groupStart: null,
+  deckBeforeGroup: null,
 
-  hydrate: (deck) => set({ deck, past: [], future: [], groupStart: null }),
+  loadDeck: (deck) => set({ deck, past: [], future: [], deckBeforeGroup: null }),
 
   applyEdit: (edit) => {
-    const { deck, past, groupStart } = get()
+    const { deck, past, deckBeforeGroup } = get()
     if (!deck) return { ok: false, error: "No deck is loaded." }
 
     const result = applyDeckEdit(deck, edit)
-    if (process.env.NODE_ENV === "development") {
-      if (result.ok) console.log(`[deck edit] ${edit.type}`, edit)
-      else console.log(`[deck edit] ${edit.type} rejected: ${result.error}`, edit)
-    }
+    logEdit(edit, result)
     if (!result.ok) return result
 
-    if (groupStart) {
+    // Inside a group, history is written once when the group finishes.
+    if (deckBeforeGroup) {
       set({ deck: result.deck })
     } else {
-      set({
-        deck: result.deck,
-        past: [...past, deck].slice(-MAX_UNDO_STEPS),
-        future: [],
-      })
+      set({ deck: result.deck, past: addToHistory(past, deck), future: [] })
     }
     return result
   },
 
   undo: () => {
-    const { deck, past, future, groupStart } = get()
+    const { deck, past, future, deckBeforeGroup } = get()
     const previousDeck = past.at(-1)
-    if (!deck || !previousDeck || groupStart) return
-
-    set({
-      deck: previousDeck,
-      past: past.slice(0, -1),
-      future: [...future, deck],
-    })
+    if (!deck || !previousDeck || deckBeforeGroup) return
+    set({ deck: previousDeck, past: past.slice(0, -1), future: [...future, deck] })
   },
 
   redo: () => {
-    const { deck, past, future, groupStart } = get()
+    const { deck, past, future, deckBeforeGroup } = get()
     const nextDeck = future.at(-1)
-    if (!deck || !nextDeck || groupStart) return
-
+    if (!deck || !nextDeck || deckBeforeGroup) return
     set({ deck: nextDeck, past: [...past, deck], future: future.slice(0, -1) })
   },
 
-  beginGroup: () => {
-    if (get().groupStart) return
-    set({ groupStart: get().deck })
+  startUndoGroup: () => {
+    const { deck, deckBeforeGroup } = get()
+    if (deckBeforeGroup) return
+    set({ deckBeforeGroup: deck })
   },
 
-  endGroup: () => {
-    const { deck, past, groupStart } = get()
-    if (!groupStart) return
-
-    const groupChangedDeck = deck !== groupStart
+  finishUndoGroup: () => {
+    const { deck, past, deckBeforeGroup } = get()
+    if (!deckBeforeGroup) return
+    const groupChangedDeck = deck !== deckBeforeGroup
     if (groupChangedDeck) {
-      set({
-        past: [...past, groupStart].slice(-MAX_UNDO_STEPS),
-        future: [],
-        groupStart: null,
-      })
+      set({ past: addToHistory(past, deckBeforeGroup), future: [], deckBeforeGroup: null })
     } else {
-      set({ groupStart: null })
+      set({ deckBeforeGroup: null })
     }
   },
 }))

@@ -11,6 +11,7 @@ import { fontStack } from "@/lib/themes/Themes"
 import { cn } from "@/lib/utils"
 import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useDeckStore } from "@/store/DeckStore"
+import { useAgentStore } from "@/store/AgentStore"
 import { useEditorStore } from "@/store/EditorStore"
 
 type ArtboardProps = {
@@ -83,7 +84,7 @@ function PositionedElement({
     findSlide(state.deck, slideId)?.elements.find((slideElement) => slideElement.id === elementId)
   )
   const isEditing = useEditorStore((state) => !isThumbnail && state.editingElementId === elementId)
-  const isAgentTouched = useEditorStore((state) => !isThumbnail && state.agentTouchedElementIds.includes(elementId))
+  const isAgentTouched = useAgentStore((state) => !isThumbnail && state.highlightedElementIds.includes(elementId))
   // Dimmed while a drag would move it to another slide.
   const isBeingMovedAway = useDragPreviewStore(
     (state) => !isThumbnail && state.dropTarget !== null && !state.dropTarget.isCopy && elementId in state.previewBoxes

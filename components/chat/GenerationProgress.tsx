@@ -12,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { continueStoppedGeneration, retrySlideBuild } from "@/lib/client/AgentActions"
 import { cn } from "@/lib/utils"
-import { useDeckAgent } from "@/hooks/UseDeckAgent"
-import type { SlideBuildStatus } from "@/store/EditorStore"
+import { useAgent } from "@/hooks/UseAgent"
+import type { SlideBuildStatus } from "@/store/AgentStore"
 
 const STATUS_LABELS: Record<SlideBuildStatus, string> = {
   waiting: "Waiting",
@@ -24,8 +24,8 @@ const STATUS_LABELS: Record<SlideBuildStatus, string> = {
 
 // Checklist of slides being generated; failed slides can be retried and a stopped build continued.
 export function GenerationProgress({ messageId }: { messageId: string }) {
-  const generation = useDeckAgent((agent) => (agent.generation?.messageId === messageId ? agent.generation : null))
-  const isAgentRunning = useDeckAgent((agent) => agent.run !== null)
+  const generation = useAgent((agent) => (agent.generation?.messageId === messageId ? agent.generation : null))
+  const isAgentRunning = useAgent((agent) => agent.run !== null)
   if (!generation) return null
 
   const { slides, isStopped, outline } = generation

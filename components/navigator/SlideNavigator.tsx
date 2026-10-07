@@ -30,7 +30,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { useAgentSlideActivity } from "@/hooks/UseAgentSlideActivity"
+import { useAgentLabel } from "@/hooks/UseAgentLabel"
 import { addBlankSlideAfterCurrent, addBlankSlideAt, duplicateSlideAfterItself } from "@/lib/client/SlideActions"
 import { cn } from "@/lib/utils"
 import { selectSlideIds, useDeckStore } from "@/store/DeckStore"
@@ -149,7 +149,7 @@ function SlideThumbnail({
   const slideTitle = useDeckStore((state) => state.deck?.slides.find((slide) => slide.id === slideId)?.title)
   const isCurrentSlide = useEditorStore((state) => state.currentSlideId === slideId)
   const goToSlide = useEditorStore((state) => state.goToSlide)
-  const agentActivity = useAgentSlideActivity(slideId)
+  const agentActivity = useAgentLabel(slideId)
   // The agent is changing this slide: no rename, duplicate or delete.
   const isLockedByAgent = agentActivity !== null
   const dropTarget = useDragPreviewStore((state) => (state.dropTarget?.slideId === slideId ? state.dropTarget : null))

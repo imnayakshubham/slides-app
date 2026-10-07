@@ -25,7 +25,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useAgentSlideActivity } from "@/hooks/UseAgentSlideActivity"
+import { useAgentLabel } from "@/hooks/UseAgentLabel"
 import {
   createChartBlock,
   createImageBlock,
@@ -142,7 +142,7 @@ const BLOCKS: Block[] = [
 
 export function AddBlockMenu() {
   const currentSlideId = useEditorStore((state) => state.currentSlideId)
-  const isCurrentSlideLocked = useAgentSlideActivity(currentSlideId) !== null
+  const isCurrentSlideLocked = useAgentLabel(currentSlideId) !== null
   const hasSlides = useDeckStore((state) => (state.deck?.slides.length ?? 0) > 0)
   const { addBlock, imageInput, uploadError } = useBlockAdder()
   const [isOpen, setIsOpen] = useState(false)

@@ -46,6 +46,7 @@ function describeOutline(outline: Pick<Outline, "title" | "slides">, targetIndex
 export async function POST(request: Request) {
   const requestBody = await request.json().catch(() => null)
   const parsedRequest = populateRequestSchema.safeParse(requestBody)
+  console.log("parsedRequest ====>", parsedRequest)
   if (!parsedRequest.success) {
     return Response.json({ error: z.prettifyError(parsedRequest.error) }, { status: 400 })
   }

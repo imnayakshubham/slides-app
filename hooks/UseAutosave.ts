@@ -6,7 +6,7 @@ import { isAgentBusyOn } from "@/lib/client/AgentActions"
 import { deckRepository } from "@/lib/repository"
 import type { Deck } from "@/lib/schema/Deck"
 import { useDeckStore } from "@/store/DeckStore"
-import { deckAgentOf, useEditorStore } from "@/store/EditorStore"
+import { agentFor, useAgentStore } from "@/store/AgentStore"
 
 const AUTOSAVE_DELAY_MS = 1000
 
@@ -52,10 +52,10 @@ export function useAutosave() {
     })
 
     // Saves once when the open deck's agent run ends.
-    const unsubscribeFromAgent = useEditorStore.subscribe((state, previousState) => {
+    const unsubscribeFromAgent = useAgentStore.subscribe((state, previousState) => {
       const deckId = useDeckStore.getState().deck?.id
-      const wasRunning = deckAgentOf(previousState.agentByDeckId, deckId).run
-      const isRunning = deckAgentOf(state.agentByDeckId, deckId).run
+      const wasRunning = agentFor(previousState.agents, deckId).run
+      const isRunning = agentFor(state.agents, deckId).run
       if (wasRunning && !isRunning) void saveUnsavedDeck()
     })
 

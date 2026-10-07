@@ -1,7 +1,7 @@
 "use client"
 
 import { useId, useState } from "react"
-import { ArrowUpIcon, PlusIcon, SquareIcon } from "lucide-react"
+import { ArrowUpIcon, SquareIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -52,10 +52,7 @@ export function MessageInput({ placeholder, onSubmitPrompt, isBusy = false, onSt
         placeholder={placeholder}
         className="max-h-40 resize-none border-0 bg-transparent px-1 shadow-none focus-visible:ring-0 dark:bg-transparent"
       />
-      <div className="flex items-center justify-between">
-        <Button type="button" variant="ghost" size="icon" aria-label="Attach" title="Attach">
-          <PlusIcon />
-        </Button>
+      <div className="flex items-center justify-end">
         {isBusy ? (
           <Button type="button" size="icon" className="rounded-full" aria-label="Stop" title="Stop" onClick={onStop}>
             <SquareIcon className="fill-current" />

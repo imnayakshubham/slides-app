@@ -45,15 +45,15 @@ function useSingleUndoStep() {
   function startStep() {
     if (isGroupOpenRef.current) return
     const deckStore = useDeckStore.getState()
-    if (deckStore.groupStart) return
-    deckStore.beginGroup()
+    if (deckStore.deckBeforeGroup) return
+    deckStore.startUndoGroup()
     isGroupOpenRef.current = true
   }
 
   function finishStep() {
     if (!isGroupOpenRef.current) return
     isGroupOpenRef.current = false
-    useDeckStore.getState().endGroup()
+    useDeckStore.getState().finishUndoGroup()
   }
 
   // The toolbar can vanish mid-adjustment, so end the undo step on unmount too.
@@ -61,7 +61,7 @@ function useSingleUndoStep() {
     return () => {
       if (!isGroupOpenRef.current) return
       isGroupOpenRef.current = false
-      useDeckStore.getState().endGroup()
+      useDeckStore.getState().finishUndoGroup()
     }
   }, [])
 

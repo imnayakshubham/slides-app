@@ -9,7 +9,7 @@ import { OutlineReview } from "@/components/chat/OutlineReview"
 import { Button } from "@/components/ui/button"
 import type { ChatMessage } from "@/lib/schema/Conversation"
 import { cn } from "@/lib/utils"
-import { useEditorStore } from "@/store/EditorStore"
+import { useAgentStore } from "@/store/AgentStore"
 
 const ESTIMATED_MESSAGE_HEIGHT_PX = 80
 const GAP_BETWEEN_MESSAGES_PX = 16
@@ -23,7 +23,7 @@ type ChatMessageListProps = {
 
 // Only messages near the visible area are drawn, so long chats stay fast.
 export function ChatMessageList({ onRetry, className }: ChatMessageListProps) {
-  const chatMessages = useEditorStore((state) => state.chatMessages)
+  const chatMessages = useAgentStore((state) => state.chatMessages)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   // The React Compiler can't handle this hook's result, so it just skips it.

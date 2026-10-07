@@ -1,15 +1,27 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { EditorLayout } from "@/components/editor/EditorLayout"
-import { buttonVariants } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAutosave } from "@/hooks/UseAutosave"
 import { deckRepository } from "@/lib/repository"
 import { useDeckStore } from "@/store/DeckStore"
-import { useEditorStore } from "@/store/EditorStore"
+import { useAgentStore } from "@/store/AgentStore"
 
 type DeckLoadState =
   { status: "loading" } | { status: "ready" } | { status: "not-found" } | { status: "invalid"; message: string }
@@ -23,23 +35,25 @@ export function DeckEditor({ deckId }: { deckId: string }) {
     let isStale = false
     Promise.all([deckRepository.getDeck(deckId), deckRepository.getConversationMessages(deckId)])
       .then(([record, chatMessages]) => {
+        console.log({ record, chatMessages })
         if (isStale) return
         if (!record) {
           setLoadState({ status: "not-found" })
           return
         }
-        useDeckStore.getState().hydrate(record.deck)
-        useEditorStore.getState().loadChatMessages(chatMessages)
+        useDeckStore.getState().loadDeck(record.deck)
+        useAgentStore.getState().loadChatMessages(chatMessages)
         setLoadState({ status: "ready" })
       })
       .catch((error: Error) => {
+        console.log({ error })
         if (!isStale) setLoadState({ status: "invalid", message: error.message })
       })
     return () => {
       isStale = true
     }
   }, [deckId])
-
+  console.log({ loadState })
   if (loadState.status === "loading") {
     return (
       <div className="flex h-svh gap-3 p-3" aria-busy="true">
@@ -56,7 +70,11 @@ export function DeckEditor({ deckId }: { deckId: string }) {
   }
 
   if (loadState.status === "invalid") {
-    return <DeckLoadProblem title="This deck's saved data is invalid" message={loadState.message} />
+    return (
+      <DeckLoadProblem title="This deck's saved data is invalid" message={loadState.message}>
+        <DeleteBrokenDeckButton deckId={deckId} />
+      </DeckLoadProblem>
+    )
   }
 
   return <LoadedDeckEditor />
@@ -68,16 +86,49 @@ function LoadedDeckEditor() {
   return <EditorLayout saveStatus={saveStatus} onRetrySave={retrySave} />
 }
 
-function DeckLoadProblem({ title, message }: { title: string; message: string }) {
+function DeckLoadProblem({ title, message, children }: { title: string; message: string; children?: ReactNode }) {
   return (
     <div className="grid h-svh place-items-center p-6">
       <div className="flex max-w-md flex-col items-center gap-3 text-center">
         <h1 className="text-lg font-medium">{title}</h1>
         <p className="text-sm break-words text-muted-foreground">{message}</p>
-        <Link href="/new" className={buttonVariants()}>
-          Go to your decks
-        </Link>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Link href="/new" className={buttonVariants()}>
+            Go to your decks
+          </Link>
+          {children}
+        </div>
       </div>
     </div>
+  )
+}
+
+// A deck that can't be read can't be fixed in the editor, so it can be removed from here.
+function DeleteBrokenDeckButton({ deckId }: { deckId: string }) {
+  const router = useRouter()
+
+  async function deleteDeck() {
+    await deckRepository.deleteDeck(deckId)
+    router.push("/new")
+  }
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger render={<Button variant="outline" />}>Delete this deck</AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this deck?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Its slides and chat are removed from this browser. This cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" onClick={() => void deleteDeck()}>
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }

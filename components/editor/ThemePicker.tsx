@@ -4,7 +4,7 @@ import { PaletteIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useDeckAgent } from "@/hooks/UseDeckAgent"
+import { useAgent } from "@/hooks/UseAgent"
 import { THEME_IDS, THEMES, deckThemeFor, fontStack, type ThemeId } from "@/lib/themes/Themes"
 import { cn } from "@/lib/utils"
 import { useDeckStore } from "@/store/DeckStore"
@@ -13,7 +13,7 @@ import { useDeckStore } from "@/store/DeckStore"
 export function ThemePicker() {
   const currentThemeId = useDeckStore((state) => state.deck?.theme.id)
   // Slides being written keep the theme they started with.
-  const isAgentBusy = useDeckAgent((agent) => agent.run !== null)
+  const isAgentBusy = useAgent((agent) => agent.run !== null)
 
   function applyTheme(themeId: ThemeId) {
     if (themeId === currentThemeId) return

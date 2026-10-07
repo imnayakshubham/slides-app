@@ -21,7 +21,7 @@ import {
 } from "@/lib/client/AgentActions"
 import type { OutlineSlide } from "@/lib/schema/Outline"
 import { cn } from "@/lib/utils"
-import { useDeckAgent } from "@/hooks/UseDeckAgent"
+import { useAgent } from "@/hooks/UseAgent"
 
 const LAYOUT_LABELS: Record<OutlineSlide["layout"], string> = {
   title: "Title",
@@ -34,10 +34,8 @@ const LAYOUT_LABELS: Record<OutlineSlide["layout"], string> = {
 
 // The planned slides: rename, reorder, remove, then Generate (or Cmd/Ctrl+Enter).
 export function OutlineReview({ messageId }: { messageId: string }) {
-  const outlineReview = useDeckAgent((agent) =>
-    agent.outlineReview?.messageId === messageId ? agent.outlineReview : null
-  )
-  const isAgentRunning = useDeckAgent((agent) => agent.run !== null)
+  const outlineReview = useAgent((agent) => (agent.outlineReview?.messageId === messageId ? agent.outlineReview : null))
+  const isAgentRunning = useAgent((agent) => agent.run !== null)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, {

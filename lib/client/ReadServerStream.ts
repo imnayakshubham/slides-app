@@ -17,13 +17,10 @@ export async function readServerStream(
   })
 
   if (!response.ok || !response.body) {
-    onEvent({
-      event: "error",
-      data: {
-        message: `Request failed with status ${response.status}.`,
-        code: "http_error",
-      },
-    })
+    // The API routes answer a bad request with { error: "..." }.
+    const errorBody = await response.json().catch(() => null)
+    const message = typeof errorBody?.error === "string" ? errorBody.error : "Something went wrong"
+    onEvent({ event: "error", data: { message } })
     return
   }
 
