@@ -162,7 +162,7 @@ function ElementTypeControls({ element }: { element: SlideElement }) {
     case "text":
       return <TextControls element={element} />
     case "shape":
-      return <ShapeControls element={element} />
+      return <ShapeControls key={element.id} element={element} />
     case "image":
       return <ImageControls element={element} />
     case "chart":

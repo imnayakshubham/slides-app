@@ -182,8 +182,15 @@ function PositionedElement({
           onFinishEditing={finishEditingTable}
         />
       ) : (
+        // A shape's SVG is drawn at the live size during a resize, so its
+        // outline doesn't stretch. Other types keep the stored element, so
+        // the memoized renderer skips them on every pointer move.
         <ElementRenderer
-          element={element}
+          element={
+            previewBox && element.type === "shape"
+              ? { ...element, ...previewBox }
+              : element
+          }
           theme={theme}
           animate={!isThumbnail}
         />

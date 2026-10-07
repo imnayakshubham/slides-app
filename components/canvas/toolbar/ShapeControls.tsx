@@ -1,4 +1,5 @@
-import { CircleIcon, SquareIcon } from "lucide-react"
+import { useState } from "react"
+import { CircleIcon, LinkIcon, SquareIcon, UnlinkIcon } from "lucide-react"
 
 import {
   ColorInput,
@@ -7,7 +8,7 @@ import {
   ToolbarToggle,
 } from "@/components/canvas/toolbar/ToolbarInputs"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
-import type { SlideElement } from "@/lib/schema/Deck"
+import { MIN_ELEMENT_SIZE, type SlideElement } from "@/lib/schema/Deck"
 
 type ShapeElementData = Extract<SlideElement, { type: "shape" }>
 
@@ -18,6 +19,8 @@ const DEFAULT_OUTLINE_WIDTH = 4
 export function ShapeControls({ element }: { element: ShapeElementData }) {
   return (
     <>
+      <ShapeSizeInputs element={element} />
+      <ToolbarDivider />
       <ToolbarToggle
         label="Rectangle"
         isActive={element.shape === "rect"}
@@ -55,6 +58,60 @@ export function ShapeControls({ element }: { element: ShapeElementData }) {
         min={0}
         onChange={(strokeWidth) => updateSelectedElement({ strokeWidth })}
       />
+    </>
+  )
+}
+
+// Width and height in slide units (the slide is 1920×1080). With the lock
+// on, changing one keeps the shape's proportions.
+function ShapeSizeInputs({ element }: { element: ShapeElementData }) {
+  // Saved when the lock is turned on, so typing a size digit by digit
+  // doesn't let rounding drift the proportions.
+  const [lockedRatio, setLockedRatio] = useState<number | null>(null)
+
+  function changeWidth(width: number) {
+    updateSelectedElement(
+      lockedRatio
+        ? { w: width, h: Math.round(width / lockedRatio) }
+        : { w: width }
+    )
+  }
+
+  function changeHeight(height: number) {
+    updateSelectedElement(
+      lockedRatio
+        ? { w: Math.round(height * lockedRatio), h: height }
+        : { h: height }
+    )
+  }
+
+  return (
+    <>
+      <span className="text-xs text-muted-foreground">W</span>
+      <NumberInput
+        label="Width"
+        value={Math.round(element.w)}
+        min={MIN_ELEMENT_SIZE}
+        onChange={changeWidth}
+        className="w-14"
+      />
+      <span className="text-xs text-muted-foreground">H</span>
+      <NumberInput
+        label="Height"
+        value={Math.round(element.h)}
+        min={MIN_ELEMENT_SIZE}
+        onChange={changeHeight}
+        className="w-14"
+      />
+      <ToolbarToggle
+        label={lockedRatio ? "Unlock proportions" : "Lock proportions"}
+        isActive={lockedRatio !== null}
+        onClick={() =>
+          setLockedRatio(lockedRatio ? null : element.w / element.h)
+        }
+      >
+        {lockedRatio ? <LinkIcon /> : <UnlinkIcon />}
+      </ToolbarToggle>
     </>
   )
 }

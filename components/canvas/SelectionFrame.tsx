@@ -7,7 +7,7 @@ import { findElementLocation } from "@/lib/edits/DeckEdits"
 import {
   unionBox,
   type Box,
-  type Corner,
+  type ResizeHandle,
   type SnapGuide,
 } from "@/lib/edits/Geometry"
 import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH } from "@/lib/schema/Deck"
@@ -15,12 +15,28 @@ import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
-const CORNERS: Corner[] = ["nw", "ne", "sw", "se"]
-const CORNER_CURSORS: Record<Corner, string> = {
+const RESIZE_HANDLES: ResizeHandle[] = [
+  "nw",
+  "n",
+  "ne",
+  "e",
+  "se",
+  "s",
+  "sw",
+  "w",
+]
+// A text box's height follows its text, so it has no top or bottom handle.
+const TEXT_RESIZE_HANDLES: ResizeHandle[] = ["nw", "ne", "e", "se", "sw", "w"]
+
+export const RESIZE_CURSORS: Record<ResizeHandle, string> = {
   nw: "nwse-resize",
   se: "nwse-resize",
   ne: "nesw-resize",
   sw: "nesw-resize",
+  n: "ns-resize",
+  s: "ns-resize",
+  e: "ew-resize",
+  w: "ew-resize",
 }
 
 // The artboard is scaled down; dividing by --artboard-scale keeps these
@@ -58,7 +74,11 @@ export function SelectionFrame() {
     const box = previewBoxes[element.id] ?? element
     const h =
       element.type === "text" ? (textHeights[element.id] ?? box.h) : box.h
-    return { elementId: element.id, box: { ...box, h } }
+    return {
+      elementId: element.id,
+      isText: element.type === "text",
+      box: { ...box, h },
+    }
   })
   const singleSelection = selectedBoxes.length === 1 ? selectedBoxes[0] : null
   const showHandles = singleSelection && editingElementId === null
@@ -87,14 +107,16 @@ export function SelectionFrame() {
       )}
 
       {showHandles &&
-        CORNERS.map((corner) => (
-          <ResizeHandle
-            key={corner}
-            corner={corner}
-            elementId={singleSelection.elementId}
-            box={singleSelection.box}
-          />
-        ))}
+        (singleSelection.isText ? TEXT_RESIZE_HANDLES : RESIZE_HANDLES).map(
+          (handle) => (
+            <ResizeHandleDot
+              key={handle}
+              handle={handle}
+              elementId={singleSelection.elementId}
+              box={singleSelection.box}
+            />
+          )
+        )}
 
       {guides.map((guide, guideIndex) => (
         <div
@@ -117,21 +139,25 @@ export function SelectionFrame() {
   )
 }
 
-function ResizeHandle({
-  corner,
+function ResizeHandleDot({
+  handle,
   elementId,
   box,
 }: {
-  corner: Corner
+  handle: ResizeHandle
   elementId: string
   box: Box
 }) {
-  const left = corner === "nw" || corner === "sw" ? box.x : box.x + box.w
-  const top = corner === "nw" || corner === "ne" ? box.y : box.y + box.h
+  let left = box.x + box.w / 2
+  if (handle.includes("w")) left = box.x
+  if (handle.includes("e")) left = box.x + box.w
+  let top = box.y + box.h / 2
+  if (handle.includes("n")) top = box.y
+  if (handle.includes("s")) top = box.y + box.h
 
   return (
     <div
-      data-handle={corner}
+      data-handle={handle}
       data-handle-element-id={elementId}
       className="pointer-events-auto absolute grid -translate-x-1/2 -translate-y-1/2 touch-none place-items-center"
       style={{
@@ -139,7 +165,7 @@ function ResizeHandle({
         top,
         width: HANDLE_HIT_SIZE,
         height: HANDLE_HIT_SIZE,
-        cursor: CORNER_CURSORS[corner],
+        cursor: RESIZE_CURSORS[handle],
       }}
     >
       <span

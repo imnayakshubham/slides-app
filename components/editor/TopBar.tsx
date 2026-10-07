@@ -13,6 +13,8 @@ type TopBarProps = {
   onOpenAgentPanel: () => void
   saveStatus: SaveStatus
   onRetrySave: () => void
+  canExport: boolean
+  onExport: () => void
 }
 
 export function TopBar({
@@ -22,6 +24,8 @@ export function TopBar({
   onOpenAgentPanel,
   saveStatus,
   onRetrySave,
+  canExport,
+  onExport,
 }: TopBarProps) {
   return (
     <header className="flex h-10 shrink-0 items-center gap-2">
@@ -66,8 +70,10 @@ export function TopBar({
         <Button
           variant="outline"
           className="rounded-full"
-          aria-label="Export"
-          title="Export"
+          aria-label="Export to PDF"
+          title="Export to PDF"
+          disabled={!canExport}
+          onClick={onExport}
         >
           <UploadIcon />
           <span className="max-sm:sr-only">Export</span>

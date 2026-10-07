@@ -138,20 +138,36 @@
     color-mix(in oklab, var(--primary) 45%, transparent);
 }
 
+/* Faint dot grid over the whole slide, with a brighter band of the same
+   dots sweeping across it. */
 .agent-working-overlay {
+  --dot-color: var(--primary);
   background-image: radial-gradient(
-    color-mix(in oklab, var(--primary) 55%, transparent) 1.5px,
-    transparent 1.75px
+    color-mix(in oklab, var(--dot-color) 30%, transparent)
+      var(--dot-size, 2.5px),
+    transparent calc(var(--dot-size, 2.5px) + 0.5px)
   );
   background-size: var(--dot-gap, 10px) var(--dot-gap, 10px);
+}
+
+.agent-working-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--dot-color) 90%, transparent)
+      var(--dot-size, 2.5px),
+    transparent calc(var(--dot-size, 2.5px) + 0.5px)
+  );
+  background-size: inherit;
   mask-image: linear-gradient(
     110deg,
-    transparent 35%,
+    transparent 25%,
     black 50%,
-    transparent 65%
+    transparent 75%
   );
   mask-size: 250% 100%;
-  animation: agent-working-sweep 1.8s linear infinite;
+  animation: agent-working-sweep 1.6s linear infinite;
 }
 
 @keyframes agent-working-sweep {
@@ -164,9 +180,30 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .agent-working-overlay {
+  .agent-working-overlay::after {
     animation: none;
     mask-image: none;
-    opacity: 0.3;
+    opacity: 0.5;
+  }
+}
+
+/* Export → PDF: only the print view's pages, one slide per landscape page. */
+@page {
+  size: 13.333in 7.5in;
+  margin: 0;
+}
+
+@media print {
+  body:has([data-print-view]) > :not([data-print-view]) {
+    display: none;
+  }
+
+  .print-page {
+    break-after: page;
+    print-color-adjust: exact;
+  }
+
+  .print-page:last-child {
+    break-after: auto;
   }
 }

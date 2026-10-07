@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { SlideCanvas } from "@/components/canvas/SlideCanvas"
 import { AgentPanel } from "@/components/chat/AgentPanel"
 import { EditorToolbar } from "@/components/editor/EditorToolbar"
+import { PrintView } from "@/components/editor/PrintView"
 import { TopBar } from "@/components/editor/TopBar"
 import { SlideNavigator } from "@/components/navigator/SlideNavigator"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
@@ -23,6 +24,9 @@ type EditorLayoutProps = {
 
 export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
   const deckTitle = useDeckStore((state) => state.deck?.title ?? "")
+  const hasSlides = useDeckStore(
+    (state) => (state.deck?.slides.length ?? 0) > 0
+  )
   const applyEdit = useDeckStore((state) => state.applyEdit)
   useSlideKeyboardNavigation()
   useCanvasShortcuts()
@@ -33,6 +37,7 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
   // The navigator gives way to the agent panel: hidden while the panel is
   // open (still openable by hand), shown once the panel is closed.
   const [isSlideNavigatorOpen, setIsSlideNavigatorOpen] = useState(false)
+  const [isPrintViewOpen, setIsPrintViewOpen] = useState(false)
 
   function setAgentPanelOpen(isOpen: boolean) {
     setIsAgentPanelOpen(isOpen)
@@ -41,6 +46,13 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
 
   function renameDeck(title: string) {
     applyEdit({ type: "updateDeck", changes: { title } })
+  }
+
+  // Nothing stays selected behind the print view, so Delete or the arrow
+  // keys can't change a slide nobody can see.
+  function openPrintView() {
+    useEditorStore.getState().setSelectedElementIds([])
+    setIsPrintViewOpen(true)
   }
 
   function openAgent() {
@@ -112,6 +124,8 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
           onOpenAgentPanel={openAgent}
           saveStatus={saveStatus}
           onRetrySave={onRetrySave}
+          canExport={hasSlides}
+          onExport={openPrintView}
         />
 
         <section
@@ -152,6 +166,10 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
           />
         </SheetContent>
       </Sheet>
+
+      {isPrintViewOpen && (
+        <PrintView onClose={() => setIsPrintViewOpen(false)} />
+      )}
     </div>
   )
 }

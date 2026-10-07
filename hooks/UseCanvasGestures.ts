@@ -2,6 +2,7 @@ import { useEffect, useRef, type PointerEvent } from "react"
 import type { DragMoveEvent } from "@dnd-kit/core"
 
 import { positionDropCursorBadge } from "@/components/canvas/DropCursorBadge"
+import { RESIZE_CURSORS } from "@/components/canvas/SelectionFrame"
 import { isSlideLockedByAgent } from "@/lib/client/AgentActions"
 import type { DeckEdit } from "@/lib/edits/DeckEdits"
 import {
@@ -12,7 +13,7 @@ import {
   snapResizedEdges,
   unionBox,
   type Box,
-  type Corner,
+  type ResizeHandle,
   type SnapGuide,
 } from "@/lib/edits/Geometry"
 import { createId } from "@/lib/Ids"
@@ -23,13 +24,6 @@ import { useEditorStore } from "@/store/EditorStore"
 
 const SNAP_DISTANCE_PX = 6
 const SLIDE_BOX: Box = { x: 0, y: 0, w: ARTBOARD_WIDTH, h: ARTBOARD_HEIGHT }
-const RESIZE_CURSORS: Record<Corner, string> = {
-  nw: "nwse-resize",
-  se: "nwse-resize",
-  ne: "nesw-resize",
-  sw: "nesw-resize",
-}
-
 // slideId: the slide the gesture started on.
 type Gesture = { scale: number; artboard: HTMLElement; slideId: string } & (
   | {
@@ -44,7 +38,7 @@ type Gesture = { scale: number; artboard: HTMLElement; slideId: string } & (
   | {
       kind: "resize"
       elementId: string
-      corner: Corner
+      handle: ResizeHandle
       startBox: Box
       isText: boolean
       snapTargets: Box[]
@@ -117,15 +111,15 @@ export function useCanvasGestures() {
     if (handle && handleElementId) {
       const startBox = elementBoxes.get(handleElementId)
       if (!startBox) return false
-      const corner = handle.dataset.handle as Corner
-      document.body.style.cursor = RESIZE_CURSORS[corner]
+      const resizeHandle = handle.dataset.handle as ResizeHandle
+      document.body.style.cursor = RESIZE_CURSORS[resizeHandle]
       gestureRef.current = {
         kind: "resize",
         scale,
         artboard,
         slideId,
         elementId: handleElementId,
-        corner,
+        handle: resizeHandle,
         startBox,
         isText: elementBoxIsText(artboard, handleElementId),
         snapTargets: snapTargetsExcept(elementBoxes, [handleElementId]),
@@ -240,7 +234,7 @@ export function useCanvasGestures() {
 
     if (gesture.kind === "resize") {
       const keepRatio = isShiftHeld && !gesture.isText
-      let box = resizeBox(gesture.startBox, gesture.corner, deltaX, deltaY, {
+      let box = resizeBox(gesture.startBox, gesture.handle, deltaX, deltaY, {
         keepRatio,
         widthOnly: gesture.isText,
       })
@@ -248,7 +242,7 @@ export function useCanvasGestures() {
       if (!isAltHeld && !keepRatio) {
         const snapped = snapResizedEdges(
           box,
-          gesture.corner,
+          gesture.handle,
           gesture.snapTargets,
           snapDistance,
           { snapHeight: !gesture.isText }

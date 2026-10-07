@@ -148,34 +148,50 @@ export function estimateTextHeight(
   return Math.ceil(lineCount * LINE_HEIGHT * fontSize + listGaps)
 }
 
-export type Corner = "nw" | "ne" | "sw" | "se"
+// Where a resize handle sits on the box: four corners and four edge
+// middles, named by compass direction.
+export type ResizeHandle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w"
+
+// Which edges of the box a handle drags.
+function edgesMovedBy(handle: ResizeHandle) {
+  return {
+    left: handle.includes("w"),
+    right: handle.includes("e"),
+    top: handle.includes("n"),
+    bottom: handle.includes("s"),
+  }
+}
 
 export type SnapGuide = {
   orientation: "vertical" | "horizontal"
   position: number
 }
 
-// Drags one corner while the opposite corner stays put.
+// Drags the handle's edges while the opposite edges stay put. An edge
+// handle changes one dimension only.
 export function resizeBox(
   startBox: Box,
-  corner: Corner,
+  handle: ResizeHandle,
   deltaX: number,
   deltaY: number,
   options: { keepRatio: boolean; widthOnly: boolean }
 ): Box {
-  const movesLeftEdge = corner === "nw" || corner === "sw"
-  const movesTopEdge = corner === "nw" || corner === "ne"
+  const edges = edgesMovedBy(handle)
+  const changesWidth = edges.left || edges.right
+  const changesHeight = (edges.top || edges.bottom) && !options.widthOnly
 
-  let width = startBox.w + (movesLeftEdge ? -deltaX : deltaX)
-  let height = startBox.h + (movesTopEdge ? -deltaY : deltaY)
+  let width = startBox.w
+  if (edges.left) width -= deltaX
+  if (edges.right) width += deltaX
+  let height = startBox.h
+  if (changesHeight && edges.top) height -= deltaY
+  if (changesHeight && edges.bottom) height += deltaY
 
-  if (options.widthOnly) {
-    width = Math.max(width, MIN_ELEMENT_SIZE)
-    height = startBox.h
-  } else if (options.keepRatio) {
+  if (options.keepRatio && !options.widthOnly) {
+    // The ratio follows whichever dragged dimension grew the most.
     const scale = Math.max(
-      width / startBox.w,
-      height / startBox.h,
+      changesWidth ? width / startBox.w : 0,
+      changesHeight ? height / startBox.h : 0,
       MIN_ELEMENT_SIZE / startBox.w,
       MIN_ELEMENT_SIZE / startBox.h
     )
@@ -187,8 +203,8 @@ export function resizeBox(
   }
 
   return {
-    x: movesLeftEdge ? startBox.x + startBox.w - width : startBox.x,
-    y: movesTopEdge ? startBox.y + startBox.h - height : startBox.y,
+    x: edges.left ? startBox.x + startBox.w - width : startBox.x,
+    y: edges.top ? startBox.y + startBox.h - height : startBox.y,
     w: width,
     h: height,
   }
@@ -255,45 +271,46 @@ export function snapBox(
   }
 }
 
-// Snaps only the edges that the dragged corner moves.
+// Snaps only the edges that the dragged handle moves.
 export function snapResizedEdges(
   box: Box,
-  corner: Corner,
+  handle: ResizeHandle,
   snapTargets: Box[],
   threshold: number,
   options: { snapHeight: boolean }
 ): { box: Box; guides: SnapGuide[] } {
-  const movesLeftEdge = corner === "nw" || corner === "sw"
-  const movesTopEdge = corner === "nw" || corner === "ne"
+  const edges = edgesMovedBy(handle)
   const snappedBox = { ...box }
   const guides: SnapGuide[] = []
 
-  const movingX = movesLeftEdge ? box.x : box.x + box.w
-  const xSnap = findClosestSnap(
-    [movingX],
-    snapTargets.flatMap((target) => alignmentLines(target.x, target.w)),
-    threshold
-  )
-  const widthAfterSnap = box.w + (movesLeftEdge ? -1 : 1) * (xSnap?.offset ?? 0)
-  if (xSnap && widthAfterSnap >= MIN_ELEMENT_SIZE) {
-    if (movesLeftEdge) snappedBox.x += xSnap.offset
-    snappedBox.w = widthAfterSnap
-    guides.push({ orientation: "vertical", position: xSnap.position })
+  if (edges.left || edges.right) {
+    const movingX = edges.left ? box.x : box.x + box.w
+    const xSnap = findClosestSnap(
+      [movingX],
+      snapTargets.flatMap((target) => alignmentLines(target.x, target.w)),
+      threshold
+    )
+    const widthAfterSnap = box.w + (edges.left ? -1 : 1) * (xSnap?.offset ?? 0)
+    if (xSnap && widthAfterSnap >= MIN_ELEMENT_SIZE) {
+      if (edges.left) snappedBox.x += xSnap.offset
+      snappedBox.w = widthAfterSnap
+      guides.push({ orientation: "vertical", position: xSnap.position })
+    }
   }
 
-  if (!options.snapHeight) return { box: snappedBox, guides }
-
-  const movingY = movesTopEdge ? box.y : box.y + box.h
-  const ySnap = findClosestSnap(
-    [movingY],
-    snapTargets.flatMap((target) => alignmentLines(target.y, target.h)),
-    threshold
-  )
-  const heightAfterSnap = box.h + (movesTopEdge ? -1 : 1) * (ySnap?.offset ?? 0)
-  if (ySnap && heightAfterSnap >= MIN_ELEMENT_SIZE) {
-    if (movesTopEdge) snappedBox.y += ySnap.offset
-    snappedBox.h = heightAfterSnap
-    guides.push({ orientation: "horizontal", position: ySnap.position })
+  if (options.snapHeight && (edges.top || edges.bottom)) {
+    const movingY = edges.top ? box.y : box.y + box.h
+    const ySnap = findClosestSnap(
+      [movingY],
+      snapTargets.flatMap((target) => alignmentLines(target.y, target.h)),
+      threshold
+    )
+    const heightAfterSnap = box.h + (edges.top ? -1 : 1) * (ySnap?.offset ?? 0)
+    if (ySnap && heightAfterSnap >= MIN_ELEMENT_SIZE) {
+      if (edges.top) snappedBox.y += ySnap.offset
+      snappedBox.h = heightAfterSnap
+      guides.push({ orientation: "horizontal", position: ySnap.position })
+    }
   }
 
   return { box: snappedBox, guides }

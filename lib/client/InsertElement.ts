@@ -49,18 +49,29 @@ export function createTextBlock(
   }
 }
 
-export function createChartBlock(theme: Theme): SlideElement {
+type ChartElement = Extract<SlideElement, { type: "chart" }>
+
+export function createChartBlock(
+  chartType: ChartElement["chartType"],
+  theme: Theme
+): SlideElement {
+  const series: ChartElement["series"] = [
+    { name: "Value", data: [10, 14, 19, 24], color: theme.colors.accent },
+  ]
+  // A stacked bar with one series looks like a plain bar chart. The second
+  // series has no color, so the chart picks one that differs from the first.
+  if (chartType === "stackedBar") {
+    series.push({ name: "Other", data: [6, 8, 9, 12] })
+  }
   return {
     id: createId(),
     type: "chart",
     ...centeredBox(CHART_SIZE.width, CHART_SIZE.height),
-    chartType: "bar",
+    chartType,
     title: "",
     categories: ["Q1", "Q2", "Q3", "Q4"],
-    series: [
-      { name: "Value", data: [10, 14, 19, 24], color: theme.colors.accent },
-    ],
-    showLegend: false,
+    series,
+    showLegend: chartType === "pie" || series.length > 1,
   }
 }
 
