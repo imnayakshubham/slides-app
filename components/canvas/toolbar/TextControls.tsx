@@ -8,9 +8,10 @@ import {
   ListOrderedIcon,
   UnderlineIcon,
 } from "lucide-react"
+import { useEditorState, type Editor } from "@tiptap/react"
 
 import { ColorInput, NumberInput, ToolbarDivider, ToolbarToggle } from "@/components/canvas/toolbar/ToolbarInputs"
-import { endActiveTextEdit, styleHighlightedWordsOf } from "@/lib/client/RichTextEditing"
+import { endActiveTextEdit } from "@/components/elements/TextEditor"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
 import { findElementLocation } from "@/lib/edits/DeckEdits"
 import { TEXT_PRESET_NAMES, TEXT_PRESETS, findTextPreset, type TextPresetName } from "@/lib/layouts/TextPresets"
@@ -45,23 +46,44 @@ function updateWholeTextBox(elementId: string, changes: ElementChanges, markToCl
   })
 }
 
+function styleHighlightedWords(editor: Editor, changes: TextStyleChanges) {
+  const editorCommands = editor.chain()
+  if (changes.bold !== undefined) editorCommands.toggleBold()
+  if (changes.italic !== undefined) editorCommands.toggleItalic()
+  if (changes.underline !== undefined) editorCommands.toggleUnderline()
+  if (changes.color) editorCommands.setColor(changes.color)
+  if (changes.fontSize) editorCommands.setFontSize(`${changes.fontSize}px`)
+  editorCommands.run()
+}
+
 export function TextControls({ element }: { element: TextElementData }) {
+  const editor = useEditorStore((state) => (state.editingElementId === element.id ? state.activeTextEditor : null))
   // Words highlighted while typing; the style settings then apply only to those words.
-  const highlightStyle = useEditorStore((state) =>
-    state.editingElementId === element.id ? state.highlightedTextStyle : null
-  )
-  const boxUnderline = element.underline ?? false
+  const highlightStyle = useEditorState({
+    editor,
+    selector: ({ editor: activeEditor }) => {
+      if (!activeEditor || activeEditor.state.selection.empty) return null
+      const colorAndSize = activeEditor.getAttributes("textStyle")
+      return {
+        bold: activeEditor.isActive("bold"),
+        italic: activeEditor.isActive("italic"),
+        underline: activeEditor.isActive("underline"),
+        color: colorAndSize.color ?? element.color,
+        fontSize: colorAndSize.fontSize ? parseFloat(colorAndSize.fontSize) : element.fontSize,
+      }
+    },
+  })
   const shownStyle = highlightStyle ?? {
     bold: element.bold,
     italic: element.italic,
-    underline: boxUnderline,
+    underline: element.underline ?? false,
     color: element.color,
     fontSize: element.fontSize,
   }
 
   function applyTextStyle(changes: TextStyleChanges, mark: TextMark) {
-    if (highlightStyle) {
-      styleHighlightedWordsOf(element.id, changes, boxUnderline)
+    if (editor && highlightStyle) {
+      styleHighlightedWords(editor, changes)
     } else {
       updateWholeTextBox(element.id, changes, mark)
     }

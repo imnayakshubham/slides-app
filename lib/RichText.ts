@@ -1,3 +1,4 @@
+import type { JSONContent } from "@tiptap/react"
 import type { CSSProperties } from "react"
 
 import type { Paragraph, TextRun } from "@/lib/schema/Deck"
@@ -56,32 +57,48 @@ export function normalizeRuns(runs: TextRun[], box: TextBoxStyle): Paragraph {
   return mergedRuns
 }
 
-// Styles the characters from start up to end, splitting runs at the highlight's edges.
-export function styleRunRange(
-  runs: TextRun[],
-  start: number,
-  end: number,
-  changes: TextStyleChanges,
-  box: TextBoxStyle
-): Paragraph {
-  const styledRuns: TextRun[] = []
-  let runStart = 0
-  for (const run of runs) {
-    const runEnd = runStart + run.text.length
-    const highlightStart = Math.min(Math.max(start - runStart, 0), run.text.length)
-    const highlightEnd = Math.min(Math.max(end - runStart, 0), run.text.length)
-    styledRuns.push(
-      { ...run, text: run.text.slice(0, highlightStart) },
-      {
-        ...run,
-        ...changes,
-        text: run.text.slice(highlightStart, highlightEnd),
-      },
-      { ...run, text: run.text.slice(highlightEnd) }
-    )
-    runStart = runEnd
+// In the editor the box itself is plain, so a bold box means every word is made bold (same for italic and underline).
+function getEditorStylesForText(run: TextRun, box: TextBoxStyle) {
+  const editorStyles: { type: string; attrs?: Record<string, string | null> }[] = []
+  if (run.bold ?? box.bold) editorStyles.push({ type: "bold" })
+  if (run.italic ?? box.italic) editorStyles.push({ type: "italic" })
+  if (run.underline ?? box.underline) editorStyles.push({ type: "underline" })
+  if (run.color || run.fontSize) {
+    const fontSize = run.fontSize ? `${run.fontSize}px` : null
+    editorStyles.push({ type: "textStyle", attrs: { color: run.color ?? null, fontSize } })
   }
-  return normalizeRuns(styledRuns, box)
+  return editorStyles
+}
+
+export function convertParagraphsToEditorContent(paragraphs: Paragraph[], box: TextBoxStyle): JSONContent {
+  const editorParagraphs = paragraphs.map((paragraph) => {
+    const editorTexts = paragraphRuns(paragraph)
+      .filter((run) => run.text !== "")
+      .map((run) => ({ type: "text", text: run.text, marks: getEditorStylesForText(run, box) }))
+    return { type: "paragraph", content: editorTexts }
+  })
+  return { type: "doc", content: editorParagraphs }
+}
+
+function convertEditorTextToTextRun(editorText: JSONContent): TextRun {
+  const editorStyles = editorText.marks ?? []
+  const colorAndSize = editorStyles.find((style) => style.type === "textStyle")?.attrs
+  return {
+    text: editorText.text ?? "",
+    bold: editorStyles.some((style) => style.type === "bold"),
+    italic: editorStyles.some((style) => style.type === "italic"),
+    underline: editorStyles.some((style) => style.type === "underline"),
+    color: colorAndSize?.color ?? undefined,
+    fontSize: colorAndSize?.fontSize ? parseFloat(colorAndSize.fontSize) : undefined,
+  }
+}
+
+export function convertEditorContentToParagraphs(editorContent: JSONContent, box: TextBoxStyle): Paragraph[] {
+  const editorParagraphs = editorContent.content ?? []
+  return editorParagraphs.map((editorParagraph) => {
+    const textRuns = (editorParagraph.content ?? []).map(convertEditorTextToTextRun)
+    return normalizeRuns(textRuns, box)
+  })
 }
 
 // When a setting is applied to the whole box, words that overrode it follow the box again.

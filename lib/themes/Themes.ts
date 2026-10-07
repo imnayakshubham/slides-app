@@ -1,7 +1,5 @@
 import { CLASSIC_CARD_COLORS, type Theme } from "@/lib/schema/Deck"
 
-// Built-in themes; card colors are also chart colors, so cardText must read well on every card.
-
 export const THEME_IDS = ["classic", "sunrise", "midnight", "editorial", "forest", "electric", "graphite"] as const
 
 export type ThemeId = (typeof THEME_IDS)[number]
@@ -65,6 +63,7 @@ export const THEMES: Record<ThemeId, Theme & { name: string; mood: string }> = {
       accent: "#B91C1C",
       card: ["#F2E8DC", "#E7DED3", "#F5E1DA", "#E4E7DD"],
       cardText: "#1C1917",
+      chart: ["#B91C1C", "#57534E", "#B45309", "#1E40AF"],
     },
   },
   forest: {
@@ -80,6 +79,7 @@ export const THEMES: Record<ThemeId, Theme & { name: string; mood: string }> = {
       accent: "#2F855A",
       card: ["#CFE3D3", "#E3EBC8", "#D5E6E3", "#EFE3C8"],
       cardText: "#1F2A24",
+      chart: ["#2F855A", "#6B8E23", "#B7791F", "#2B6CB0"],
     },
   },
   electric: {
@@ -95,6 +95,7 @@ export const THEMES: Record<ThemeId, Theme & { name: string; mood: string }> = {
       accent: "#6366F1",
       card: ["#E0E7FF", "#FCE7F3", "#CFFAFE", "#FEF3C7"],
       cardText: "#1E1B4B",
+      chart: ["#6366F1", "#EC4899", "#06B6D4", "#F59E0B"],
     },
   },
   graphite: {
@@ -135,6 +136,6 @@ export function fontStack(fontName: string) {
 
 // The color of chart series `seriesIndex` when it has no color of its own.
 export function seriesColorFor(theme: Theme, seriesIndex: number) {
-  const palette = [theme.colors.accent, ...theme.colors.card]
-  return palette[seriesIndex % palette.length]
+  const chartColors = theme.colors.chart ?? [theme.colors.accent, ...theme.colors.card]
+  return chartColors[seriesIndex % chartColors.length]
 }

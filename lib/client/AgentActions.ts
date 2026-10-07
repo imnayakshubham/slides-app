@@ -5,12 +5,12 @@ import { toast } from "sonner"
 import type { SlidesMessage } from "@/lib/ai/SlidesMessage"
 import {
   applyAgentEdit,
-  getAgent,
-  isAgentBusyOn,
-  openDeckId,
-  releaseSlidesToAgent,
-  runAgentWork,
-  updateAgent,
+  getAgentStateForDeck,
+  getOpenDeckId,
+  isAgentWorkingOnDeck,
+  runAgentJobThatCanBeStopped,
+  stopUserEditingOnSlides,
+  updateAgentStateForDeck,
 } from "@/lib/client/AgentRun"
 import type { DeckEdit } from "@/lib/edits/DeckEdits"
 import { messageFromError } from "@/lib/ErrorMessage"
@@ -24,18 +24,18 @@ import { useEditorStore } from "@/store/EditorStore"
 // Building a deck from an approved outline: editing the outline, then writing each slide.
 
 function openOutlineReview() {
-  const deckId = openDeckId()
+  const deckId = getOpenDeckId()
   if (!deckId) return null
-  return getAgent(deckId).outlineReview
+  return getAgentStateForDeck(deckId).outlineReview
 }
 
 // Row keys are reordered and removed together with their slides.
 function saveOutlineSlides(slides: OutlineSlide[], slideKeys: string[]) {
-  const deckId = openDeckId()
+  const deckId = getOpenDeckId()
   const outlineReview = openOutlineReview()
   if (!deckId || !outlineReview) return
   const outline = { ...outlineReview.outline, slides }
-  updateAgent(deckId, { outlineReview: { ...outlineReview, outline, slideKeys } })
+  updateAgentStateForDeck(deckId, { outlineReview: { ...outlineReview, outline, slideKeys } })
 }
 
 export function renameOutlineSlide(slideIndex: number, title: string) {
@@ -64,24 +64,24 @@ export function removeOutlineSlide(slideIndex: number) {
 }
 
 export function discardOutline() {
-  const deckId = openDeckId()
+  const deckId = getOpenDeckId()
   if (!deckId) return
-  const outlineReview = getAgent(deckId).outlineReview
+  const outlineReview = getAgentStateForDeck(deckId).outlineReview
   if (!outlineReview) return
-  updateAgent(deckId, { outlineReview: null })
+  updateAgentStateForDeck(deckId, { outlineReview: null })
 }
 
 // Phase two: adds every planned slide at once, then fills them one by one, as one undo step.
 export async function generateApprovedOutline() {
   const deck = useDeckStore.getState().deck
-  if (!deck || isAgentBusyOn(deck.id)) return
+  if (!deck || isAgentWorkingOnDeck(deck.id)) return
   const deckId = deck.id
-  const outlineReview = getAgent(deckId).outlineReview
+  const outlineReview = getAgentStateForDeck(deckId).outlineReview
   if (!outlineReview) return
   const { messageId, outline } = outlineReview
-  updateAgent(deckId, { outlineReview: null })
+  updateAgentStateForDeck(deckId, { outlineReview: null })
 
-  await runAgentWork(deckId, "generating", async (abortSignal) => {
+  await runAgentJobThatCanBeStopped(deckId, "generating", async (abortSignal) => {
     // Outlines planned before themes existed keep the deck's theme.
     const theme = outline.themeId ? deckThemeFor(outline.themeId) : deck.theme
     const plannedSlides = outline.slides.map((outlineSlide) =>
@@ -104,7 +104,7 @@ export async function generateApprovedOutline() {
       outlineSlideIndex: index,
       status: "waiting",
     }))
-    updateAgent(deckId, {
+    updateAgentStateForDeck(deckId, {
       generation: { messageId, outline, slides: slideBuilds, isStopped: false },
       isFollowingGeneration: true,
     })
@@ -113,38 +113,42 @@ export async function generateApprovedOutline() {
 }
 
 export async function retrySlideBuild(slideId: string) {
-  const deckId = openDeckId()
-  if (!deckId || isAgentBusyOn(deckId)) return
-  const slideBuild = getAgent(deckId).generation?.slides.find((build) => build.slideId === slideId)
+  const deckId = getOpenDeckId()
+  if (!deckId || isAgentWorkingOnDeck(deckId)) return
+  const slideBuild = getAgentStateForDeck(deckId).generation?.slides.find((build) => build.slideId === slideId)
   if (!slideBuild) return
-  await runAgentWork(deckId, "generating", (abortSignal) => fillSlides(deckId, [slideBuild], abortSignal))
+  await runAgentJobThatCanBeStopped(deckId, "generating", (abortSignal) =>
+    fillSlides(deckId, [slideBuild], abortSignal)
+  )
 }
 
 export async function continueStoppedGeneration() {
-  const deckId = openDeckId()
-  if (!deckId || isAgentBusyOn(deckId)) return
-  const generation = getAgent(deckId).generation
+  const deckId = getOpenDeckId()
+  if (!deckId || isAgentWorkingOnDeck(deckId)) return
+  const generation = getAgentStateForDeck(deckId).generation
   if (!generation) return
   const waitingBuilds = generation.slides.filter((build) => build.status === "waiting")
-  updateAgent(deckId, { isFollowingGeneration: true })
-  await runAgentWork(deckId, "generating", (abortSignal) => fillSlides(deckId, waitingBuilds, abortSignal))
+  updateAgentStateForDeck(deckId, { isFollowingGeneration: true })
+  await runAgentJobThatCanBeStopped(deckId, "generating", (abortSignal) =>
+    fillSlides(deckId, waitingBuilds, abortSignal)
+  )
 }
 
 function setSlideBuildStatus(deckId: string, slideId: string, status: SlideBuildStatus) {
-  const generation = getAgent(deckId).generation
+  const generation = getAgentStateForDeck(deckId).generation
   if (!generation) return
   const slides = generation.slides.map((build) => (build.slideId === slideId ? { ...build, status } : build))
-  updateAgent(deckId, { generation: { ...generation, slides } })
+  updateAgentStateForDeck(deckId, { generation: { ...generation, slides } })
 }
 
 function setGenerationStopped(deckId: string, isStopped: boolean) {
-  const generation = getAgent(deckId).generation
+  const generation = getAgentStateForDeck(deckId).generation
   if (!generation) return
-  updateAgent(deckId, { generation: { ...generation, isStopped } })
+  updateAgentStateForDeck(deckId, { generation: { ...generation, isStopped } })
 }
 
 async function fillSlides(deckId: string, slideBuilds: SlideBuild[], abortSignal: AbortSignal) {
-  const generation = getAgent(deckId).generation
+  const generation = getAgentStateForDeck(deckId).generation
   if (!generation) return
   setGenerationStopped(deckId, false)
   let failedSlideCount = 0
@@ -158,9 +162,9 @@ async function fillSlides(deckId: string, slideBuilds: SlideBuild[], abortSignal
       continue
     }
 
-    releaseSlidesToAgent([slideBuild.slideId])
+    stopUserEditingOnSlides([slideBuild.slideId])
     setSlideBuildStatus(deckId, slideBuild.slideId, "filling")
-    if (getAgent(deckId).isFollowingGeneration) {
+    if (getAgentStateForDeck(deckId).isFollowingGeneration) {
       useEditorStore.getState().goToSlide(slideBuild.slideId)
     }
     const { errorMessage, appliedEditCount } = await writeSlide(deckId, abortSignal, {
@@ -195,7 +199,7 @@ async function fillSlides(deckId: string, slideBuilds: SlideBuild[], abortSignal
     toast.error(`${slides} couldn't be written`, { description: "Use Retry next to each one.", duration: Infinity })
   }
   if (abortSignal.aborted) setGenerationStopped(deckId, true)
-  updateAgent(deckId, { isFollowingGeneration: false })
+  updateAgentStateForDeck(deckId, { isFollowingGeneration: false })
 }
 
 // Writes one slide through /api/populate; its changes apply as soon as they arrive.

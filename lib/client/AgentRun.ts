@@ -1,4 +1,4 @@
-import { endActiveTextEdit } from "@/lib/client/RichTextEditing"
+import { endActiveTextEdit } from "@/components/elements/TextEditor"
 import { findElementLocation, type DeckEdit } from "@/lib/edits/DeckEdits"
 import { createId } from "@/lib/Ids"
 import type { Deck } from "@/lib/schema/Deck"
@@ -7,125 +7,127 @@ import type { AgentRunKind, DeckAgent } from "@/store/AgentStore"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 
-// What every agent run shares (chat replies and slide generation): one run per deck, one undo step,
-// the slide lock, and applying the agent's edits safely.
+// An "agent run" is one chat reply or one slide generation.
+// While it runs, the user can't edit the slides it changes, and Cmd+Z undoes the whole run in one step.
 
-// Running generation requests by run id, so Stop aborts exactly the right one.
+// Lets the Stop button cancel the right slide generation.
 const abortControllersByRunId = new Map<string, AbortController>()
 
-export function openDeckId() {
+export function getOpenDeckId() {
   return useDeckStore.getState().deck?.id
 }
 
-export function getAgent(deckId: string) {
+export function getAgentStateForDeck(deckId: string) {
   return agentFor(useAgentStore.getState().agents, deckId)
 }
 
-export function updateAgent(deckId: string, changes: Partial<DeckAgent>) {
+export function updateAgentStateForDeck(deckId: string, changes: Partial<DeckAgent>) {
   useAgentStore.getState().updateAgent(deckId, changes)
 }
 
-export function isAgentBusyOn(deckId: string | undefined) {
-  return Boolean(deckId && getAgent(deckId).run)
-}
-
-// True while the agent is changing (or has yet to write) this slide; the user can't edit it then.
-export function isSlideLockedByAgent(slideId: string) {
-  const deckId = openDeckId()
+export function isAgentWorkingOnDeck(deckId: string | undefined) {
   if (!deckId) return false
-  return agentLabelFor(getAgent(deckId), slideId) !== null
+  return getAgentStateForDeck(deckId).run !== null
 }
 
-// Starts a run and its undo group; returns the run id that finishRun needs.
-export function startRun(deckId: string, kind: AgentRunKind) {
+export function isAgentEditingSlide(slideId: string) {
+  const deckId = getOpenDeckId()
+  if (!deckId) return false
+  return agentLabelFor(getAgentStateForDeck(deckId), slideId) !== null
+}
+
+// Returns the run id that finishAgentRun needs.
+export function startAgentRun(deckId: string, kind: AgentRunKind) {
   const runId = createId()
-  updateAgent(deckId, { run: { runId, kind, editingSlideIds: [] } })
+  updateAgentStateForDeck(deckId, { run: { runId, kind, editingSlideIds: [] } })
   useDeckStore.getState().startUndoGroup()
   return runId
 }
 
-// Only ends its own run, so a run stopped when the user left this deck can't end a newer one.
-export function finishRun(deckId: string, runId: string) {
-  const isStillThisRun = getAgent(deckId).run?.runId === runId
+// Ends only its own run, so an old run that was stopped can't end a newer one.
+export function finishAgentRun(deckId: string, runId: string) {
+  const isStillThisRun = getAgentStateForDeck(deckId).run?.runId === runId
   if (!isStillThisRun) return
-  updateAgent(deckId, { run: null })
-  if (openDeckId() === deckId) useDeckStore.getState().finishUndoGroup()
+  updateAgentStateForDeck(deckId, { run: null })
+  if (getOpenDeckId() === deckId) useDeckStore.getState().finishUndoGroup()
 }
 
-// Runs awaited work (slide generation) as one run that Stop can abort.
-export async function runAgentWork(
+export async function runAgentJobThatCanBeStopped(
   deckId: string,
   kind: AgentRunKind,
-  work: (abortSignal: AbortSignal) => Promise<void>
+  job: (abortSignal: AbortSignal) => Promise<void>
 ) {
-  const runId = startRun(deckId, kind)
+  const runId = startAgentRun(deckId, kind)
   const abortController = new AbortController()
   abortControllersByRunId.set(runId, abortController)
   try {
-    await work(abortController.signal)
+    await job(abortController.signal)
   } finally {
     abortControllersByRunId.delete(runId)
-    finishRun(deckId, runId)
+    finishAgentRun(deckId, runId)
   }
 }
 
-export function stopRun(runId: string) {
+export function stopAgentRun(runId: string) {
   abortControllersByRunId.get(runId)?.abort()
 }
 
-export function stopAllRuns() {
+export function stopAllAgentRuns() {
   for (const abortController of abortControllersByRunId.values()) {
     abortController.abort()
   }
 }
 
-// Applies one agent edit to the open deck. Returns false when it was skipped.
+// Returns false when the change was skipped.
 export function applyAgentEdit(deckId: string, edit: DeckEdit, options: { lockSlides: boolean }) {
-  // The user may have opened another deck: never apply this deck's edits to it.
-  if (openDeckId() !== deckId) return false
+  // The user may have opened another deck in the meantime.
+  if (getOpenDeckId() !== deckId) return false
   const deckBeforeEdit = useDeckStore.getState().deck
-  // Lock the slides first so the user's typing is saved before the agent's change lands.
+  // Lock first, so the user's typing on those slides is saved before the agent's change lands.
   if (options.lockSlides && deckBeforeEdit) {
-    markSlidesBeingEdited(deckId, slideIdsChangedBy(edit, deckBeforeEdit))
+    markSlidesAsEditedByAgent(deckId, slideIdsChangedBy(edit, deckBeforeEdit))
   }
-  // Fails when the target was deleted meanwhile.
+  // Fails if the user deleted what the agent is changing.
   const result = useDeckStore.getState().applyEdit(edit)
   if (!result.ok) return false
   useAgentStore.getState().highlightElements(elementIdsChangedBy(edit))
   return true
 }
 
-// Saves any typing on these slides and unselects their elements before the agent changes them.
-export function releaseSlidesToAgent(slideIds: string[]) {
+// Saves any typing on these slides and unselects their elements, before the agent changes them.
+export function stopUserEditingOnSlides(slideIds: string[]) {
   const deck = useDeckStore.getState().deck
   if (!deck) return
-  const isOnLockedSlide = (elementId: string) => {
+
+  function isElementOnSlides(elementId: string) {
+    if (!deck) return false
     const location = findElementLocation(deck, elementId)
-    return location !== undefined && slideIds.includes(location.slide.id)
+    if (!location) return false
+    return slideIds.includes(location.slide.id)
   }
 
-  const editor = useEditorStore.getState()
-  if (editor.editingElementId && isOnLockedSlide(editor.editingElementId)) {
+  const editorState = useEditorStore.getState()
+  if (editorState.editingElementId && isElementOnSlides(editorState.editingElementId)) {
     endActiveTextEdit()
-    // A table being typed into saves when its cell loses focus.
+    // A table saves its typed cells when it loses focus.
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur()
     }
   }
-  const unlockedSelection = editor.selectedElementIds.filter((elementId) => !isOnLockedSlide(elementId))
-  if (unlockedSelection.length !== editor.selectedElementIds.length) {
-    editor.setSelectedElementIds(unlockedSelection)
+  const selectionOffTheseSlides = editorState.selectedElementIds.filter((elementId) => !isElementOnSlides(elementId))
+  if (selectionOffTheseSlides.length !== editorState.selectedElementIds.length) {
+    editorState.setSelectedElementIds(selectionOffTheseSlides)
   }
 }
 
-function markSlidesBeingEdited(deckId: string, slideIds: string[]) {
-  const run = getAgent(deckId).run
+function markSlidesAsEditedByAgent(deckId: string, slideIds: string[]) {
+  const run = getAgentStateForDeck(deckId).run
   if (!run) return
   const newSlideIds = slideIds.filter((slideId) => !run.editingSlideIds.includes(slideId))
-  // Most edits touch a slide that is already marked: no update then.
+  // Most changes are on a slide that is already locked.
   if (newSlideIds.length === 0) return
-  releaseSlidesToAgent(newSlideIds)
-  updateAgent(deckId, { run: { ...run, editingSlideIds: [...run.editingSlideIds, ...newSlideIds] } })
+  stopUserEditingOnSlides(newSlideIds)
+  updateAgentStateForDeck(deckId, { run: { ...run, editingSlideIds: [...run.editingSlideIds, ...newSlideIds] } })
 }
 
 function elementIdsChangedBy(edit: DeckEdit): string[] {
@@ -145,9 +147,12 @@ function elementIdsChangedBy(edit: DeckEdit): string[] {
   }
 }
 
-// Read before the edit, so a moved element marks both the slide it left and the one it joined.
+// Uses the deck from before the change, so a moved element counts both the slide it left and the one it joined.
 function slideIdsChangedBy(edit: DeckEdit, deckBeforeEdit: Deck): string[] {
-  const slideOfElement = (elementId: string) => findElementLocation(deckBeforeEdit, elementId)?.slide.id
+  function findSlideIdOfElement(elementId: string) {
+    return findElementLocation(deckBeforeEdit, elementId)?.slide.id
+  }
+
   switch (edit.type) {
     case "addSlide":
       return [edit.slide.id]
@@ -161,9 +166,9 @@ function slideIdsChangedBy(edit: DeckEdit, deckBeforeEdit: Deck): string[] {
     case "updateElement":
     case "deleteElement":
     case "reorderElement":
-      return [slideOfElement(edit.elementId)].filter((slideId) => slideId !== undefined)
+      return [findSlideIdOfElement(edit.elementId)].filter((slideId) => slideId !== undefined)
     case "moveElement":
-      return [slideOfElement(edit.elementId), edit.toSlideId].filter((slideId) => slideId !== undefined)
+      return [findSlideIdOfElement(edit.elementId), edit.toSlideId].filter((slideId) => slideId !== undefined)
     case "batch":
       return edit.edits.flatMap((innerEdit) => slideIdsChangedBy(innerEdit, deckBeforeEdit))
     default:

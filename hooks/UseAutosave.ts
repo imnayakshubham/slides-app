@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import { isAgentBusyOn } from "@/lib/client/AgentRun"
+import { isAgentWorkingOnDeck } from "@/lib/client/AgentRun"
 import { deckRepository } from "@/lib/repository"
 import type { Deck } from "@/lib/schema/Deck"
 import { useDeckStore } from "@/store/DeckStore"
@@ -47,7 +47,7 @@ export function useAutosave() {
       unsavedDeckRef.current = changedDeck
       setSaveStatus("saving")
       clearTimeout(saveTimeoutRef.current)
-      if (isAgentBusyOn(changedDeck.id)) return
+      if (isAgentWorkingOnDeck(changedDeck.id)) return
       saveTimeoutRef.current = setTimeout(saveUnsavedDeck, AUTOSAVE_DELAY_MS)
     })
 

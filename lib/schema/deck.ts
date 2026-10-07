@@ -157,10 +157,11 @@ const themeSchema = z.strictObject({
     text: z.string(),
     heading: z.string(),
     accent: z.string(),
-    // Fills for cards, and chart series after the first.
+    // Fills for cards; also chart colors (after the accent) when a theme has no chart colors.
     card: z.array(z.string()).min(1),
     // Text on top of a card.
     cardText: z.string(),
+    chart: z.array(z.string()).min(1).optional(),
   }),
 })
 

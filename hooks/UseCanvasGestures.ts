@@ -3,7 +3,7 @@ import type { DragMoveEvent } from "@dnd-kit/core"
 
 import { positionDropCursorBadge } from "@/components/canvas/DropCursorBadge"
 import { RESIZE_CURSORS } from "@/components/canvas/SelectionFrame"
-import { isSlideLockedByAgent } from "@/lib/client/AgentRun"
+import { isAgentEditingSlide } from "@/lib/client/AgentRun"
 import type { DeckEdit } from "@/lib/edits/DeckEdits"
 import { boxesOverlap, clampBox, resizeBox, snapBox, snapResizedEdges, unionBox } from "@/lib/edits/Geometry"
 import type { Box, ResizeHandle, SnapGuide } from "@/lib/edits/Geometry"
@@ -255,7 +255,7 @@ export function useCanvasGestures() {
       return
     }
     // The agent started on this slide mid-drag: its changes win.
-    if (isSlideLockedByAgent(gesture.slideId)) {
+    if (isAgentEditingSlide(gesture.slideId)) {
       clearGesture()
       return
     }
@@ -355,14 +355,14 @@ function findSlideUnderPointer(
     const thumbnail = node.closest<HTMLElement>("[data-slide-drop-id]")
     const thumbnailSlideId = thumbnail?.dataset.slideDropId
     if (thumbnailSlideId) {
-      const isUnavailable = thumbnailSlideId === sourceSlideId || isSlideLockedByAgent(thumbnailSlideId)
+      const isUnavailable = thumbnailSlideId === sourceSlideId || isAgentEditingSlide(thumbnailSlideId)
       if (isUnavailable) return null
       return { slideId: thumbnailSlideId, artboard: null }
     }
     const canvasSlide = node.closest<HTMLElement>("[data-canvas-slide-id]")
     const canvasSlideId = canvasSlide?.dataset.canvasSlideId
     if (canvasSlide && canvasSlideId) {
-      const isUnavailable = canvasSlideId === sourceSlideId || isSlideLockedByAgent(canvasSlideId)
+      const isUnavailable = canvasSlideId === sourceSlideId || isAgentEditingSlide(canvasSlideId)
       if (isUnavailable) return null
       return {
         slideId: canvasSlideId,

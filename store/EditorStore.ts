@@ -1,6 +1,6 @@
+import type { Editor } from "@tiptap/react"
 import { create } from "zustand"
 
-import type { TextBoxStyle } from "@/lib/RichText"
 import { useDeckStore } from "@/store/DeckStore"
 
 type Point = { x: number; y: number }
@@ -18,9 +18,8 @@ type EditorStore = {
   setSelectedElementIds: (elementIds: string[]) => void
   editingElementId: string | null
   setEditingElementId: (elementId: string | null) => void
-  // Null when no words are highlighted: toolbar settings then style the whole box.
-  highlightedTextStyle: TextBoxStyle | null
-  setHighlightedTextStyle: (style: TextBoxStyle | null) => void
+  activeTextEditor: Editor | null
+  setActiveTextEditor: (editor: Editor | null) => void
   addHereMenu: AddHereMenu | null
   setAddHereMenu: (menu: AddHereMenu | null) => void
 }
@@ -34,17 +33,16 @@ export const useEditorStore = create<EditorStore>()((set) => ({
       currentSlideId: slideId,
       selectedElementIds: [],
       editingElementId: null,
-      highlightedTextStyle: null,
       addHereMenu: null,
     }),
 
   setSelectedElementIds: (elementIds) => set({ selectedElementIds: elementIds }),
 
   editingElementId: null,
-  setEditingElementId: (elementId) => set({ editingElementId: elementId, highlightedTextStyle: null }),
+  setEditingElementId: (elementId) => set({ editingElementId: elementId }),
 
-  highlightedTextStyle: null,
-  setHighlightedTextStyle: (style) => set({ highlightedTextStyle: style }),
+  activeTextEditor: null,
+  setActiveTextEditor: (editor) => set({ activeTextEditor: editor }),
 
   addHereMenu: null,
   setAddHereMenu: (menu) => set({ addHereMenu: menu }),

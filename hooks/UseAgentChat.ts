@@ -1,7 +1,7 @@
 import { useEffect } from "react"
 import { useChat } from "@ai-sdk/react"
 
-import { stopAllRuns } from "@/lib/client/AgentRun"
+import { stopAllAgentRuns } from "@/lib/client/AgentRun"
 import { deckChatFor, retryLastAgentMessage, sendAgentMessage, stopAgent, stopAllChats } from "@/lib/client/DeckChat"
 import { useDeckStore } from "@/store/DeckStore"
 
@@ -13,7 +13,7 @@ export function useAgentChat() {
   useEffect(
     () => () => {
       stopAllChats()
-      stopAllRuns()
+      stopAllAgentRuns()
     },
     []
   )

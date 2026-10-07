@@ -5,13 +5,13 @@ import { toast } from "sonner"
 import type { SlidesMessage } from "@/lib/ai/SlidesMessage"
 import {
   applyAgentEdit,
-  finishRun,
-  getAgent,
-  isAgentBusyOn,
-  openDeckId,
-  startRun,
-  stopRun,
-  updateAgent,
+  finishAgentRun,
+  getAgentStateForDeck,
+  getOpenDeckId,
+  isAgentWorkingOnDeck,
+  startAgentRun,
+  stopAgentRun,
+  updateAgentStateForDeck,
 } from "@/lib/client/AgentRun"
 import { messageFromError } from "@/lib/ErrorMessage"
 import { createId } from "@/lib/Ids"
@@ -55,7 +55,7 @@ function createDeckChat(deckId: string, messages: SlidesMessage[]) {
       if (dataPart.type !== "data-edit") return
       const { edit, label } = dataPart.data
       const wasApplied = applyAgentEdit(deckId, edit, { lockSlides: true })
-      if (!wasApplied && openDeckId() === deckId) {
+      if (!wasApplied && getOpenDeckId() === deckId) {
         toast.warning(`Skipped "${label}"`, { description: "That part changed while the agent worked." })
       }
     },
@@ -88,28 +88,28 @@ function requestFor(messages: SlidesMessage[]) {
 }
 
 export async function sendAgentMessage(text: string) {
-  const deckId = openDeckId()
-  if (!deckId || isAgentBusyOn(deckId)) return
+  const deckId = getOpenDeckId()
+  if (!deckId || isAgentWorkingOnDeck(deckId)) return
   const isPlanning = useDeckStore.getState().deck?.slides.length === 0
-  chatRunIdByDeckId.set(deckId, startRun(deckId, isPlanning ? "planning" : "chat"))
+  chatRunIdByDeckId.set(deckId, startAgentRun(deckId, isPlanning ? "planning" : "chat"))
   await deckChatFor(deckId).sendMessage({ text })
 }
 
 // Sends the last user message again, replacing a failed or stopped reply.
 export async function retryLastAgentMessage() {
-  const deckId = openDeckId()
-  if (!deckId || isAgentBusyOn(deckId)) return
+  const deckId = getOpenDeckId()
+  if (!deckId || isAgentWorkingOnDeck(deckId)) return
   const isPlanning = useDeckStore.getState().deck?.slides.length === 0
-  chatRunIdByDeckId.set(deckId, startRun(deckId, isPlanning ? "planning" : "chat"))
+  chatRunIdByDeckId.set(deckId, startAgentRun(deckId, isPlanning ? "planning" : "chat"))
   await deckChatFor(deckId).regenerate()
 }
 
 // Stop button: stops the open deck's reply or its slide generation.
 export function stopAgent() {
-  const deckId = openDeckId()
-  const run = deckId ? getAgent(deckId).run : null
+  const deckId = getOpenDeckId()
+  const run = deckId ? getAgentStateForDeck(deckId).run : null
   if (!deckId || !run) return
-  if (run.kind === "generating") stopRun(run.runId)
+  if (run.kind === "generating") stopAgentRun(run.runId)
   else void deckChatFor(deckId).stop()
 }
 
@@ -120,14 +120,14 @@ export function stopAllChats() {
 
 function finishChatTurn(deckId: string, reply: SlidesMessage, messages: SlidesMessage[], didFail: boolean) {
   const runId = chatRunIdByDeckId.get(deckId)
-  const wasPlanning = getAgent(deckId).run?.kind === "planning"
-  if (runId) finishRun(deckId, runId)
+  const wasPlanning = getAgentStateForDeck(deckId).run?.kind === "planning"
+  if (runId) finishAgentRun(deckId, runId)
   chatRunIdByDeckId.delete(deckId)
 
   const outline = outlineIn(reply)
   if (outline) {
     const slideKeys = outline.slides.map(() => createId())
-    updateAgent(deckId, { outlineReview: { messageId: reply.id, outline, slideKeys } })
+    updateAgentStateForDeck(deckId, { outlineReview: { messageId: reply.id, outline, slideKeys } })
   } else if (wasPlanning && !didFail) {
     toast.error("The agent couldn't plan the deck", {
       description: "It didn't return an outline. Please try again.",
