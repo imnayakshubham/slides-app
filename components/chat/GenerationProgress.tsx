@@ -15,7 +15,8 @@ import {
   retrySlideBuild,
 } from "@/lib/client/AgentActions"
 import { cn } from "@/lib/utils"
-import { useEditorStore, type SlideBuildStatus } from "@/store/EditorStore"
+import { useDeckAgent } from "@/hooks/UseDeckAgent"
+import type { SlideBuildStatus } from "@/store/EditorStore"
 
 const STATUS_LABELS: Record<SlideBuildStatus, string> = {
   waiting: "Waiting",
@@ -28,13 +29,13 @@ const STATUS_LABELS: Record<SlideBuildStatus, string> = {
 // proposed the outline. Failed slides can be retried, and a stopped build
 // can continue with the slides that are left.
 export function GenerationProgress({ messageId }: { messageId: string }) {
-  const deckGeneration = useEditorStore((state) =>
-    state.deckGeneration?.messageId === messageId ? state.deckGeneration : null
+  const generation = useDeckAgent((agent) =>
+    agent.generation?.messageId === messageId ? agent.generation : null
   )
-  const isAgentRunning = useEditorStore((state) => state.isAgentRunning)
-  if (!deckGeneration) return null
+  const isAgentRunning = useDeckAgent((agent) => agent.run !== null)
+  if (!generation) return null
 
-  const { slides, isStopped, outline } = deckGeneration
+  const { slides, isStopped, outline } = generation
   const doneCount = slides.filter((build) => build.status === "done").length
   const waitingCount = slides.filter(
     (build) => build.status === "waiting"

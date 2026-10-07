@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
+import { isAgentBusyOn } from "@/lib/client/AgentActions"
 import { deckRepository } from "@/lib/repository"
 import type { Deck } from "@/lib/schema/Deck"
 import { useDeckStore } from "@/store/DeckStore"
-import { useEditorStore } from "@/store/EditorStore"
+import { deckAgentOf, useEditorStore } from "@/store/EditorStore"
 
 const AUTOSAVE_DELAY_MS = 1000
 
@@ -53,15 +54,17 @@ export function useAutosave() {
       unsavedDeckRef.current = changedDeck
       setSaveStatus("saving")
       clearTimeout(saveTimeoutRef.current)
-      if (useEditorStore.getState().isAgentRunning) return
+      if (isAgentBusyOn(changedDeck.id)) return
       saveTimeoutRef.current = setTimeout(saveUnsavedDeck, AUTOSAVE_DELAY_MS)
     })
 
+    // Saves once when the open deck's agent run ends.
     const unsubscribeFromAgent = useEditorStore.subscribe(
       (state, previousState) => {
-        const agentJustFinished =
-          previousState.isAgentRunning && !state.isAgentRunning
-        if (agentJustFinished) void saveUnsavedDeck()
+        const deckId = useDeckStore.getState().deck?.id
+        const wasRunning = deckAgentOf(previousState.agentByDeckId, deckId).run
+        const isRunning = deckAgentOf(state.agentByDeckId, deckId).run
+        if (wasRunning && !isRunning) void saveUnsavedDeck()
       }
     )
 

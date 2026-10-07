@@ -34,6 +34,42 @@ export type DeckGeneration = {
   isStopped: boolean
 }
 
+export type AgentRunKind = "chat" | "planning" | "generating"
+
+// One agent run on one deck.
+export type AgentRun = {
+  runId: string
+  kind: AgentRunKind
+  // Slides changed during this run; they shimmer until it ends.
+  editingSlideIds: string[]
+}
+
+// Everything the agent has going on for one deck.
+export type DeckAgentState = {
+  run: AgentRun | null
+  // An outline waiting for the user to edit and approve it.
+  outlineReview: OutlineReview | null
+  generation: DeckGeneration | null
+  // The canvas follows the slide being written until the user takes over.
+  isFollowingGeneration: boolean
+}
+
+const NO_AGENT_ACTIVITY: DeckAgentState = {
+  run: null,
+  outlineReview: null,
+  generation: null,
+  isFollowingGeneration: false,
+}
+
+// The agent state of one deck (nothing going on when it has none yet).
+export function deckAgentOf(
+  agentByDeckId: Record<string, DeckAgentState>,
+  deckId: string | undefined
+): DeckAgentState {
+  if (!deckId) return NO_AGENT_ACTIVITY
+  return agentByDeckId[deckId] ?? NO_AGENT_ACTIVITY
+}
+
 type EditorStore = {
   currentSlideId: string | null
   selectedElementIds: string[]
@@ -48,7 +84,6 @@ type EditorStore = {
   setHighlightedTextStyle: (style: TextBoxStyle | null) => void
 
   chatMessages: ChatMessage[]
-  isAgentRunning: boolean
   loadChatMessages: (messages: ChatMessage[]) => void
   addChatMessage: (message: ChatMessage) => void
   updateChatMessage: (
@@ -56,24 +91,16 @@ type EditorStore = {
     update: (message: ChatMessage) => ChatMessage
   ) => void
   removeChatMessage: (messageId: string) => void
-  setIsAgentRunning: (isAgentRunning: boolean) => void
 
-  // An outline waiting for the user to edit and approve it.
-  outlineReview: OutlineReview | null
-  setOutlineReview: (outlineReview: OutlineReview | null) => void
-  deckGeneration: DeckGeneration | null
-  setDeckGeneration: (deckGeneration: DeckGeneration | null) => void
-  setSlideBuildStatus: (slideId: string, status: SlideBuildStatus) => void
-  // The canvas follows the slide being filled until the user takes over.
-  isFollowingGeneration: boolean
-  setIsFollowingGeneration: (isFollowing: boolean) => void
+  // Keyed by deck id, so a run, its statuses and its outline belong to
+  // exactly one deck and can never leak into another.
+  agentByDeckId: Record<string, DeckAgentState>
+  updateDeckAgent: (
+    deckId: string,
+    update: (agent: DeckAgentState) => Partial<DeckAgentState>
+  ) => void
   agentTouchedElementIds: string[]
   highlightAgentTouchedElements: (elementIds: string[]) => void
-  // Slides the agent has changed during the current chat reply; they
-  // shimmer until the reply ends.
-  agentEditingSlideIds: string[]
-  addAgentEditingSlides: (slideIds: string[]) => void
-  clearAgentEditingSlides: () => void
 }
 
 export const useEditorStore = create<EditorStore>()((set) => ({
@@ -99,10 +126,8 @@ export const useEditorStore = create<EditorStore>()((set) => ({
   setHighlightedTextStyle: (style) => set({ highlightedTextStyle: style }),
 
   chatMessages: [],
-  isAgentRunning: false,
 
-  loadChatMessages: (messages) =>
-    set({ chatMessages: messages, isAgentRunning: false }),
+  loadChatMessages: (messages) => set({ chatMessages: messages }),
 
   addChatMessage: (message) =>
     set((state) => ({ chatMessages: [...state.chatMessages, message] })),
@@ -122,45 +147,17 @@ export const useEditorStore = create<EditorStore>()((set) => ({
       ),
     })),
 
-  setIsAgentRunning: (isAgentRunning) => set({ isAgentRunning }),
-
-  outlineReview: null,
-  setOutlineReview: (outlineReview) => set({ outlineReview }),
-
-  deckGeneration: null,
-  setDeckGeneration: (deckGeneration) => set({ deckGeneration }),
-  setSlideBuildStatus: (slideId, status) =>
+  agentByDeckId: {},
+  updateDeckAgent: (deckId, update) =>
     set((state) => {
-      if (!state.deckGeneration) return {}
+      const agent = deckAgentOf(state.agentByDeckId, deckId)
       return {
-        deckGeneration: {
-          ...state.deckGeneration,
-          slides: state.deckGeneration.slides.map((slideBuild) =>
-            slideBuild.slideId === slideId
-              ? { ...slideBuild, status }
-              : slideBuild
-          ),
+        agentByDeckId: {
+          ...state.agentByDeckId,
+          [deckId]: { ...agent, ...update(agent) },
         },
       }
     }),
-
-  isFollowingGeneration: false,
-  setIsFollowingGeneration: (isFollowingGeneration) =>
-    set({ isFollowingGeneration }),
-
-  agentEditingSlideIds: [],
-  addAgentEditingSlides: (slideIds) =>
-    set((state) => {
-      const newSlideIds = slideIds.filter(
-        (slideId) => !state.agentEditingSlideIds.includes(slideId)
-      )
-      // Most edits touch a slide that is already marked: no update then.
-      if (newSlideIds.length === 0) return {}
-      return {
-        agentEditingSlideIds: [...state.agentEditingSlideIds, ...newSlideIds],
-      }
-    }),
-  clearAgentEditingSlides: () => set({ agentEditingSlideIds: [] }),
 
   agentTouchedElementIds: [],
   highlightAgentTouchedElements: (elementIds) => {

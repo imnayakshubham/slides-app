@@ -10,39 +10,76 @@ import type { Deck } from "@/lib/schema/Deck"
 import type { Outline, OutlineSlide } from "@/lib/schema/Outline"
 import type { StreamEvent } from "@/lib/StreamEvents"
 import { useDeckStore } from "@/store/DeckStore"
-import { useEditorStore, type SlideBuild } from "@/store/EditorStore"
+import {
+  deckAgentOf,
+  useEditorStore,
+  type AgentRunKind,
+  type DeckAgentState,
+  type SlideBuild,
+  type SlideBuildStatus,
+} from "@/store/EditorStore"
 
 // Everything the agent does from the browser: chat edits, planning a deck,
 // building it slide by slide, retrying a slide and continuing after Stop.
-// All of it goes through runAgentWork (one run at a time, one undo step)
-// and streamRequest (one streamed API call into a chat message).
+// Each action belongs to the deck that was open when it started (its id is
+// captured up front) and only ever changes that deck's agent state. All of
+// it goes through runAgentWork (one run per deck, one undo step) and
+// streamRequest (one streamed API call into a chat message).
 
 const CONNECTION_ERROR_MESSAGE =
   "Couldn't reach the agent. Check your connection and try again."
 const NO_OUTLINE_MESSAGE =
   "The agent didn't return an outline. Please try again."
 
-let activeAbortController: AbortController | null = null
+// Running requests by run id, so Stop aborts exactly the right one.
+const abortControllersByRunId = new Map<string, AbortController>()
 
-export function stopAgent() {
-  activeAbortController?.abort()
+function openDeckId() {
+  return useDeckStore.getState().deck?.id
 }
 
-export function isAgentBusy() {
-  return useEditorStore.getState().isAgentRunning
+function deckAgent(deckId: string) {
+  return deckAgentOf(useEditorStore.getState().agentByDeckId, deckId)
+}
+
+function updateDeckAgent(
+  deckId: string,
+  update: (agent: DeckAgentState) => Partial<DeckAgentState>
+) {
+  useEditorStore.getState().updateDeckAgent(deckId, update)
+}
+
+export function isAgentBusyOn(deckId: string | undefined) {
+  return Boolean(deckId && deckAgent(deckId).run)
+}
+
+// Stop button: stops the open deck's run.
+export function stopAgent() {
+  const deckId = openDeckId()
+  const runId = deckId ? deckAgent(deckId).run?.runId : undefined
+  if (runId) abortControllersByRunId.get(runId)?.abort()
+}
+
+// Leaving the editor stops everything; changes already made stay saved.
+export function stopAllAgentRuns() {
+  for (const abortController of abortControllersByRunId.values()) {
+    abortController.abort()
+  }
 }
 
 // A new message on an empty deck plans a deck; otherwise it edits the deck.
 export async function sendAgentMessage(text: string) {
-  if (isAgentBusy()) return
+  const deckId = openDeckId()
+  if (!deckId || isAgentBusyOn(deckId)) return
   const { chatMessages, addChatMessage } = useEditorStore.getState()
   addChatMessage(createMessage("user", text))
-  saveConversation()
-  await respondTo(text, chatMessages)
+  saveConversation(deckId)
+  await respondTo(deckId, text, chatMessages)
 }
 
 export async function retryLastAgentMessage() {
-  if (isAgentBusy()) return
+  const deckId = openDeckId()
+  if (!deckId || isAgentBusyOn(deckId)) return
   const { chatMessages, removeChatMessage } = useEditorStore.getState()
 
   const lastMessage = chatMessages.at(-1)
@@ -53,29 +90,36 @@ export async function retryLastAgentMessage() {
   )
   if (lastUserMessageIndex === -1) return
   await respondTo(
+    deckId,
     chatMessages[lastUserMessageIndex].content,
     chatMessages.slice(0, lastUserMessageIndex)
   )
 }
 
-async function respondTo(text: string, earlierMessages: ChatMessage[]) {
+async function respondTo(
+  deckId: string,
+  text: string,
+  earlierMessages: ChatMessage[]
+) {
   const deck = useDeckStore.getState().deck
   if (!deck) return
   if (deck.slides.length === 0) {
-    await planDeck(text)
+    await planDeck(deckId, text)
   } else {
-    await runChatTurn(text, earlierMessages)
+    await runChatTurn(deckId, text, earlierMessages)
   }
 }
 
 async function runChatTurn(
+  deckId: string,
   userMessage: string,
   earlierMessages: ChatMessage[]
 ) {
-  await runAgentWork(async (abortSignal) => {
+  await runAgentWork(deckId, "chat", async (abortSignal) => {
     const { currentSlideId, selectedElementIds } = useEditorStore.getState()
     const messageId = startAssistantMessage()
     const { errorMessage } = await streamRequest({
+      deckId,
       messageId,
       url: "/api/chat",
       body: {
@@ -95,10 +139,11 @@ async function runChatTurn(
 }
 
 // Phase one: the outline is shown for review; the deck is not touched.
-async function planDeck(prompt: string) {
-  await runAgentWork(async (abortSignal) => {
+async function planDeck(deckId: string, prompt: string) {
+  await runAgentWork(deckId, "planning", async (abortSignal) => {
     const messageId = startAssistantMessage()
     const { errorMessage, outline } = await streamRequest({
+      deckId,
       messageId,
       url: "/api/plan",
       body: { prompt },
@@ -111,11 +156,13 @@ async function planDeck(prompt: string) {
         ...message,
         content: `Here's an outline for “${outline.title}”, ${outline.slides.length} slides. Edit, reorder or remove slides, then generate.`,
       }))
-      useEditorStore.getState().setOutlineReview({
-        messageId,
-        outline,
-        slideKeys: outline.slides.map(() => createId()),
-      })
+      updateDeckAgent(deckId, () => ({
+        outlineReview: {
+          messageId,
+          outline,
+          slideKeys: outline.slides.map(() => createId()),
+        },
+      }))
     }
     const missingOutline =
       !outline && !errorMessage && !abortSignal.aborted
@@ -129,8 +176,8 @@ async function planDeck(prompt: string) {
   })
 }
 
-// Edits to the outline before it is approved. Each keeps the row keys in
-// the same order as the slides.
+// Edits to the open deck's outline before it is approved. Each keeps the
+// row keys in the same order as the slides.
 function updateOutlineReview(
   update: (
     slides: OutlineSlide[],
@@ -140,16 +187,21 @@ function updateOutlineReview(
     slideKeys: string[]
   }
 ) {
-  const { outlineReview, setOutlineReview } = useEditorStore.getState()
-  if (!outlineReview) return
-  const { slides, slideKeys } = update(
-    outlineReview.outline.slides,
-    outlineReview.slideKeys
-  )
-  setOutlineReview({
-    ...outlineReview,
-    outline: { ...outlineReview.outline, slides },
-    slideKeys,
+  const deckId = openDeckId()
+  if (!deckId) return
+  updateDeckAgent(deckId, ({ outlineReview }) => {
+    if (!outlineReview) return {}
+    const { slides, slideKeys } = update(
+      outlineReview.outline.slides,
+      outlineReview.slideKeys
+    )
+    return {
+      outlineReview: {
+        ...outlineReview,
+        outline: { ...outlineReview.outline, slides },
+        slideKeys,
+      },
+    }
   })
 }
 
@@ -177,26 +229,30 @@ export function removeOutlineSlide(slideIndex: number) {
 }
 
 export function discardOutline() {
-  const { outlineReview, setOutlineReview } = useEditorStore.getState()
+  const deckId = openDeckId()
+  if (!deckId) return
+  const outlineReview = deckAgent(deckId).outlineReview
   if (!outlineReview) return
-  setOutlineReview(null)
+  updateDeckAgent(deckId, () => ({ outlineReview: null }))
   updateMessage(outlineReview.messageId, (message) => ({
     ...message,
     content: "Outline discarded.",
   }))
-  saveConversation()
+  saveConversation(deckId)
 }
 
 // Phase two: every planned slide is added at once (with its title), then
 // filled one by one. The whole build is one undo step.
 export async function generateApprovedOutline() {
-  const { outlineReview, setOutlineReview } = useEditorStore.getState()
   const deck = useDeckStore.getState().deck
-  if (!outlineReview || !deck || isAgentBusy()) return
+  if (!deck || isAgentBusyOn(deck.id)) return
+  const deckId = deck.id
+  const outlineReview = deckAgent(deckId).outlineReview
+  if (!outlineReview) return
   const { messageId, outline } = outlineReview
-  setOutlineReview(null)
+  updateDeckAgent(deckId, () => ({ outlineReview: null }))
 
-  await runAgentWork(async (abortSignal) => {
+  await runAgentWork(deckId, "generating", async (abortSignal) => {
     const plannedSlides = outline.slides.map((outlineSlide) =>
       createSlide(outlineSlide.layout, outlineSlide.title, deck.theme)
     )
@@ -216,61 +272,98 @@ export async function generateApprovedOutline() {
       outlineSlideIndex: index,
       status: "waiting",
     }))
-    const editor = useEditorStore.getState()
-    editor.setDeckGeneration({
-      messageId,
-      outline,
-      slides: slideBuilds,
-      isStopped: false,
-    })
-    editor.setIsFollowingGeneration(true)
-    await fillSlides(slideBuilds, abortSignal)
+    updateDeckAgent(deckId, () => ({
+      generation: {
+        messageId,
+        outline,
+        slides: slideBuilds,
+        isStopped: false,
+      },
+      isFollowingGeneration: true,
+    }))
+    await fillSlides(deckId, slideBuilds, abortSignal)
   })
 }
 
 export async function retrySlideBuild(slideId: string) {
-  const slideBuild = useEditorStore
-    .getState()
-    .deckGeneration?.slides.find((build) => build.slideId === slideId)
-  if (!slideBuild || isAgentBusy()) return
-  await runAgentWork((abortSignal) => fillSlides([slideBuild], abortSignal))
+  const deckId = openDeckId()
+  if (!deckId || isAgentBusyOn(deckId)) return
+  const slideBuild = deckAgent(deckId).generation?.slides.find(
+    (build) => build.slideId === slideId
+  )
+  if (!slideBuild) return
+  await runAgentWork(deckId, "generating", (abortSignal) =>
+    fillSlides(deckId, [slideBuild], abortSignal)
+  )
 }
 
 export async function continueStoppedGeneration() {
-  const deckGeneration = useEditorStore.getState().deckGeneration
-  if (!deckGeneration || isAgentBusy()) return
-  const waitingBuilds = deckGeneration.slides.filter(
+  const deckId = openDeckId()
+  if (!deckId || isAgentBusyOn(deckId)) return
+  const generation = deckAgent(deckId).generation
+  if (!generation) return
+  const waitingBuilds = generation.slides.filter(
     (build) => build.status === "waiting"
   )
-  useEditorStore.getState().setIsFollowingGeneration(true)
-  await runAgentWork((abortSignal) => fillSlides(waitingBuilds, abortSignal))
+  updateDeckAgent(deckId, () => ({ isFollowingGeneration: true }))
+  await runAgentWork(deckId, "generating", (abortSignal) =>
+    fillSlides(deckId, waitingBuilds, abortSignal)
+  )
 }
 
-async function fillSlides(slideBuilds: SlideBuild[], abortSignal: AbortSignal) {
-  const editor = useEditorStore.getState()
-  const deckGeneration = editor.deckGeneration
-  if (!deckGeneration) return
-  editor.setDeckGeneration({ ...deckGeneration, isStopped: false })
+function setSlideBuildStatus(
+  deckId: string,
+  slideId: string,
+  status: SlideBuildStatus
+) {
+  updateDeckAgent(deckId, ({ generation }) => {
+    if (!generation) return {}
+    return {
+      generation: {
+        ...generation,
+        slides: generation.slides.map((build) =>
+          build.slideId === slideId ? { ...build, status } : build
+        ),
+      },
+    }
+  })
+}
+
+function setGenerationStopped(deckId: string, isStopped: boolean) {
+  updateDeckAgent(deckId, ({ generation }) =>
+    generation ? { generation: { ...generation, isStopped } } : {}
+  )
+}
+
+async function fillSlides(
+  deckId: string,
+  slideBuilds: SlideBuild[],
+  abortSignal: AbortSignal
+) {
+  const generation = deckAgent(deckId).generation
+  if (!generation) return
+  setGenerationStopped(deckId, false)
 
   for (const slideBuild of slideBuilds) {
     if (abortSignal.aborted) break
     const deck = useDeckStore.getState().deck
     // The user may have deleted the slide while earlier ones were filling.
     if (!deck?.slides.some((slide) => slide.id === slideBuild.slideId)) {
-      editor.setSlideBuildStatus(slideBuild.slideId, "failed")
+      setSlideBuildStatus(deckId, slideBuild.slideId, "failed")
       continue
     }
 
-    editor.setSlideBuildStatus(slideBuild.slideId, "filling")
-    if (useEditorStore.getState().isFollowingGeneration) {
-      editor.goToSlide(slideBuild.slideId)
+    setSlideBuildStatus(deckId, slideBuild.slideId, "filling")
+    if (deckAgent(deckId).isFollowingGeneration) {
+      useEditorStore.getState().goToSlide(slideBuild.slideId)
     }
     const { errorMessage, appliedEditCount } = await streamRequest({
-      messageId: deckGeneration.messageId,
+      deckId,
+      messageId: generation.messageId,
       url: "/api/populate",
       body: {
         deck,
-        outline: deckGeneration.outline,
+        outline: generation.outline,
         slideId: slideBuild.slideId,
         outlineSlideIndex: slideBuild.outlineSlideIndex,
       },
@@ -279,40 +372,53 @@ async function fillSlides(slideBuilds: SlideBuild[], abortSignal: AbortSignal) {
     })
 
     if (abortSignal.aborted) {
-      editor.setSlideBuildStatus(slideBuild.slideId, "waiting")
+      setSlideBuildStatus(deckId, slideBuild.slideId, "waiting")
       break
     }
     // No edit means every attempt to write the slide was rejected.
     const isFilled = !errorMessage && appliedEditCount > 0
-    editor.setSlideBuildStatus(slideBuild.slideId, isFilled ? "done" : "failed")
+    setSlideBuildStatus(
+      deckId,
+      slideBuild.slideId,
+      isFilled ? "done" : "failed"
+    )
   }
 
-  const latestGeneration = useEditorStore.getState().deckGeneration
-  if (abortSignal.aborted && latestGeneration) {
-    editor.setDeckGeneration({ ...latestGeneration, isStopped: true })
-  }
-  editor.setIsFollowingGeneration(false)
+  if (abortSignal.aborted) setGenerationStopped(deckId, true)
+  updateDeckAgent(deckId, () => ({ isFollowingGeneration: false }))
 }
 
-// One agent run at a time. Everything it changes is one undo step, and the
-// deck is saved once it ends (see useAutosave).
-async function runAgentWork(work: (abortSignal: AbortSignal) => Promise<void>) {
+// One run per deck at a time. Everything it changes is one undo step, and
+// the deck is saved once it ends (see useAutosave). Its cleanup only
+// touches its own run: a run that was stopped when the user left this deck
+// can't end a newer run, or close another deck's undo step.
+async function runAgentWork(
+  deckId: string,
+  kind: AgentRunKind,
+  work: (abortSignal: AbortSignal) => Promise<void>
+) {
+  const runId = createId()
   const abortController = new AbortController()
-  activeAbortController = abortController
-  useEditorStore.getState().setIsAgentRunning(true)
+  abortControllersByRunId.set(runId, abortController)
+  updateDeckAgent(deckId, () => ({
+    run: { runId, kind, editingSlideIds: [] },
+  }))
   useDeckStore.getState().beginGroup()
   try {
     await work(abortController.signal)
   } finally {
-    if (activeAbortController === abortController) activeAbortController = null
-    useDeckStore.getState().endGroup()
-    useEditorStore.getState().clearAgentEditingSlides()
-    useEditorStore.getState().setIsAgentRunning(false)
-    saveConversation()
+    abortControllersByRunId.delete(runId)
+    const isStillThisRun = deckAgent(deckId).run?.runId === runId
+    if (isStillThisRun) updateDeckAgent(deckId, () => ({ run: null }))
+    if (isStillThisRun && openDeckId() === deckId) {
+      useDeckStore.getState().endGroup()
+      saveConversation(deckId)
+    }
   }
 }
 
 type StreamRequest = {
+  deckId: string
   messageId: string
   url: string
   body: unknown
@@ -325,7 +431,7 @@ type StreamRequest = {
 // Streams one API call: deck edits are applied as they arrive, and the
 // reply text goes into the chat message.
 async function streamRequest(request: StreamRequest) {
-  const { messageId, url, body, abortSignal, isChatReply } = request
+  const { deckId, messageId, url, body, abortSignal, isChatReply } = request
   let errorMessage: string | undefined
   let outline: Outline | undefined
   let appliedEditCount = 0
@@ -348,7 +454,9 @@ async function streamRequest(request: StreamRequest) {
     if (streamEvent.event === "text_delta" && isChatReply) {
       textBuffer.add(streamEvent.data.text)
     }
-    if (streamEvent.event === "edit") {
+    // The user may have opened another deck: never apply this deck's edits
+    // to it.
+    if (streamEvent.event === "edit" && openDeckId() === deckId) {
       const { edit, label } = streamEvent.data
       const deckBeforeEdit = useDeckStore.getState().deck
       // Fails when the user changed or deleted the target meanwhile.
@@ -359,7 +467,7 @@ async function streamRequest(request: StreamRequest) {
         const editor = useEditorStore.getState()
         editor.highlightAgentTouchedElements(elementIdsChangedBy(edit))
         if (isChatReply && deckBeforeEdit) {
-          editor.addAgentEditingSlides(slideIdsChangedBy(edit, deckBeforeEdit))
+          markSlidesBeingEdited(deckId, slideIdsChangedBy(edit, deckBeforeEdit))
         }
       } else {
         addAction(`Skipped "${label}": it changed while the agent worked`, true)
@@ -398,6 +506,19 @@ function elementIdsChangedBy(edit: DeckEdit): string[] {
     default:
       return []
   }
+}
+
+function markSlidesBeingEdited(deckId: string, slideIds: string[]) {
+  const run = deckAgent(deckId).run
+  if (!run) return
+  const newSlideIds = slideIds.filter(
+    (slideId) => !run.editingSlideIds.includes(slideId)
+  )
+  // Most edits touch a slide that is already marked: no update then.
+  if (newSlideIds.length === 0) return
+  updateDeckAgent(deckId, () => ({
+    run: { ...run, editingSlideIds: [...run.editingSlideIds, ...newSlideIds] },
+  }))
 }
 
 // Read from the deck before the edit, so a moved element marks both the
@@ -512,9 +633,9 @@ function createTextBuffer(writeText: (text: string) => void) {
   return { add, flush }
 }
 
-function saveConversation() {
-  const deckId = useDeckStore.getState().deck?.id
-  if (!deckId) return
+// Saves the open chat, only while it still belongs to this deck.
+function saveConversation(deckId: string) {
+  if (openDeckId() !== deckId) return
 
   const finishedMessages = useEditorStore
     .getState()

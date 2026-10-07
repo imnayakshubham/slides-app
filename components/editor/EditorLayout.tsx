@@ -14,7 +14,7 @@ import { useCanvasShortcuts } from "@/hooks/UseCanvasShortcuts"
 import type { SaveStatus } from "@/hooks/UseAutosave"
 import { useSlideKeyboardNavigation } from "@/hooks/UseSlideKeyboardNavigation"
 import { useDeckStore } from "@/store/DeckStore"
-import { useEditorStore } from "@/store/EditorStore"
+import { deckAgentOf, useEditorStore } from "@/store/EditorStore"
 
 type EditorLayoutProps = {
   saveStatus: SaveStatus
@@ -69,9 +69,13 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
   useEffect(
     () =>
       useEditorStore.subscribe((state, previousState) => {
-        if (state.outlineReview && !previousState.outlineReview) {
-          showAgentForReview()
-        }
+        const deckId = useDeckStore.getState().deck?.id
+        const hasReview = deckAgentOf(state.agentByDeckId, deckId).outlineReview
+        const hadReview = deckAgentOf(
+          previousState.agentByDeckId,
+          deckId
+        ).outlineReview
+        if (hasReview && !hadReview) showAgentForReview()
       }),
     []
   )
@@ -79,8 +83,11 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
   // Any click or scroll in the editor means the user is driving now, so the
   // canvas stops jumping to the slide being generated.
   function stopFollowingGeneration() {
-    const editor = useEditorStore.getState()
-    if (editor.isFollowingGeneration) editor.setIsFollowingGeneration(false)
+    const deckId = useDeckStore.getState().deck?.id
+    const { agentByDeckId, updateDeckAgent } = useEditorStore.getState()
+    if (deckId && deckAgentOf(agentByDeckId, deckId).isFollowingGeneration) {
+      updateDeckAgent(deckId, () => ({ isFollowingGeneration: false }))
+    }
   }
 
   return (

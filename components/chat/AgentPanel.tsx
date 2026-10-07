@@ -6,8 +6,9 @@ import { MessageInput } from "@/components/chat/MessageInput"
 import { DeckTitleInput } from "@/components/editor/DeckTitleInput"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useDeckAgent } from "@/hooks/UseDeckAgent"
 import { useDeckStore } from "@/store/DeckStore"
-import { useEditorStore } from "@/store/EditorStore"
+import { useEditorStore, type AgentRunKind } from "@/store/EditorStore"
 
 // On an empty deck a message plans a new deck; otherwise it edits this one.
 const GENERATE_EXAMPLE_PROMPTS = [
@@ -43,7 +44,7 @@ export function AgentPanel({
   className,
 }: AgentPanelProps) {
   const hasMessages = useEditorStore((state) => state.chatMessages.length > 0)
-  const isAgentRunning = useEditorStore((state) => state.isAgentRunning)
+  const agentRunKind = useDeckAgent((agent) => agent.run?.kind)
   const isDeckEmpty = useDeckStore(
     (state) => (state.deck?.slides.length ?? 0) === 0
   )
@@ -113,11 +114,22 @@ export function AgentPanel({
       )}
 
       <MessageInput
-        placeholder={isDeckEmpty ? "Describe your deck…" : "Message the agent…"}
+        placeholder={messagePlaceholder(agentRunKind, isDeckEmpty)}
         onSubmitPrompt={onSendMessage}
-        isBusy={isAgentRunning}
+        isBusy={agentRunKind !== undefined}
         onStop={onStopAgent}
       />
     </section>
   )
+}
+
+// While the agent works, the input says what it is doing on this deck.
+function messagePlaceholder(
+  agentRunKind: AgentRunKind | undefined,
+  isDeckEmpty: boolean
+) {
+  if (agentRunKind === "planning") return "Planning your deck…"
+  if (agentRunKind === "generating") return "Writing your slides…"
+  if (agentRunKind === "chat") return "Editing your deck…"
+  return isDeckEmpty ? "Describe your deck…" : "Message the agent…"
 }

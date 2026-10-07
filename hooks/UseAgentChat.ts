@@ -4,12 +4,13 @@ import {
   retryLastAgentMessage,
   sendAgentMessage,
   stopAgent,
+  stopAllAgentRuns,
 } from "@/lib/client/AgentActions"
 
 // The chat panel's view of the agent. The work itself lives in AgentActions;
-// this only stops a running agent when the editor closes.
+// this only stops running agents when the editor closes.
 export function useAgentChat() {
-  useEffect(() => stopAgent, [])
+  useEffect(() => stopAllAgentRuns, [])
 
   return {
     sendMessage: sendAgentMessage,
