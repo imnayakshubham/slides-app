@@ -7,7 +7,7 @@ type Point = { x: number; y: number }
 
 type AddHereMenu = {
   screenPoint: Point
-  // In artboard units: where the new element goes.
+  // Where the new element goes, in slide units (1920 x 1080).
   slidePoint: Point
 }
 

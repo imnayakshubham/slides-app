@@ -41,7 +41,7 @@ export function ChatMessageList({ onRetry, className }: ChatMessageListProps) {
     scrollEndThreshold: FOLLOW_BOTTOM_DISTANCE_PX,
   })
 
-  // The virtualizer stays the same object, so this runs once, when the chat opens.
+  // The list helper stays the same object, so this runs only once, when the chat opens.
   useEffect(() => {
     virtualizer.scrollToEnd()
   }, [virtualizer])
@@ -83,7 +83,7 @@ export function ChatMessageList({ onRetry, className }: ChatMessageListProps) {
   )
 }
 
-// While a reply streams, only that message re-renders.
+// While a reply streams in, only that message redraws.
 const ChatMessageItem = memo(function ChatMessageItem({
   message,
   isReplying,

@@ -56,7 +56,7 @@ function useSingleUndoStep() {
     useDeckStore.getState().finishUndoGroup()
   }
 
-  // The toolbar can vanish mid-adjustment, so end the undo step on unmount too.
+  // The toolbar can disappear mid-change, so also end the undo step when it goes away.
   useEffect(() => {
     return () => {
       if (!isGroupOpenRef.current) return

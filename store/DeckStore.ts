@@ -51,7 +51,7 @@ export const useDeckStore = create<DeckStore>()((set, get) => ({
     logEdit(edit, result)
     if (!result.ok) return result
 
-    // Inside a group, history is written once when the group finishes.
+    // Inside a group, undo history is saved once, when the group finishes.
     if (deckBeforeGroup) {
       set({ deck: result.deck })
     } else {

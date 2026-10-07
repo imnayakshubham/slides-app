@@ -22,7 +22,7 @@ import { seriesColorFor } from "@/lib/themes/Themes"
 
 type ChartElementData = Extract<SlideElement, { type: "chart" }>
 
-// Artboard pixels (1920x1080), not screen pixels.
+// Slide pixels (the slide is 1920x1080), not screen pixels.
 const TITLE_FONT_SIZE = 36
 const LABEL_FONT_SIZE = 24
 const LINE_WIDTH = 4

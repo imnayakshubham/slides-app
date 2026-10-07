@@ -16,7 +16,7 @@ export type SlideBuild = {
 type OutlineReview = {
   messageId: string
   outline: Outline
-  // Stable row ids while slides are reordered or removed.
+  // Outline row ids that stay the same when slides are reordered or removed.
   slideKeys: string[]
 }
 

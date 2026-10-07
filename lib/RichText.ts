@@ -5,7 +5,7 @@ import type { Paragraph, TextRun } from "@/lib/schema/Deck"
 
 export type TextMark = "bold" | "italic" | "underline" | "color" | "fontSize"
 
-// The box-wide style that runs fall back to.
+// The style of the whole text box, used by any words that don't set their own.
 export type TextBoxStyle = {
   bold: boolean
   italic: boolean
@@ -36,7 +36,8 @@ function sameMarks(run: TextRun, otherRun: TextRun) {
   return TEXT_MARKS.every((mark) => run[mark] === otherRun[mark])
 }
 
-// Removes marks that repeat the box style, merges matching neighbours, unwraps unstyled paragraphs.
+// Drops styles that match the box, joins neighbouring pieces with the same style,
+// and turns a paragraph with no styles left back into plain text.
 export function normalizeRuns(runs: TextRun[], box: TextBoxStyle): Paragraph {
   const mergedRuns: TextRun[] = []
   for (const run of runs) {

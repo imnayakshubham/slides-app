@@ -68,7 +68,7 @@ export function Artboard({ slideId, isThumbnail = false, className, children }: 
   )
 }
 
-// Reads only its own element, so editing one element doesn't re-render the others.
+// Reads only its own element, so editing one element doesn't redraw the others.
 function PositionedElement({
   slideId,
   elementId,

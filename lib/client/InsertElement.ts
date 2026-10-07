@@ -46,7 +46,7 @@ type ChartElement = Extract<SlideElement, { type: "chart" }>
 
 export function createChartBlock(chartType: ChartElement["chartType"], theme: Theme): SlideElement {
   const series: ChartElement["series"] = [{ name: "Value", data: [10, 14, 19, 24], color: theme.colors.accent }]
-  // One stacked series looks like a plain bar; the uncolored second series gets a different color.
+  // A stacked bar with one series looks like a plain bar, so add a second one (it gets the next theme color).
   if (chartType === "stackedBar") {
     series.push({ name: "Other", data: [6, 8, 9, 12] })
   }

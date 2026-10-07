@@ -44,7 +44,7 @@ type Gesture = { scale: number; artboard: HTMLElement; slideId: string } & (
 export function useCanvasGestures() {
   const gestureRef = useRef<Gesture | null>(null)
   const heldKeysRef = useRef({ shift: false, alt: false })
-  // Real pointer position: dnd-kit's delta includes scrolling, so it can't find the slide under it.
+  // The real pointer position. dnd-kit's movement includes scrolling, so it can't tell which slide is under the pointer.
   const pointerRef = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
@@ -272,7 +272,7 @@ export function useCanvasGestures() {
     }
 
     const edits: DeckEdit[] = Object.entries(previewBoxes).map(([elementId, box]) => {
-      // Text height follows its text, so store what the browser laid out.
+      // Text height follows its text, so save the height the browser drew.
       const height = elementBoxIsText(gesture.artboard, elementId)
         ? (findElementNode(gesture.artboard, elementId)?.offsetHeight ?? box.h)
         : box.h
@@ -346,7 +346,7 @@ function dropOnOtherSlide(gesture: MoveGesture, dropTarget: DropTarget, pointer:
   }
 }
 
-// The other slide under the pointer: a navigator thumbnail, or a canvas slide with its artboard.
+// The other slide under the pointer: a thumbnail in the slide list, or another slide on the canvas.
 function findSlideUnderPointer(
   pointer: { x: number; y: number },
   sourceSlideId: string
@@ -392,7 +392,7 @@ function elementBoxIsText(artboard: HTMLElement, elementId: string) {
   return findElementNode(artboard, elementId)?.dataset.elementType === "text"
 }
 
-// Boxes as they appear: text uses its laid-out height, not the stored one.
+// Boxes as shown on screen: text uses the height the browser drew, not the saved one.
 function measureElementBoxes(slide: Slide, artboard: HTMLElement) {
   const boxes = new Map<string, Box>()
   for (const element of slide.elements) {

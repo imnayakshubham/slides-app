@@ -1,7 +1,8 @@
 import { usesHeadingFont } from "@/lib/schema/Deck"
 import type { Deck, Paragraph, Slide, SlideElement, Theme } from "@/lib/schema/Deck"
 
-// Old theme colors paired with new ones by role; headings are separate as some themes reuse body color.
+// Pairs each old theme color with the new color that has the same job. Headings get their own pair
+// because some themes use the body color for headings too.
 function colorPairs(oldTheme: Theme, newTheme: Theme) {
   const pairs: [string, string][] = [
     [oldTheme.colors.text, newTheme.colors.text],
@@ -20,7 +21,6 @@ function sameColor(color: string, otherColor: string) {
   return color.toLowerCase() === otherColor.toLowerCase()
 }
 
-// Returns a new deck with the new theme and its colors swapped in.
 export function recolorDeck(deck: Deck, newTheme: Theme): Deck {
   const oldTheme = deck.theme
   const pairs = colorPairs(oldTheme, newTheme)

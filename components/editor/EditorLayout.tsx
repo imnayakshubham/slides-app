@@ -66,7 +66,7 @@ export function EditorLayout({ saveStatus, onRetrySave }: EditorLayoutProps) {
     else setIsMobileAgentOpen(true)
   }
 
-  // Sends the /new prompt once: cleared from the URL and delayed a tick so dev double mounts skip it.
+  // Sends the /new prompt only once. It is removed from the URL and sent a moment later, because dev mode starts the page twice.
   const startPromptFromUrl = useEffectEvent(() => {
     const prompt = new URLSearchParams(window.location.search).get("prompt")
     if (!prompt) return

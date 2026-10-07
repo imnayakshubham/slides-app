@@ -22,13 +22,13 @@ type StreamAgentReplyOptions = {
   // Tools get the stream writer so they can send each deck change as soon as it is valid.
   createTools: (writer: SlidesStreamWriter) => ToolSet
   toolChoice?: ToolChoice<ToolSet>
-  // A forced tool runs on every step, so stop after one step or once that tool succeeds.
+  // A tool the model must use would run again on every step, so stop after one step or once it works.
   maxSteps?: number
   isFinished?: () => boolean
   abortSignal?: AbortSignal
 }
 
-// Streams the agent's reply as an AI SDK UI message stream: text, tool calls and our data parts.
+// Sends the agent's reply to the browser bit by bit: its text, its tool calls and our own data.
 export function streamAgentReply({
   instructions,
   messages,
@@ -63,7 +63,7 @@ export function streamAgentReply({
   return createUIMessageStreamResponse({ stream })
 }
 
-// Shown to the user: the provider's own reason, unwrapped from the SDK's retry error.
+// The AI service's own error message, taken out of the retry error, to show the user.
 function describeError(error: unknown) {
   console.error("AI agent run failed", error)
   const lastError = RetryError.isInstance(error) ? error.lastError : error

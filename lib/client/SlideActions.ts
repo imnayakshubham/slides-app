@@ -4,7 +4,7 @@ import { useEditorStore } from "@/store/EditorStore"
 
 // Slide actions for the navigator and canvas; each is one undo step and opens the new slide.
 
-// `index` is where the new slide goes; the slide count adds it at the end.
+// `index` is where the new slide goes; pass the slide count to add it at the end.
 export function addBlankSlideAt(index: number) {
   const { deck, applyEdit } = useDeckStore.getState()
   if (!deck) return

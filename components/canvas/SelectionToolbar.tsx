@@ -46,7 +46,7 @@ export function SelectionToolbar() {
     )
   )
 
-  // Moved by setting its style directly, so it doesn't re-render.
+  // Moved by setting its style directly, so it doesn't redraw.
   useLayoutEffect(() => {
     function placeToolbar() {
       const toolbar = toolbarRef.current

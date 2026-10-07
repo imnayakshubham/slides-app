@@ -24,5 +24,5 @@ export function useAgentChat() {
 // The open deck's chat messages, status and error, from the AI SDK.
 export function useDeckChat() {
   const deckId = useDeckStore((state) => state.deck?.id ?? "")
-  return useChat({ chat: deckChatFor(deckId), experimental_throttle: TEXT_THROTTLE_MS })
+  return useChat({ chat: deckChatFor(deckId), throttle: TEXT_THROTTLE_MS })
 }

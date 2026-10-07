@@ -7,14 +7,14 @@ import { useDragPreviewStore } from "@/store/DragPreviewStore"
 // Gap so the badge never covers what is under the pointer.
 const OFFSET_FROM_POINTER_PX = 14
 
-// Follows the pointer through CSS variables, so moving it never re-renders React.
+// Follows the pointer through CSS variables, so moving it never makes React redraw.
 export function positionDropCursorBadge(pointer: { x: number; y: number }) {
   const rootStyle = document.documentElement.style
   rootStyle.setProperty("--drop-cursor-x", `${pointer.x + OFFSET_FROM_POINTER_PX}px`)
   rootStyle.setProperty("--drop-cursor-y", `${pointer.y + OFFSET_FROM_POINTER_PX}px`)
 }
 
-// "Move chart → slide 4" next to the pointer while it is over another slide.
+// Shows "Move chart -> slide 4" next to the pointer while it is over another slide.
 export function DropCursorBadge() {
   const dropTarget = useDragPreviewStore((state) => state.dropTarget)
   if (!dropTarget) return null

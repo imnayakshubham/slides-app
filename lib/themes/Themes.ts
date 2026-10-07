@@ -134,7 +134,7 @@ export function fontStack(fontName: string) {
   return `${FONT_VARIABLES[fontName] ?? fontName}, var(--font-sans), sans-serif`
 }
 
-// The color of chart series `seriesIndex` when it has no color of its own.
+// Fallback color for a chart series that has no color of its own.
 export function seriesColorFor(theme: Theme, seriesIndex: number) {
   const chartColors = theme.colors.chart ?? [theme.colors.accent, ...theme.colors.card]
   return chartColors[seriesIndex % chartColors.length]

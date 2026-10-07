@@ -149,7 +149,6 @@ export function AddBlockMenu() {
   const [search, setSearch] = useState("")
   const [category, setCategory] = useState<BlockCategory | "all">("all")
 
-  // Searching looks through every category.
   const searchText = search.trim().toLowerCase()
   const visibleBlocks = searchText
     ? BLOCKS.filter((block) => block.label.toLowerCase().includes(searchText))

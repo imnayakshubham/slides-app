@@ -92,7 +92,7 @@ function withTextHeight(element: SlideElement): SlideElement {
   return { ...element, h: Math.max(MIN_ELEMENT_SIZE, height) }
 }
 
-// Tools edit `workingDeck` so later calls in the same request see earlier changes.
+// Tools change `workingDeck` so later tool calls in the same request see earlier changes.
 // `onEdit` sends each valid change to the browser as soon as it is made.
 export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: string) => void): ToolSet {
   let workingDeck = deck
@@ -160,9 +160,9 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
       execute: ({ slideId, background, ...otherChanges }) => {
         const changes = background
           ? {
-            ...otherChanges,
-            background: { type: "color" as const, color: background },
-          }
+              ...otherChanges,
+              background: { type: "color" as const, color: background },
+            }
           : otherChanges
         return applyChange({ type: "updateSlide", slideId, changes }, `Updated ${describeSlide(workingDeck, slideId)}`)
       },

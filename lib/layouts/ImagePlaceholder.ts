@@ -11,7 +11,7 @@ function escapeXml(text: string) {
   return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;")
 }
 
-// Word-wrapped to MAX_LINES lines, ending in "…" when the description is longer.
+// Fits the description on MAX_LINES lines, ending in three dots when it is longer.
 function wrapDescription(description: string) {
   const lines: string[] = []
   let currentLine = ""

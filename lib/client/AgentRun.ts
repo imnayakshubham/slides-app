@@ -36,7 +36,6 @@ export function isAgentEditingSlide(slideId: string) {
   return agentLabelFor(getAgentStateForDeck(deckId), slideId) !== null
 }
 
-// Returns the run id that finishAgentRun needs.
 export function startAgentRun(deckId: string, kind: AgentRunKind) {
   const runId = createId()
   updateAgentStateForDeck(deckId, { run: { runId, kind, editingSlideIds: [] } })

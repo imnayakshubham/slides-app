@@ -15,7 +15,7 @@ type ChartElement = Extract<SlideElement, { type: "chart" }>
 type TableElement = Extract<SlideElement, { type: "table" }>
 type ShapeElement = Extract<SlideElement, { type: "shape" }>
 
-// The 1920×1080 artboard maps onto PowerPoint's 13.333×7.5in wide layout.
+// The 1920 x 1080 slide maps onto PowerPoint's 13.333 x 7.5 inch wide layout.
 const PIXELS_PER_INCH = ARTBOARD_WIDTH / 13.333
 const POINTS_PER_PIXEL = 72 / PIXELS_PER_INCH
 // Same sizes the canvas uses, so the export looks the same.
@@ -276,7 +276,7 @@ function fileNameFor(title: string) {
   return `${safeTitle || "Presentation"}.pptx`
 }
 
-// Loaded on demand so the editor bundle doesn't carry the library.
+// Loaded only when needed, so opening the editor doesn't download the export library.
 export async function exportDeckToPptx(deck: Deck) {
   const { default: PptxGenJSClass } = await import("pptxgenjs")
   const presentation = await buildPresentation(deck, new PptxGenJSClass())

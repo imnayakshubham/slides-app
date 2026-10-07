@@ -4,7 +4,7 @@ const MAX_IMAGE_SIDE_PX = 1600
 
 const HEX_COLOR = /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i
 
-// PowerPoint takes "RRGGBB"; non-hex CSS colors are resolved by the canvas.
+// PowerPoint wants "RRGGBB". Other CSS colors are converted by painting one pixel on a canvas.
 export function colorToHex(color: string) {
   if (HEX_COLOR.test(color)) {
     const digits = color.slice(1)
@@ -45,7 +45,7 @@ function canvasSizeFor(boxWidth: number, boxHeight: number) {
   return { width: boxWidth * scale, height: boxHeight * scale }
 }
 
-// Remote images are fetched first; drawing them directly would block reading the canvas back.
+// Remote images are downloaded first, because drawing them straight from another site stops us reading the canvas back.
 async function loadImage(src: string) {
   const isRemote = /^https?:/i.test(src)
   const objectUrl = isRemote ? URL.createObjectURL(await (await fetch(src)).blob()) : null
@@ -78,7 +78,7 @@ export async function imageToPngData(src: string, boxWidth: number, boxHeight: n
   return canvasToPngData(canvas)
 }
 
-// Same angle math as CSS linear-gradient: the gradient line reaches the corners.
+// Same angle math as CSS linear-gradient, so the gradient reaches the corners.
 export function gradientToPngData(from: string, to: string, angleDegrees: number, boxWidth: number, boxHeight: number) {
   const { width, height } = canvasSizeFor(boxWidth, boxHeight)
   const canvas = createCanvas(width, height)

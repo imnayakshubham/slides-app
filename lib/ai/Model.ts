@@ -2,7 +2,6 @@ import "server-only"
 
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
 
-
 export function getChatModel() {
   const apiKey = process.env.AI_API_KEY
   if (!apiKey) return null

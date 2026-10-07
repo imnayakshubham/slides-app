@@ -52,7 +52,7 @@ export function ShapeControls({ element }: { element: ShapeElementData }) {
   )
 }
 
-// Width and height in slide units (1920×1080); with the lock on, proportions stay the same.
+// Width and height in slide units (1920x1080); with the lock on, proportions stay the same.
 function ShapeSizeInputs({ element }: { element: ShapeElementData }) {
   // Saved when the lock turns on, so typing digit by digit doesn't let rounding drift the ratio.
   const [lockedRatio, setLockedRatio] = useState<number | null>(null)

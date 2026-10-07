@@ -114,7 +114,7 @@ export function TextEditor({ element, box, textStyle, onFinishEditing }: TextEdi
     <EditorContent
       editor={editor}
       className={isBulletOrNumberedList ? "ps-[1.25em]" : undefined}
-      // Bold, italic and underline come from marks while editing, so the box itself is plain.
+      // While editing, bold, italic and underline are set on the words, so the box itself stays plain.
       style={{
         ...textStyle,
         fontWeight: 400,

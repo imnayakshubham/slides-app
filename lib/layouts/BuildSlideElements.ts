@@ -87,7 +87,6 @@ function bottomOf(element: SlideElement) {
   return element.y + element.h
 }
 
-// The area left in `area` below an element placed at its top.
 function areaBelow(area: Box, element: SlideElement): Box {
   const top = bottomOf(element) + GAP
   return { ...area, y: top, h: area.y + area.h - top }
