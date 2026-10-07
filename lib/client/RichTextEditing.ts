@@ -1,11 +1,5 @@
-import {
-  normalizeRuns,
-  paragraphRuns,
-  runStyle,
-  styleRunRange,
-  type TextBoxStyle,
-  type TextStyleChanges,
-} from "@/lib/RichText"
+import { normalizeRuns, paragraphRuns, runStyle, styleRunRange } from "@/lib/RichText"
+import type { TextBoxStyle, TextStyleChanges } from "@/lib/RichText"
 import type { Paragraph, TextRun } from "@/lib/schema/Deck"
 import { useEditorStore } from "@/store/EditorStore"
 

@@ -12,15 +12,8 @@ import type { Outline, OutlineSlide } from "@/lib/schema/Outline"
 import type { StreamEvent } from "@/lib/StreamEvents"
 import { deckThemeFor } from "@/lib/themes/Themes"
 import { useDeckStore } from "@/store/DeckStore"
-import {
-  agentActivityOnSlide,
-  deckAgentOf,
-  useEditorStore,
-  type AgentRunKind,
-  type DeckAgentState,
-  type SlideBuild,
-  type SlideBuildStatus,
-} from "@/store/EditorStore"
+import { agentActivityOnSlide, deckAgentOf, useEditorStore } from "@/store/EditorStore"
+import type { AgentRunKind, DeckAgentState, SlideBuild, SlideBuildStatus } from "@/store/EditorStore"
 
 // Everything the agent does from the browser: chat edits, planning a deck,
 // building it slide by slide, retrying a slide and continuing after Stop.

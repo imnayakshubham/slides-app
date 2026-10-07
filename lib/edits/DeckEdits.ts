@@ -1,16 +1,8 @@
 import { z } from "zod"
 
 import { clampBox, placeWithoutOverlap } from "@/lib/edits/Geometry"
-import {
-  deckSchema,
-  slideElementSchema,
-  slideSchema,
-  type Deck,
-  type ElementChanges,
-  type Slide,
-  type SlideElement,
-  type Theme,
-} from "@/lib/schema/Deck"
+import { deckSchema, slideElementSchema, slideSchema } from "@/lib/schema/Deck"
+import type { Deck, ElementChanges, Slide, SlideElement, Theme } from "@/lib/schema/Deck"
 import { recolorDeck } from "@/lib/themes/Recolor"
 
 export type DeckEdit =

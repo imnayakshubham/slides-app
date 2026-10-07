@@ -1,16 +1,8 @@
 "use client"
 
 import { useEffect, useState, type ComponentProps } from "react"
-import {
-  DndContext,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragMoveEvent,
-  type DragOverEvent,
-} from "@dnd-kit/core"
+import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core"
+import type { DragEndEvent, DragMoveEvent, DragOverEvent } from "@dnd-kit/core"
 import { SortableContext, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { PlusIcon, SparklesIcon } from "lucide-react"
@@ -26,9 +18,8 @@ import {
   insertionLineFor,
   keepSlidesInPlace,
   slideInsertionFor,
-  type InsertionLine,
-  type SlideInsertion,
 } from "@/components/editor/SlideInsertionLine"
+import type { InsertionLine, SlideInsertion } from "@/components/editor/SlideInsertionLine"
 import { Button } from "@/components/ui/button"
 import { useCanvasGestures } from "@/hooks/UseCanvasGestures"
 import { addBlankSlideAfterCurrent, addBlankSlideAt } from "@/lib/client/SlideActions"

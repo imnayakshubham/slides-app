@@ -1,16 +1,8 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import {
-  DndContext,
-  MouseSensor,
-  TouchSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragOverEvent,
-} from "@dnd-kit/core"
+import { DndContext, MouseSensor, TouchSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core"
+import type { DragEndEvent, DragOverEvent } from "@dnd-kit/core"
 import { SortableContext, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { CopyIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react"
@@ -24,9 +16,8 @@ import {
   insertionLineFor,
   keepSlidesInPlace,
   slideInsertionFor,
-  type InsertionLine,
-  type SlideInsertion,
 } from "@/components/editor/SlideInsertionLine"
+import type { InsertionLine, SlideInsertion } from "@/components/editor/SlideInsertionLine"
 import {
   AlertDialog,
   AlertDialogAction,

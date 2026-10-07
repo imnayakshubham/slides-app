@@ -5,17 +5,8 @@ import { positionDropCursorBadge } from "@/components/canvas/DropCursorBadge"
 import { RESIZE_CURSORS } from "@/components/canvas/SelectionFrame"
 import { isSlideLockedByAgent } from "@/lib/client/AgentActions"
 import type { DeckEdit } from "@/lib/edits/DeckEdits"
-import {
-  boxesOverlap,
-  clampBox,
-  resizeBox,
-  snapBox,
-  snapResizedEdges,
-  unionBox,
-  type Box,
-  type ResizeHandle,
-  type SnapGuide,
-} from "@/lib/edits/Geometry"
+import { boxesOverlap, clampBox, resizeBox, snapBox, snapResizedEdges, unionBox } from "@/lib/edits/Geometry"
+import type { Box, ResizeHandle, SnapGuide } from "@/lib/edits/Geometry"
 import { createId } from "@/lib/Ids"
 import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, type Slide } from "@/lib/schema/Deck"
 import { useDragPreviewStore, type DropTarget } from "@/store/DragPreviewStore"

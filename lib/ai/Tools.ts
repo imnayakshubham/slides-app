@@ -4,26 +4,13 @@ import { tool, type ToolSet } from "ai"
 import { z } from "zod"
 
 import { applyDeckEdit, findElementLocation, type DeckEdit } from "@/lib/edits/DeckEdits"
-import {
-  estimateTextHeight,
-  findFreeSpot,
-  overlappingElementIds,
-  placeWithoutOverlap,
-  type Box,
-} from "@/lib/edits/Geometry"
+import { estimateTextHeight, findFreeSpot, overlappingElementIds, placeWithoutOverlap } from "@/lib/edits/Geometry"
+import type { Box } from "@/lib/edits/Geometry"
 import { createId } from "@/lib/Ids"
 import { imagePlaceholderSrc } from "@/lib/layouts/ImagePlaceholder"
 import { createSlide, duplicateSlide, slideLayoutSlots } from "@/lib/layouts/SlideLayouts"
-import {
-  ARTBOARD_HEIGHT,
-  ARTBOARD_WIDTH,
-  MIN_ELEMENT_SIZE,
-  slideLayoutSchema,
-  type Deck,
-  type ElementChanges,
-  type Slide,
-  type SlideElement,
-} from "@/lib/schema/Deck"
+import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, MIN_ELEMENT_SIZE, slideLayoutSchema } from "@/lib/schema/Deck"
+import type { Deck, ElementChanges, Slide, SlideElement } from "@/lib/schema/Deck"
 import { paragraphText } from "@/lib/RichText"
 import type { SendStreamEvent } from "@/lib/StreamEvents"
 

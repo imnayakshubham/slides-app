@@ -3,14 +3,8 @@ import type PptxGenJS from "pptxgenjs"
 import { colorToHex, gradientToPngData, imageToPngData } from "@/lib/export/ExportImages"
 import { imagePlaceholderSrc } from "@/lib/layouts/ImagePlaceholder"
 import { paragraphRuns } from "@/lib/RichText"
-import {
-  ARTBOARD_HEIGHT,
-  ARTBOARD_WIDTH,
-  type Deck,
-  type Slide,
-  type SlideElement,
-  type Theme,
-} from "@/lib/schema/Deck"
+import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH } from "@/lib/schema/Deck"
+import type { Deck, Slide, SlideElement, Theme } from "@/lib/schema/Deck"
 import { seriesColorFor } from "@/lib/themes/Themes"
 
 type Presentation = InstanceType<typeof PptxGenJS>
