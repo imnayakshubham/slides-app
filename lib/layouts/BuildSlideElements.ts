@@ -1,11 +1,10 @@
 import { estimateTextHeight, findFreeSpot, type Box } from "@/lib/edits/Geometry"
-import { createId } from "@/lib/Ids"
-import { newTimestamps } from "@/lib/Timestamps"
+import { createId, newTimestamps } from "@/lib/utils"
 import { slideLayoutSlots } from "@/lib/layouts/SlideLayouts"
 import { paragraphFromMarkdown } from "@/lib/ParagraphFromMarkdown"
 import { paragraphText } from "@/lib/RichText"
-import { ARTBOARD_HEIGHT, MIN_ELEMENT_SIZE, usesHeadingFont } from "@/lib/schema/Deck"
-import type { Deck, Slide, SlideElement, TextRole } from "@/lib/schema/Deck"
+import { ARTBOARD_HEIGHT, MIN_ELEMENT_SIZE, usesHeadingFont } from "@/lib/schema/deck"
+import type { Deck, Slide, SlideElement, TextRole } from "@/lib/schema/deck"
 import type { SlideContent } from "@/lib/schema/SlideContent"
 
 // Turns the AI's content for one slide into placed elements, shrinking text until it all fits.

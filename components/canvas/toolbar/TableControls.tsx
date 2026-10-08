@@ -3,7 +3,7 @@ import { PanelTopIcon } from "lucide-react"
 import { ToolbarDivider, ToolbarToggle } from "@/components/canvas/toolbar/ToolbarInputs"
 import { Button } from "@/components/ui/button"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
-import type { SlideElement } from "@/lib/schema/Deck"
+import type { SlideElement } from "@/lib/schema/deck"
 
 type TableElementData = Extract<SlideElement, { type: "table" }>
 

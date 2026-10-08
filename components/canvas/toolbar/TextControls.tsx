@@ -16,7 +16,7 @@ import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
 import { findElementLocation } from "@/lib/edits/DeckEdits"
 import { TEXT_PRESET_NAMES, TEXT_PRESETS, findTextPreset, type TextPresetName } from "@/lib/layouts/TextPresets"
 import { clearRunMark, type TextMark, type TextStyleChanges } from "@/lib/RichText"
-import type { ElementChanges, SlideElement } from "@/lib/schema/Deck"
+import type { ElementChanges, SlideElement } from "@/lib/schema/deck"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 

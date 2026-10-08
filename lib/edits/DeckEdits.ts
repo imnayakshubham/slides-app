@@ -1,45 +1,45 @@
 import { z } from "zod"
 
 import { clampBox, placeWithoutOverlap } from "@/lib/edits/Geometry"
-import { deckSchema, slideElementSchema, slideSchema } from "@/lib/schema/Deck"
-import type { Deck, ElementChanges, Slide, SlideElement, Theme } from "@/lib/schema/Deck"
+import { deckSchema, slideElementSchema, slideSchema } from "@/lib/schema/deck"
+import type { Deck, ElementChanges, Slide, SlideElement, Theme } from "@/lib/schema/deck"
 import { recolorDeck } from "@/lib/themes/Recolor"
-import { currentTime, newTimestamps } from "@/lib/Timestamps"
+import { currentTime, newTimestamps } from "@/lib/utils"
 
 export type DeckEdit =
   | { type: "updateDeck"; changes: { title?: string } }
   | { type: "addSlide"; slide: Slide; index?: number }
   | {
-      type: "updateSlide"
-      slideId: string
-      changes: Partial<Pick<Slide, "title" | "layout" | "background" | "notes">>
-    }
+    type: "updateSlide"
+    slideId: string
+    changes: Partial<Pick<Slide, "title" | "layout" | "background" | "notes">>
+  }
   | { type: "deleteSlide"; slideId: string }
   | { type: "moveSlide"; slideId: string; toIndex: number }
   | { type: "addElement"; slideId: string; element: SlideElement }
   | { type: "updateElement"; elementId: string; changes: ElementChanges }
   | { type: "deleteElement"; elementId: string }
   | {
-      type: "moveElement"
-      elementId: string
-      toSlideId: string
-      x?: number
-      y?: number
-    }
+    type: "moveElement"
+    elementId: string
+    toSlideId: string
+    x?: number
+    y?: number
+  }
   // A copy of an element; the new id is passed in so the same edit always gives the same result.
   | {
-      type: "copyElement"
-      elementId: string
-      toSlideId: string
-      newElementId: string
-      x?: number
-      y?: number
-    }
+    type: "copyElement"
+    elementId: string
+    toSlideId: string
+    newElementId: string
+    x?: number
+    y?: number
+  }
   | {
-      type: "reorderElement"
-      elementId: string
-      direction: "forward" | "backward" | "front" | "back"
-    }
+    type: "reorderElement"
+    elementId: string
+    direction: "forward" | "backward" | "front" | "back"
+  }
   // Swaps colors that came from the old theme for the new theme's; hand-picked colors stay.
   | { type: "setTheme"; theme: Theme }
   | { type: "batch"; edits: DeckEdit[] }

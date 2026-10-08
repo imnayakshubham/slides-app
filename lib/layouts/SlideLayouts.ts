@@ -1,7 +1,6 @@
-import { createId } from "@/lib/Ids"
+import { createId, newTimestamps } from "@/lib/utils"
 import { estimateTextHeight, type Box } from "@/lib/edits/Geometry"
-import { MIN_ELEMENT_SIZE, type Deck, type Slide, type SlideElement, type SlideLayout } from "@/lib/schema/Deck"
-import { newTimestamps } from "@/lib/Timestamps"
+import { MIN_ELEMENT_SIZE, type Deck, type Slide, type SlideElement, type SlideLayout } from "@/lib/schema/deck"
 
 // Every layout with a title leaves room for a short eyebrow label above it.
 const standardEyebrowSlot: Box = { x: 120, y: 64, w: 1680, h: 48 }
@@ -70,22 +69,22 @@ export function createSlide(layout: SlideLayout, title: string, theme: Deck["the
     notes: "",
     elements: titleSlot
       ? [
-          {
-            id: createId(),
-            ...newTimestamps(),
-            type: "text",
-            role: "title",
-            ...titleSlot,
-            h: Math.max(MIN_ELEMENT_SIZE, estimateTextHeight([title], fontSize, titleSlot.w, "none")),
-            paragraphs: [title],
-            fontSize,
-            bold: true,
-            italic: false,
-            color: theme.colors.heading,
-            align: "left",
-            listStyle: "none",
-          },
-        ]
+        {
+          id: createId(),
+          ...newTimestamps(),
+          type: "text",
+          role: "title",
+          ...titleSlot,
+          h: Math.max(MIN_ELEMENT_SIZE, estimateTextHeight([title], fontSize, titleSlot.w, "none")),
+          paragraphs: [title],
+          fontSize,
+          bold: true,
+          italic: false,
+          color: theme.colors.heading,
+          align: "left",
+          listStyle: "none",
+        },
+      ]
       : [],
   }
 }

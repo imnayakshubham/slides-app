@@ -7,8 +7,8 @@ import { isAgentEditingSlide } from "@/lib/client/AgentRun"
 import type { DeckEdit } from "@/lib/edits/DeckEdits"
 import { boxesOverlap, clampBox, resizeBox, snapBox, snapResizedEdges, unionBox } from "@/lib/edits/Geometry"
 import type { Box, ResizeHandle, SnapGuide } from "@/lib/edits/Geometry"
-import { createId } from "@/lib/Ids"
-import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, type Slide } from "@/lib/schema/Deck"
+import { createId } from "@/lib/utils"
+import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, type Slide } from "@/lib/schema/deck"
 import { useDragPreviewStore, type DropTarget } from "@/store/DragPreviewStore"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
@@ -18,26 +18,26 @@ const SLIDE_BOX: Box = { x: 0, y: 0, w: ARTBOARD_WIDTH, h: ARTBOARD_HEIGHT }
 // slideId: the slide the gesture started on.
 type Gesture = { scale: number; artboard: HTMLElement; slideId: string } & (
   | {
-      kind: "move"
-      startBoxes: Map<string, Box>
-      snapTargets: Box[]
-      // Grab point in slide units, so a drop on another slide keeps the element under the pointer.
-      grabPoint: { x: number; y: number }
-      itemLabel: string
-    }
+    kind: "move"
+    startBoxes: Map<string, Box>
+    snapTargets: Box[]
+    // Grab point in slide units, so a drop on another slide keeps the element under the pointer.
+    grabPoint: { x: number; y: number }
+    itemLabel: string
+  }
   | {
-      kind: "resize"
-      elementId: string
-      handle: ResizeHandle
-      startBox: Box
-      isText: boolean
-      snapTargets: Box[]
-    }
+    kind: "resize"
+    elementId: string
+    handle: ResizeHandle
+    startBox: Box
+    isText: boolean
+    snapTargets: Box[]
+  }
   | {
-      kind: "marquee"
-      startPoint: { x: number; y: number }
-      elementBoxes: Map<string, Box>
-    }
+    kind: "marquee"
+    startPoint: { x: number; y: number }
+    elementBoxes: Map<string, Box>
+  }
 )
 
 // Turns pointer movement into element boxes, previews them, and saves them once on release.

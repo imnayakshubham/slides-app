@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { ImageOffIcon } from "lucide-react"
 
-import type { SlideElement } from "@/lib/schema/Deck"
+import type { SlideElement } from "@/lib/schema/deck"
 
 type ImageElementData = Extract<SlideElement, { type: "image" }>
 

@@ -17,7 +17,7 @@ import {
   YAxis,
 } from "recharts"
 
-import type { Deck, SlideElement } from "@/lib/schema/Deck"
+import type { Deck, SlideElement } from "@/lib/schema/deck"
 import { seriesColorFor } from "@/lib/themes/Themes"
 
 type ChartElementData = Extract<SlideElement, { type: "chart" }>

@@ -13,7 +13,7 @@ import { Fragment, Slice, type Node as EditorNode } from "@tiptap/pm/model"
 import { EditorContent, useEditor } from "@tiptap/react"
 
 import { convertEditorContentToParagraphs, convertParagraphsToEditorContent, type TextBoxStyle } from "@/lib/RichText"
-import type { Paragraph as DeckParagraph, SlideElement } from "@/lib/schema/Deck"
+import type { Paragraph as DeckParagraph, SlideElement } from "@/lib/schema/deck"
 import { useEditorStore } from "@/store/EditorStore"
 
 type TextElementData = Extract<SlideElement, { type: "text" }>

@@ -16,7 +16,7 @@ import {
   moveSelectedElementInStack,
 } from "@/lib/client/SelectedElementActions"
 import { findElementLocation } from "@/lib/edits/DeckEdits"
-import type { SlideElement } from "@/lib/schema/Deck"
+import type { SlideElement } from "@/lib/schema/deck"
 import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"

@@ -1,4 +1,4 @@
-import type { Theme } from "@/lib/schema/Deck"
+import type { Theme } from "@/lib/schema/deck"
 
 // Stand-in image the AI places when it has no photo; the user swaps it with "Replace image".
 

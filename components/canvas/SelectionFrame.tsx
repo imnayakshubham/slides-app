@@ -5,7 +5,7 @@ import { useShallow } from "zustand/react/shallow"
 
 import { findElementLocation } from "@/lib/edits/DeckEdits"
 import { unionBox, type Box, type ResizeHandle, type SnapGuide } from "@/lib/edits/Geometry"
-import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH } from "@/lib/schema/Deck"
+import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH } from "@/lib/schema/deck"
 import { useDragPreviewStore } from "@/store/DragPreviewStore"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"

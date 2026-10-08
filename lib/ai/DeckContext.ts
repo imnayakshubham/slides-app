@@ -2,7 +2,7 @@ import "server-only"
 
 import { slideLayoutSlots } from "@/lib/layouts/SlideLayouts"
 import { paragraphText } from "@/lib/RichText"
-import type { Deck, SlideElement } from "@/lib/schema/Deck"
+import type { Deck, SlideElement } from "@/lib/schema/deck"
 
 const MAX_TEXT_PREVIEW_LENGTH = 120
 const MAX_CHAT_HISTORY_MESSAGES = 12

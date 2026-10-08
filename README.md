@@ -478,7 +478,7 @@ Dev tools: `typescript`, `eslint` with `eslint-config-next`, `prettier` with `pr
 
 | File                                  | What it does                                                       |
 | ------------------------------------- | ------------------------------------------------------------------ |
-| `schema/Deck.ts`                      | Zod schema for the deck, slides, elements and theme                |
+| `schema/deck.ts`                      | Zod schema for the deck, slides, elements and theme                |
 | `schema/DeckRecord.ts`                | Shape of a saved deck                                              |
 | `schema/Conversation.ts`              | Shape of a saved chat                                              |
 | `schema/Outline.ts`                   | Shape of the AI's outline                                          |
@@ -511,9 +511,5 @@ Dev tools: `typescript`, `eslint` with `eslint-config-next`, `prettier` with `pr
 | `fixtures/SampleDeck.ts`              | The sample deck for "Load sample deck"                             |
 | `RichText.ts`                         | Converts styled text between the deck and the Tiptap editor        |
 | `ParagraphFromMarkdown.ts`            | Turns the AI's `**bold**` / `*italic*` into real styled text (server only) |
-| `CreateEmptyDeck.ts`                  | Makes a new empty deck                                             |
-| `Ids.ts`                              | Creates UUID v7 ids                                                |
-| `Timestamps.ts`                       | Gives the current time and new createdAt/updatedAt dates (UTC)     |
-| `ErrorMessage.ts`                     | Gets a readable message from an error                              |
 | `IsTypingTarget.ts`                   | Checks if the user is typing, so shortcuts don't fire              |
-| `utils.ts`                            | The `cn` class name helper                                         |
+| `utils.ts`                            | Small helpers: `cn` (class names), `createId` (UUID v7), `currentTime` / `newTimestamps` (UTC dates), `messageFromError`, `createEmptyDeck` |

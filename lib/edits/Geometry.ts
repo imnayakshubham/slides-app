@@ -1,4 +1,4 @@
-import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, MIN_ELEMENT_SIZE, type Slide } from "@/lib/schema/Deck"
+import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, MIN_ELEMENT_SIZE, type Slide } from "@/lib/schema/deck"
 
 export type Box = { x: number; y: number; w: number; h: number }
 

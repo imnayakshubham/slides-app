@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import type { DeckEdit } from "@/lib/edits/DeckEdits"
 import { deckRepository } from "@/lib/repository"
-import type { SlideBackground } from "@/lib/schema/Deck"
+import type { SlideBackground } from "@/lib/schema/deck"
 import { cn } from "@/lib/utils"
 import { useAgentLabel } from "@/hooks/UseAgentLabel"
 import { useDeckStore } from "@/store/DeckStore"
@@ -87,11 +87,11 @@ export function SlideBackgroundPicker() {
     background?.type === "gradient"
       ? background
       : {
-          type: "gradient" as const,
-          from: theme.colors.background,
-          to: theme.colors.accent,
-          angle: PRESET_GRADIENT_ANGLE,
-        }
+        type: "gradient" as const,
+        from: theme.colors.background,
+        to: theme.colors.accent,
+        angle: PRESET_GRADIENT_ANGLE,
+      }
 
   async function setBackgroundFromPickedImage(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]

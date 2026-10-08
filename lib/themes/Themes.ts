@@ -1,4 +1,4 @@
-import type { Theme } from "@/lib/schema/Deck"
+import type { Theme } from "@/lib/schema/deck"
 
 export const THEME_TYPES = ["classic", "sunrise", "midnight", "editorial", "forest", "electric", "graphite"] as const
 

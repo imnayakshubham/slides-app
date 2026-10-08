@@ -5,7 +5,7 @@ import { ImageElement } from "@/components/elements/ImageElement"
 import { ShapeElement } from "@/components/elements/ShapeElement"
 import { TableElement } from "@/components/elements/TableElement"
 import { TextElement } from "@/components/elements/TextElement"
-import type { Deck, SlideElement } from "@/lib/schema/Deck"
+import type { Deck, SlideElement } from "@/lib/schema/deck"
 
 type ElementRendererProps = {
   element: SlideElement

@@ -3,7 +3,7 @@ import { CircleIcon, LinkIcon, SquareIcon, UnlinkIcon } from "lucide-react"
 
 import { ColorInput, NumberInput, ToolbarDivider, ToolbarToggle } from "@/components/canvas/toolbar/ToolbarInputs"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
-import { MIN_ELEMENT_SIZE, type SlideElement } from "@/lib/schema/Deck"
+import { MIN_ELEMENT_SIZE, type SlideElement } from "@/lib/schema/deck"
 
 type ShapeElementData = Extract<SlideElement, { type: "shape" }>
 

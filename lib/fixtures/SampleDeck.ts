@@ -1,4 +1,4 @@
-import { deckSchema } from "@/lib/schema/Deck"
+import { deckSchema } from "@/lib/schema/deck"
 import { deckThemeFor } from "@/lib/themes/Themes"
 
 // Fixed uuids and dates so manual checks and screenshots stay comparable between runs.

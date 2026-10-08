@@ -1,7 +1,7 @@
 import type { DeckEdit } from "@/lib/edits/DeckEdits"
 import { findElementLocation } from "@/lib/edits/DeckEdits"
 import { duplicateElement } from "@/lib/layouts/SlideLayouts"
-import type { ElementChanges } from "@/lib/schema/Deck"
+import type { ElementChanges } from "@/lib/schema/deck"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 

@@ -4,8 +4,8 @@ import type { CSSProperties } from "react"
 
 import { TextEditor } from "@/components/elements/TextEditor"
 import { paragraphRuns, runStyle, type TextBoxStyle } from "@/lib/RichText"
-import { usesHeadingFont } from "@/lib/schema/Deck"
-import type { Paragraph, SlideElement } from "@/lib/schema/Deck"
+import { usesHeadingFont } from "@/lib/schema/deck"
+import type { Paragraph, SlideElement } from "@/lib/schema/deck"
 
 type TextElementData = Extract<SlideElement, { type: "text" }>
 

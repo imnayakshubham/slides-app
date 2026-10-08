@@ -6,7 +6,7 @@ import { ColorInput, NumberInput, TextInput } from "@/components/canvas/toolbar/
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
-import type { SlideElement } from "@/lib/schema/Deck"
+import type { SlideElement } from "@/lib/schema/deck"
 import { seriesColorFor } from "@/lib/themes/Themes"
 import { useDeckStore } from "@/store/DeckStore"
 

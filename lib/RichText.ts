@@ -1,7 +1,7 @@
 import type { JSONContent } from "@tiptap/react"
 import type { CSSProperties } from "react"
 
-import type { Paragraph, TextRun } from "@/lib/schema/Deck"
+import type { Paragraph, TextRun } from "@/lib/schema/deck"
 
 export type TextMark = "bold" | "italic" | "underline" | "color" | "fontSize"
 

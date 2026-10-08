@@ -1,10 +1,9 @@
 import { clampBox, findFreeSpot } from "@/lib/edits/Geometry"
-import { createId } from "@/lib/Ids"
-import { newTimestamps } from "@/lib/Timestamps"
+import { createId, newTimestamps } from "@/lib/utils"
 import { TEXT_PRESETS, type TextPresetName } from "@/lib/layouts/TextPresets"
 import type { UploadedImage } from "@/lib/repository/DeckRepository"
-import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, MIN_ELEMENT_SIZE, usesHeadingFont } from "@/lib/schema/Deck"
-import type { Deck, SlideElement } from "@/lib/schema/Deck"
+import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, MIN_ELEMENT_SIZE, usesHeadingFont } from "@/lib/schema/deck"
+import type { Deck, SlideElement } from "@/lib/schema/deck"
 import { useDeckStore } from "@/store/DeckStore"
 import { useEditorStore } from "@/store/EditorStore"
 

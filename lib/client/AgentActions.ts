@@ -13,7 +13,7 @@ import {
   updateAgentStateForDeck,
 } from "@/lib/client/AgentRun"
 import type { DeckEdit } from "@/lib/edits/DeckEdits"
-import { messageFromError } from "@/lib/ErrorMessage"
+import { messageFromError } from "@/lib/utils"
 import { createSlide } from "@/lib/layouts/SlideLayouts"
 import type { OutlineSlide } from "@/lib/schema/Outline"
 import { deckThemeFor } from "@/lib/themes/Themes"

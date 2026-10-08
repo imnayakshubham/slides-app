@@ -1,5 +1,5 @@
 import type { SlidesMessage } from "@/lib/ai/SlidesMessage"
-import type { Deck } from "@/lib/schema/Deck"
+import type { Deck } from "@/lib/schema/deck"
 import type { DeckRecord, DeckSummary } from "@/lib/schema/DeckRecord"
 
 export type UploadedImage = { src: string; width: number; height: number }

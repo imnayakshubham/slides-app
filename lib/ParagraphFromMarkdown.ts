@@ -8,7 +8,7 @@ import Text from "@tiptap/extension-text"
 import { MarkdownManager } from "@tiptap/markdown"
 
 import { convertEditorContentToParagraphs, type TextBoxStyle } from "@/lib/RichText"
-import type { Paragraph as DeckParagraph } from "@/lib/schema/Deck"
+import type { Paragraph as DeckParagraph } from "@/lib/schema/deck"
 
 const markdownManager = new MarkdownManager({ extensions: [Document, Paragraph, Text, Bold, Italic] })
 

@@ -2,7 +2,7 @@ import { create } from "zustand"
 
 import { applyDeckEdit } from "@/lib/edits/DeckEdits"
 import type { DeckEdit, DeckEditResult } from "@/lib/edits/DeckEdits"
-import type { Deck } from "@/lib/schema/Deck"
+import type { Deck } from "@/lib/schema/deck"
 
 const MAX_UNDO_STEPS = 100
 

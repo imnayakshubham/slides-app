@@ -12,7 +12,7 @@ import type { ModelMessage, ToolChoice, ToolSet } from "ai"
 
 import { getChatModel } from "@/lib/ai/Model"
 import type { SlidesMessage, SlidesStreamWriter } from "@/lib/ai/SlidesMessage"
-import { messageFromError } from "@/lib/ErrorMessage"
+import { messageFromError } from "@/lib/utils"
 
 const MAX_AGENT_STEPS = 8
 

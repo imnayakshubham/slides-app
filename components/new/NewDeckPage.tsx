@@ -21,11 +21,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
-import { createEmptyDeck } from "@/lib/CreateEmptyDeck"
+import { createEmptyDeck, currentTime } from "@/lib/utils"
 import { sampleDeck } from "@/lib/fixtures/SampleDeck"
 import { deckRepository } from "@/lib/repository"
 import type { DeckSummary } from "@/lib/schema/DeckRecord"
-import { currentTime } from "@/lib/Timestamps"
 
 export function NewDeckPage() {
   const router = useRouter()

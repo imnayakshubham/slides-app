@@ -3,8 +3,8 @@ import type PptxGenJS from "pptxgenjs"
 import { colorToHex, gradientToPngData, imageToPngData } from "@/lib/export/ExportImages"
 import { imagePlaceholderSrc } from "@/lib/layouts/ImagePlaceholder"
 import { paragraphRuns } from "@/lib/RichText"
-import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, usesHeadingFont } from "@/lib/schema/Deck"
-import type { Deck, Slide, SlideElement, Theme } from "@/lib/schema/Deck"
+import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, usesHeadingFont } from "@/lib/schema/deck"
+import type { Deck, Slide, SlideElement, Theme } from "@/lib/schema/deck"
 import { seriesColorFor } from "@/lib/themes/Themes"
 
 type Presentation = InstanceType<typeof PptxGenJS>
@@ -109,9 +109,9 @@ function addShape(presentation: Presentation, pptxSlide: PptxSlide, element: Sha
     line:
       element.strokeWidth > 0
         ? {
-            color: colorToHex(element.stroke),
-            width: points(element.strokeWidth),
-          }
+          color: colorToHex(element.stroke),
+          width: points(element.strokeWidth),
+        }
         : { type: "none" },
   })
 }
@@ -140,10 +140,10 @@ function addTable(pptxSlide: PptxSlide, element: TableElement, theme: Theme) {
       text: cellText,
       options: isHeader
         ? {
-            bold: true,
-            color: colorToHex(colors.heading),
-            fill: { color: mixHex(colors.accent, colors.background, 0.18) },
-          }
+          bold: true,
+          color: colorToHex(colors.heading),
+          fill: { color: mixHex(colors.accent, colors.background, 0.18) },
+        }
         : { color: colorToHex(colors.text) },
     }))
   })

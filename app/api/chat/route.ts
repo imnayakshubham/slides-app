@@ -4,7 +4,7 @@ import { buildDeckContext, recentMessages } from "@/lib/ai/DeckContext"
 import { EDITOR_INSTRUCTIONS } from "@/lib/ai/Prompts"
 import { streamAgentReply } from "@/lib/ai/StreamAgentReply"
 import { createAgentTools } from "@/lib/ai/Tools"
-import { deckSchema } from "@/lib/schema/Deck"
+import { deckSchema } from "@/lib/schema/deck"
 
 export const runtime = "nodejs"
 export const maxDuration = 60

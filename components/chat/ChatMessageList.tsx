@@ -10,8 +10,7 @@ import { Button } from "@/components/ui/button"
 import { useDeckChat } from "@/hooks/UseAgentChat"
 import type { SlidesMessage } from "@/lib/ai/SlidesMessage"
 import { changesIn, outlineIn, textOf } from "@/lib/client/DeckChat"
-import { messageFromError } from "@/lib/ErrorMessage"
-import { cn } from "@/lib/utils"
+import { messageFromError, cn } from "@/lib/utils"
 
 const ESTIMATED_MESSAGE_HEIGHT_PX = 80
 const GAP_BETWEEN_MESSAGES_PX = 16

@@ -5,7 +5,7 @@ import { POPULATOR_INSTRUCTIONS } from "@/lib/ai/Prompts"
 import { streamAgentReply } from "@/lib/ai/StreamAgentReply"
 import { applyDeckEdit, type DeckEdit } from "@/lib/edits/DeckEdits"
 import { buildSlideElements } from "@/lib/layouts/BuildSlideElements"
-import { deckSchema } from "@/lib/schema/Deck"
+import { deckSchema } from "@/lib/schema/deck"
 import { outlineSchema, type Outline } from "@/lib/schema/Outline"
 import { slideContentSchema } from "@/lib/schema/SlideContent"
 

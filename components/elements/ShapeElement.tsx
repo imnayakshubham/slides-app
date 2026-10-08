@@ -1,4 +1,4 @@
-import type { SlideElement } from "@/lib/schema/Deck"
+import type { SlideElement } from "@/lib/schema/deck"
 
 type ShapeElementData = Extract<SlideElement, { type: "shape" }>
 

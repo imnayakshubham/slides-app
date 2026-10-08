@@ -6,8 +6,7 @@ import { z } from "zod"
 import { applyDeckEdit, findElementLocation, type DeckEdit } from "@/lib/edits/DeckEdits"
 import { estimateTextHeight, findFreeSpot, overlappingElementIds, placeWithoutOverlap } from "@/lib/edits/Geometry"
 import type { Box } from "@/lib/edits/Geometry"
-import { createId } from "@/lib/Ids"
-import { newTimestamps } from "@/lib/Timestamps"
+import { createId, newTimestamps } from "@/lib/utils"
 import { imagePlaceholderSrc } from "@/lib/layouts/ImagePlaceholder"
 import { createSlide, duplicateSlide, slideLayoutSlots } from "@/lib/layouts/SlideLayouts"
 import {
@@ -17,8 +16,8 @@ import {
   TEXT_ROLES,
   slideLayoutSchema,
   usesHeadingFont,
-} from "@/lib/schema/Deck"
-import type { Deck, ElementChanges, Slide, SlideElement } from "@/lib/schema/Deck"
+} from "@/lib/schema/deck"
+import type { Deck, ElementChanges, Slide, SlideElement } from "@/lib/schema/deck"
 import { paragraphFromMarkdown } from "@/lib/ParagraphFromMarkdown"
 import { paragraphText } from "@/lib/RichText"
 
@@ -162,9 +161,9 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
       execute: ({ slideId, background, ...otherChanges }) => {
         const changes = background
           ? {
-              ...otherChanges,
-              background: { type: "color" as const, color: background },
-            }
+            ...otherChanges,
+            background: { type: "color" as const, color: background },
+          }
           : otherChanges
         return applyChange({ type: "updateSlide", slideId, changes }, `Updated ${describeSlide(workingDeck, slideId)}`)
       },

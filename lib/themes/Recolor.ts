@@ -1,5 +1,5 @@
-import { usesHeadingFont } from "@/lib/schema/Deck"
-import type { Deck, Paragraph, Slide, SlideElement, Theme } from "@/lib/schema/Deck"
+import { usesHeadingFont } from "@/lib/schema/deck"
+import type { Deck, Paragraph, Slide, SlideElement, Theme } from "@/lib/schema/deck"
 
 // Pairs each old theme color with the new color that has the same job. Headings get their own pair
 // because some themes use the body color for headings too.

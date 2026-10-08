@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 
 import { isAgentWorkingOnDeck } from "@/lib/client/AgentRun"
 import { deckRepository } from "@/lib/repository"
-import type { Deck } from "@/lib/schema/Deck"
+import type { Deck } from "@/lib/schema/deck"
 import { useDeckStore } from "@/store/DeckStore"
 import { agentFor, useAgentStore } from "@/store/AgentStore"
 

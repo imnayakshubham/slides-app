@@ -3,7 +3,7 @@ import { ListIcon } from "lucide-react"
 import { ChartDataEditor } from "@/components/canvas/toolbar/ChartDataEditor"
 import { ToolbarToggle } from "@/components/canvas/toolbar/ToolbarInputs"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
-import type { SlideElement } from "@/lib/schema/Deck"
+import type { SlideElement } from "@/lib/schema/deck"
 
 type ChartElementData = Extract<SlideElement, { type: "chart" }>
 

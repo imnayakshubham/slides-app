@@ -6,7 +6,7 @@ import { ImageUpIcon, Maximize2Icon, Minimize2Icon } from "lucide-react"
 import { TextInput, ToolbarDivider, ToolbarToggle } from "@/components/canvas/toolbar/ToolbarInputs"
 import { updateSelectedElement } from "@/lib/client/SelectedElementActions"
 import { deckRepository } from "@/lib/repository"
-import type { SlideElement } from "@/lib/schema/Deck"
+import type { SlideElement } from "@/lib/schema/deck"
 
 type ImageElementData = Extract<SlideElement, { type: "image" }>
 

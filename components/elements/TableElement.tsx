@@ -3,7 +3,7 @@
 import type { FocusEvent, KeyboardEvent } from "react"
 
 import { focusAtEnd } from "@/components/elements/TextElement"
-import type { SlideElement } from "@/lib/schema/Deck"
+import type { SlideElement } from "@/lib/schema/deck"
 
 type TableElementData = Extract<SlideElement, { type: "table" }>
 
