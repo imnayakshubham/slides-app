@@ -19,6 +19,7 @@ import {
   usesHeadingFont,
 } from "@/lib/schema/Deck"
 import type { Deck, ElementChanges, Slide, SlideElement } from "@/lib/schema/Deck"
+import { paragraphFromMarkdown } from "@/lib/ParagraphFromMarkdown"
 import { paragraphText } from "@/lib/RichText"
 
 const DEFAULT_TEXT_FONT_SIZE = 40
@@ -247,7 +248,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
             type: "text",
             role,
             ...position,
-            paragraphs: style.paragraphs ?? [""],
+            paragraphs: (style.paragraphs ?? [""]).map(paragraphFromMarkdown),
             fontSize: style.fontSize ?? DEFAULT_TEXT_FONT_SIZE,
             bold: style.bold ?? false,
             italic: style.italic ?? false,
@@ -296,6 +297,9 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
         const location = findElementLocation(workingDeck, elementId)
         // Fields from another element type fail validation in applyDeckEdit.
         let fullChanges = changes as ElementChanges
+        if (changes.paragraphs) {
+          fullChanges = { ...fullChanges, paragraphs: changes.paragraphs.map(paragraphFromMarkdown) }
+        }
         let warning: string | undefined
 
         // Rewritten text gets its new height, and the model is told if it now overlaps something.

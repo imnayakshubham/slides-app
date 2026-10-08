@@ -35,7 +35,6 @@ export function DeckEditor({ deckId }: { deckId: string }) {
     let isStale = false
     Promise.all([deckRepository.getDeck(deckId), deckRepository.getConversationMessages(deckId)])
       .then(([record, chatMessages]) => {
-        console.log({ record, chatMessages })
         if (isStale) return
         if (!record) {
           setLoadState({ status: "not-found" })
@@ -47,14 +46,13 @@ export function DeckEditor({ deckId }: { deckId: string }) {
         setLoadState({ status: "ready" })
       })
       .catch((error: Error) => {
-        console.log({ error })
         if (!isStale) setLoadState({ status: "invalid", message: error.message })
       })
     return () => {
       isStale = true
     }
   }, [deckId])
-  console.log({ loadState })
+
   if (loadState.status === "loading") {
     return (
       <div className="flex h-svh gap-3 p-3" aria-busy="true">

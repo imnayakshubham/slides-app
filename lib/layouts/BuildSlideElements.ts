@@ -2,6 +2,8 @@ import { estimateTextHeight, findFreeSpot, type Box } from "@/lib/edits/Geometry
 import { createId } from "@/lib/Ids"
 import { newTimestamps } from "@/lib/Timestamps"
 import { slideLayoutSlots } from "@/lib/layouts/SlideLayouts"
+import { paragraphFromMarkdown } from "@/lib/ParagraphFromMarkdown"
+import { paragraphText } from "@/lib/RichText"
 import { ARTBOARD_HEIGHT, MIN_ELEMENT_SIZE, usesHeadingFont } from "@/lib/schema/Deck"
 import type { Deck, Slide, SlideElement, TextRole } from "@/lib/schema/Deck"
 import type { SlideContent } from "@/lib/schema/SlideContent"
@@ -35,12 +37,14 @@ type TextStyle = {
 
 // Steps the font size down until the text fits the area; the box is as tall as the text.
 function fittedText(paragraphs: string[], area: Box, style: TextStyle, theme: Theme): SlideElement {
+  const styledParagraphs = paragraphs.map(paragraphFromMarkdown)
+  const plainParagraphs = styledParagraphs.map(paragraphText)
   const listStyle = style.listStyle ?? "none"
   let fontSize = style.fontSize
-  while (fontSize > MIN_FONT_SIZE && estimateTextHeight(paragraphs, fontSize, area.w, listStyle) > area.h) {
+  while (fontSize > MIN_FONT_SIZE && estimateTextHeight(plainParagraphs, fontSize, area.w, listStyle) > area.h) {
     fontSize -= FONT_SIZE_STEP
   }
-  const height = estimateTextHeight(paragraphs, fontSize, area.w, listStyle)
+  const height = estimateTextHeight(plainParagraphs, fontSize, area.w, listStyle)
   return {
     id: createId(),
     ...newTimestamps(),
@@ -50,7 +54,7 @@ function fittedText(paragraphs: string[], area: Box, style: TextStyle, theme: Th
     y: area.y,
     w: area.w,
     h: Math.max(MIN_ELEMENT_SIZE, height),
-    paragraphs,
+    paragraphs: styledParagraphs,
     fontSize,
     bold: style.bold ?? false,
     italic: style.italic ?? false,

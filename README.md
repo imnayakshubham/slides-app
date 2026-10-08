@@ -510,6 +510,7 @@ Dev tools: `typescript`, `eslint` with `eslint-config-next`, `prettier` with `pr
 | `export/ExportImages.ts`              | Turns colors, images and gradients into what PowerPoint accepts    |
 | `fixtures/SampleDeck.ts`              | The sample deck for "Load sample deck"                             |
 | `RichText.ts`                         | Converts styled text between the deck and the Tiptap editor        |
+| `ParagraphFromMarkdown.ts`            | Turns the AI's `**bold**` / `*italic*` into real styled text (server only) |
 | `CreateEmptyDeck.ts`                  | Makes a new empty deck                                             |
 | `Ids.ts`                              | Creates UUID v7 ids                                                |
 | `Timestamps.ts`                       | Gives the current time and new createdAt/updatedAt dates (UTC)     |

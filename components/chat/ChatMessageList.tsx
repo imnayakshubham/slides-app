@@ -43,6 +43,7 @@ export function ChatMessageList({ onRetry, className }: ChatMessageListProps) {
   }, [virtualizer])
 
   const isWaitingForReply = status === "submitted"
+  const isAgentReplying = status === "submitted" || status === "streaming"
 
   return (
     <div ref={scrollContainerRef} className={cn("overflow-y-auto", className)}>
@@ -59,7 +60,7 @@ export function ChatMessageList({ onRetry, className }: ChatMessageListProps) {
             >
               <ChatMessageItem
                 message={message}
-                isReplying={status === "streaming" && virtualItem.index === chatMessages.length - 1}
+                isReplying={isAgentReplying && virtualItem.index === chatMessages.length - 1}
               />
             </li>
           )

@@ -2,12 +2,12 @@ import type { Theme } from "@/lib/schema/Deck"
 
 export const THEME_TYPES = ["classic", "sunrise", "midnight", "editorial", "forest", "electric", "graphite"] as const
 
-export type ThemeType = (typeof THEME_TYPES)[number]
+type ThemeType = (typeof THEME_TYPES)[number]
 
 export type ThemePreset = Theme & { name: string; mood: string }
 
 // The card colors of the original default theme.
-export const CLASSIC_CARD_COLORS = ["#818CF8", "#F472B6", "#FBBF24", "#34D399"]
+const CLASSIC_CARD_COLORS = ["#818CF8", "#F472B6", "#FBBF24", "#34D399"]
 
 // The built-in themes are fixed, so their dates are too.
 const PRESET_DATE = "2026-10-08T00:00:00.000Z"
