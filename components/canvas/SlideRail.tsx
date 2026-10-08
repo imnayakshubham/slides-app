@@ -7,7 +7,7 @@ import { ArrowUpIcon, GripVerticalIcon, SparklesIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Textarea } from "@/components/ui/textarea"
-import { useAgent } from "@/hooks/UseAgent"
+import { useOpenDeckAgent } from "@/hooks/UseOpenDeckAgent"
 import { sendAgentMessage } from "@/lib/client/DeckChat"
 import { cn } from "@/lib/utils"
 import { useEditorStore } from "@/store/EditorStore"
@@ -46,7 +46,7 @@ export function SlideRail({ slideId, slideNumber, dragHandleListeners, setDragHa
 
 // The chat already treats the open slide as "this slide", so a normal message is enough.
 function EditWithAgentPopover({ slideId, slideNumber }: { slideId: string; slideNumber: number }) {
-  const isAgentBusy = useAgent((agent) => agent.run !== null)
+  const isAgentBusy = useOpenDeckAgent().run !== null
   const [isOpen, setIsOpen] = useState(false)
   const [request, setRequest] = useState("")
 

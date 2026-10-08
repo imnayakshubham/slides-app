@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils"
 
 const ESTIMATED_MESSAGE_HEIGHT_PX = 80
 const GAP_BETWEEN_MESSAGES_PX = 16
-// Within this distance of the bottom, the list keeps following new text.
 const FOLLOW_BOTTOM_DISTANCE_PX = 48
 
 type ChatMessageListProps = {
@@ -23,12 +22,10 @@ type ChatMessageListProps = {
   className?: string
 }
 
-// Only messages near the visible area are drawn, so long chats stay fast.
 export function ChatMessageList({ onRetry, className }: ChatMessageListProps) {
   const { messages: chatMessages, status, error } = useDeckChat()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-  // The React Compiler can't handle this hook's result, so it just skips it.
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: chatMessages.length,
@@ -41,7 +38,6 @@ export function ChatMessageList({ onRetry, className }: ChatMessageListProps) {
     scrollEndThreshold: FOLLOW_BOTTOM_DISTANCE_PX,
   })
 
-  // The list helper stays the same object, so this runs only once, when the chat opens.
   useEffect(() => {
     virtualizer.scrollToEnd()
   }, [virtualizer])
@@ -91,6 +87,8 @@ const ChatMessageItem = memo(function ChatMessageItem({
   message: SlidesMessage
   isReplying: boolean
 }) {
+
+  // textOf(message) returns: "Shortened the bullets on slide 3."
   const text = textOf(message)
   if (message.role === "user") {
     return (
@@ -100,7 +98,9 @@ const ChatMessageItem = memo(function ChatMessageItem({
     )
   }
 
+  // outlineIn(message) returns: { title: "Q3 Product Roadmap", themeType: "midnight", slides: [...] }, or undefined
   const outline = outlineIn(message)
+  // changesIn(message) returns: [{ label: "Added a bar chart to slide 3", failed: false }]
   const changes = changesIn(message)
 
   if (!text && changes.length === 0 && !outline) {

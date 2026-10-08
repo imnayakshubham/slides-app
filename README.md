@@ -457,7 +457,7 @@ Dev tools: `typescript`, `eslint` with `eslint-config-next`, `prettier` with `pr
 
 | File                              | What it does                                                    |
 | --------------------------------- | --------------------------------------------------------------- |
-| `UseAgent.ts`                     | Reads the open deck's agent state                               |
+| `UseOpenDeckAgent.ts`             | Reads the open deck's agent state                               |
 | `UseAgentChat.ts`                 | The open deck's chat messages and actions                       |
 | `UseAgentLabel.ts`                | What the AI is doing on a slide, if anything                    |
 | `UseAutosave.ts`                  | Saves the deck automatically                                    |

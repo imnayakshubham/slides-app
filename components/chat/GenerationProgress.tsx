@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { continueStoppedGeneration, retrySlideBuild } from "@/lib/client/AgentActions"
 import { cn } from "@/lib/utils"
-import { useAgent } from "@/hooks/UseAgent"
+import { useOpenDeckAgent } from "@/hooks/UseOpenDeckAgent"
 import type { SlideBuildStatus } from "@/store/AgentStore"
 
 const STATUS_LABELS: Record<SlideBuildStatus, string> = {
@@ -24,9 +24,10 @@ const STATUS_LABELS: Record<SlideBuildStatus, string> = {
 
 // Checklist of slides being generated; failed slides can be retried and a stopped build continued.
 export function GenerationProgress({ messageId }: { messageId: string }) {
-  const generation = useAgent((agent) => (agent.generation?.messageId === messageId ? agent.generation : null))
-  const isAgentRunning = useAgent((agent) => agent.run !== null)
-  if (!generation) return null
+  const agent = useOpenDeckAgent()
+  const generation = agent.generation
+  const isAgentRunning = agent.run !== null
+  if (!generation || generation.messageId !== messageId) return null
 
   const { slides, isStopped, outline } = generation
   const doneCount = slides.filter((build) => build.status === "done").length

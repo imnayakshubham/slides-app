@@ -59,7 +59,6 @@ export async function POST(request: Request) {
   let isSlideFilled = false
 
   return streamAgentReply({
-    // Only the story and this slide: the AI writes content, the layout code places it.
     instructions: [POPULATOR_INSTRUCTIONS, describeOutline(outline, outlineSlideIndex)].join("\n\n"),
     messages: [{ role: "user", content: `Write slide "${slide.title}" now.` }],
     createTools: (writer) => ({

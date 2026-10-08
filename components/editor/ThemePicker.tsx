@@ -4,16 +4,14 @@ import { PaletteIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useAgent } from "@/hooks/UseAgent"
+import { useOpenDeckAgent } from "@/hooks/UseOpenDeckAgent"
 import { THEMES, deckThemeFor, fontStack, type ThemePreset } from "@/lib/themes/Themes"
 import { cn } from "@/lib/utils"
 import { useDeckStore } from "@/store/DeckStore"
 
-// Switches the whole deck's colors and fonts in one undo step.
 export function ThemePicker() {
   const currentThemeId = useDeckStore((state) => state.deck?.theme.id)
-  // Slides being written keep the theme they started with.
-  const isAgentBusy = useAgent((agent) => agent.run !== null)
+  const isAgentBusy = useOpenDeckAgent().run !== null
 
   function applyTheme(preset: ThemePreset) {
     if (preset.id === currentThemeId) return
@@ -61,7 +59,6 @@ export function ThemePicker() {
   )
 }
 
-// A tiny slide preview: background, "Aa" in the heading font, and the card colors.
 function ThemePreview({ preset, className }: { preset: ThemePreset; className?: string }) {
   const { colors, headingFont } = preset
   return (

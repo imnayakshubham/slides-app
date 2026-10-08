@@ -195,7 +195,6 @@ function getElementIds(deck: Deck | null, slideId: string) {
 
 function useArtboardScale() {
   const containerRef = useRef<HTMLDivElement>(null)
-  // 0 until measured, so the slide never flashes at full size.
   const [scale, setScale] = useState(0)
 
   useEffect(() => {

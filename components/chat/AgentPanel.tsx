@@ -6,7 +6,7 @@ import { MessageInput } from "@/components/chat/MessageInput"
 import { DeckTitleInput } from "@/components/editor/DeckTitleInput"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useAgent } from "@/hooks/UseAgent"
+import { useOpenDeckAgent } from "@/hooks/UseOpenDeckAgent"
 import { useDeckChat } from "@/hooks/UseAgentChat"
 import { useDeckStore } from "@/store/DeckStore"
 import type { AgentRunKind } from "@/store/AgentStore"
@@ -45,7 +45,7 @@ export function AgentPanel({
   className,
 }: AgentPanelProps) {
   const hasMessages = useDeckChat().messages.length > 0
-  const agentRunKind = useAgent((agent) => agent.run?.kind)
+  const agentRunKind = useOpenDeckAgent().run?.kind
   const isDeckEmpty = useDeckStore((state) => (state.deck?.slides.length ?? 0) === 0)
   const examplePrompts = isDeckEmpty ? GENERATE_EXAMPLE_PROMPTS : EDIT_EXAMPLE_PROMPTS
 
