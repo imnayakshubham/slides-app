@@ -13,4 +13,4 @@ export const deckRecordSchema = z.strictObject({
 
 export type DeckRecord = z.infer<typeof deckRecordSchema>
 
-export type DeckSummary = { id: string; title: string; updatedAt: string }
+export type DeckSummary = { id: string; title: string; createdAt: string; updatedAt: string }

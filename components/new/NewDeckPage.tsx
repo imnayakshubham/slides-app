@@ -25,6 +25,7 @@ import { createEmptyDeck } from "@/lib/CreateEmptyDeck"
 import { sampleDeck } from "@/lib/fixtures/SampleDeck"
 import { deckRepository } from "@/lib/repository"
 import type { DeckSummary } from "@/lib/schema/DeckRecord"
+import { currentTime } from "@/lib/Timestamps"
 
 export function NewDeckPage() {
   const router = useRouter()
@@ -59,7 +60,7 @@ export function NewDeckPage() {
   async function renameDeck(deckId: string, title: string) {
     const record = await deckRepository.getDeck(deckId)
     if (!record) return
-    await deckRepository.saveDeck({ ...record.deck, title })
+    await deckRepository.saveDeck({ ...record.deck, title, updatedAt: currentTime() })
     setDeckSummaries(await deckRepository.listDecks())
   }
 

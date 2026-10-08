@@ -7,6 +7,7 @@ import { applyDeckEdit, findElementLocation, type DeckEdit } from "@/lib/edits/D
 import { estimateTextHeight, findFreeSpot, overlappingElementIds, placeWithoutOverlap } from "@/lib/edits/Geometry"
 import type { Box } from "@/lib/edits/Geometry"
 import { createId } from "@/lib/Ids"
+import { newTimestamps } from "@/lib/Timestamps"
 import { imagePlaceholderSrc } from "@/lib/layouts/ImagePlaceholder"
 import { createSlide, duplicateSlide, slideLayoutSlots } from "@/lib/layouts/SlideLayouts"
 import {
@@ -242,6 +243,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
           const role = style.role ?? "body"
           element = {
             id: elementId,
+            ...newTimestamps(),
             type: "text",
             role,
             ...position,
@@ -260,6 +262,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
           }
           element = {
             id: elementId,
+            ...newTimestamps(),
             type: "image",
             ...position,
             src: style.src ?? imagePlaceholderSrc(description, workingDeck.theme),
@@ -269,6 +272,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
         } else {
           element = {
             id: elementId,
+            ...newTimestamps(),
             type: "shape",
             ...position,
             shape: style.shape ?? "rect",
@@ -406,6 +410,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
 
         const chart: SlideElement = {
           id: createId(),
+          ...newTimestamps(),
           type: "chart",
           ...position,
           chartType: input.chartType,
@@ -472,6 +477,7 @@ export function createAgentTools(deck: Deck, onEdit: (edit: DeckEdit, label: str
 
         const table: SlideElement = {
           id: createId(),
+          ...newTimestamps(),
           type: "table",
           ...position,
           rows,

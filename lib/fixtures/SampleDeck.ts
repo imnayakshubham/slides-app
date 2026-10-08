@@ -1,21 +1,26 @@
 import { deckSchema } from "@/lib/schema/Deck"
 import { deckThemeFor } from "@/lib/themes/Themes"
 
-// Fixed uuids so manual checks and screenshots stay comparable between runs.
+// Fixed uuids and dates so manual checks and screenshots stay comparable between runs.
+const SAMPLE_TIMESTAMPS = { createdAt: "2026-10-08T00:00:00.000Z", updatedAt: "2026-10-08T00:00:00.000Z" }
+
 export const sampleDeck = deckSchema.parse({
   id: "01990000-0000-7000-8000-000000000001",
+  ...SAMPLE_TIMESTAMPS,
   title: "Q3 Product Roadmap",
   aspectRatio: "16:9",
   theme: deckThemeFor("classic"),
   slides: [
     {
       id: "01990000-0000-7000-8000-000000000002",
+      ...SAMPLE_TIMESTAMPS,
       title: "Q3 Product Roadmap",
       layout: "title",
       notes: "Welcome everyone.",
       elements: [
         {
           id: "01990000-0000-7000-8000-000000000003",
+          ...SAMPLE_TIMESTAMPS,
           type: "text",
           role: "title",
           x: 160,
@@ -32,6 +37,7 @@ export const sampleDeck = deckSchema.parse({
         },
         {
           id: "01990000-0000-7000-8000-000000000004",
+          ...SAMPLE_TIMESTAMPS,
           type: "text",
           role: "subtitle",
           x: 160,
@@ -50,12 +56,14 @@ export const sampleDeck = deckSchema.parse({
     },
     {
       id: "01990000-0000-7000-8000-000000000005",
+      ...SAMPLE_TIMESTAMPS,
       title: "Goals",
       layout: "content",
       notes: "",
       elements: [
         {
           id: "01990000-0000-7000-8000-000000000006",
+          ...SAMPLE_TIMESTAMPS,
           type: "text",
           role: "body",
           x: 120,
@@ -72,6 +80,7 @@ export const sampleDeck = deckSchema.parse({
         },
         {
           id: "01990000-0000-7000-8000-000000000007",
+          ...SAMPLE_TIMESTAMPS,
           type: "image",
           x: 1060,
           y: 260,
@@ -85,12 +94,14 @@ export const sampleDeck = deckSchema.parse({
     },
     {
       id: "01990000-0000-7000-8000-000000000008",
+      ...SAMPLE_TIMESTAMPS,
       title: "Revenue",
       layout: "chart-forward",
       notes: "",
       elements: [
         {
           id: "01990000-0000-7000-8000-000000000009",
+          ...SAMPLE_TIMESTAMPS,
           type: "chart",
           x: 120,
           y: 260,
@@ -108,12 +119,14 @@ export const sampleDeck = deckSchema.parse({
     },
     {
       id: "01990000-0000-7000-8000-000000000010",
+      ...SAMPLE_TIMESTAMPS,
       title: "Pricing",
       layout: "comparison",
       notes: "",
       elements: [
         {
           id: "01990000-0000-7000-8000-000000000011",
+          ...SAMPLE_TIMESTAMPS,
           type: "table",
           x: 120,
           y: 260,
@@ -128,6 +141,7 @@ export const sampleDeck = deckSchema.parse({
         },
         {
           id: "01990000-0000-7000-8000-000000000012",
+          ...SAMPLE_TIMESTAMPS,
           type: "shape",
           x: 980,
           y: 260,

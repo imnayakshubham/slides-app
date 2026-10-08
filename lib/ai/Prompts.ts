@@ -1,4 +1,4 @@
-import { THEME_IDS, THEMES } from "@/lib/themes/Themes"
+import { THEMES } from "@/lib/themes/Themes"
 
 export const EDITOR_INSTRUCTIONS = `You edit an existing slide deck by calling tools. Each tool call is one small change, applied immediately.
 
@@ -15,7 +15,7 @@ Rules:
 - If a tool returns ok: false, read the error, fix the call and try again.
 - When you are done, reply with one or two short sentences saying what you changed. If the request is unclear, ask instead of guessing.`
 
-const THEME_LIST = THEME_IDS.map((themeId) => `- ${themeId}: ${THEMES[themeId].mood}`).join("\n")
+const THEME_LIST = THEMES.map((preset) => `- ${preset.themeType}: ${preset.mood}`).join("\n")
 
 export const PLANNER_INSTRUCTIONS = `You plan slide decks.
 
@@ -29,7 +29,7 @@ Rules:
 - Set wantsChart when numbers are best shown as a chart, and wantsTable for comparisons, prices or schedules. Include what the user asked for.
 - Put concrete key points and plausible numbers in contentHints, so each slide can be written without guessing.
 - Slide titles are short and plain, with no em dashes and no buzzwords.
-- Pick the themeId whose mood suits the topic and audience. Avoid classic unless the user asks for a plain look.
+- Pick the themeType whose mood suits the topic and audience. Avoid classic unless the user asks for a plain look.
 
 Themes:
 ${THEME_LIST}`

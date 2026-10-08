@@ -9,6 +9,7 @@ import type { ConversationRecord } from "@/lib/schema/Conversation"
 import type { Deck } from "@/lib/schema/Deck"
 import { deckRecordSchema } from "@/lib/schema/DeckRecord"
 import { outlineSchema } from "@/lib/schema/Outline"
+import { currentTime } from "@/lib/Timestamps"
 import type { DeckRecord, DeckSummary } from "@/lib/schema/DeckRecord"
 
 const DATABASE_NAME = "ai-slides"
@@ -66,16 +67,17 @@ async function saveDeck(deck: Deck) {
   const database = await openDatabase()
   const transaction = database.transaction(["decks", "deckIndex"], "readwrite")
   const previousRecord = await transaction.objectStore("decks").get(deck.id)
-  const now = new Date().toISOString()
+  const now = currentTime()
+  const createdAt = previousRecord?.createdAt ?? now
 
   const record: DeckRecord = {
     schemaVersion: 1,
     version: (previousRecord?.version ?? 0) + 1,
-    createdAt: previousRecord?.createdAt ?? now,
+    createdAt,
     updatedAt: now,
     deck,
   }
-  const summary: DeckSummary = { id: deck.id, title: deck.title, updatedAt: now }
+  const summary: DeckSummary = { id: deck.id, title: deck.title, createdAt, updatedAt: now }
 
   await Promise.all([
     transaction.objectStore("decks").put(record),
@@ -117,14 +119,19 @@ async function getConversationMessages(deckId: string) {
 }
 
 async function saveConversationMessages(deckId: string, messages: SlidesMessage[]) {
+  const database = await openDatabase()
+  const transaction = database.transaction("conversations", "readwrite")
+  const previousRecord = await transaction.store.get(deckId)
+  const now = currentTime()
+
   const record: ConversationRecord = {
     schemaVersion: 2,
     deckId,
-    updatedAt: new Date().toISOString(),
+    createdAt: previousRecord?.createdAt ?? now,
+    updatedAt: now,
     messages,
   }
-  const database = await openDatabase()
-  await database.put("conversations", record)
+  await Promise.all([transaction.store.put(record), transaction.done])
 }
 
 // No file storage yet, so the image is shrunk and kept inside the deck as a data URL.

@@ -1,6 +1,7 @@
 import { createId } from "@/lib/Ids"
 import { estimateTextHeight, type Box } from "@/lib/edits/Geometry"
 import { MIN_ELEMENT_SIZE, type Deck, type Slide, type SlideElement, type SlideLayout } from "@/lib/schema/Deck"
+import { newTimestamps } from "@/lib/Timestamps"
 
 // Every layout with a title leaves room for a short eyebrow label above it.
 const standardEyebrowSlot: Box = { x: 120, y: 64, w: 1680, h: 48 }
@@ -63,6 +64,7 @@ export function createSlide(layout: SlideLayout, title: string, theme: Deck["the
 
   return {
     id: createId(),
+    ...newTimestamps(),
     title,
     layout,
     notes: "",
@@ -70,6 +72,7 @@ export function createSlide(layout: SlideLayout, title: string, theme: Deck["the
       ? [
           {
             id: createId(),
+            ...newTimestamps(),
             type: "text",
             role: "title",
             ...titleSlot,
@@ -91,9 +94,11 @@ export function duplicateSlide(slide: Slide): Slide {
   return {
     ...slide,
     id: createId(),
+    ...newTimestamps(),
     elements: slide.elements.map((element) => ({
       ...element,
       id: createId(),
+      ...newTimestamps(),
     })),
   }
 }
@@ -104,6 +109,7 @@ export function duplicateElement(element: SlideElement): SlideElement {
   return {
     ...element,
     id: createId(),
+    ...newTimestamps(),
     x: element.x + DUPLICATE_OFFSET,
     y: element.y + DUPLICATE_OFFSET,
   }

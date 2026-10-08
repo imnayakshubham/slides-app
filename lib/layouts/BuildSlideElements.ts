@@ -1,5 +1,6 @@
 import { estimateTextHeight, findFreeSpot, type Box } from "@/lib/edits/Geometry"
 import { createId } from "@/lib/Ids"
+import { newTimestamps } from "@/lib/Timestamps"
 import { slideLayoutSlots } from "@/lib/layouts/SlideLayouts"
 import { ARTBOARD_HEIGHT, MIN_ELEMENT_SIZE, usesHeadingFont } from "@/lib/schema/Deck"
 import type { Deck, Slide, SlideElement, TextRole } from "@/lib/schema/Deck"
@@ -42,6 +43,7 @@ function fittedText(paragraphs: string[], area: Box, style: TextStyle, theme: Th
   const height = estimateTextHeight(paragraphs, fontSize, area.w, listStyle)
   return {
     id: createId(),
+    ...newTimestamps(),
     type: "text",
     role: style.role,
     x: area.x,
@@ -61,6 +63,7 @@ function fittedText(paragraphs: string[], area: Box, style: TextStyle, theme: Th
 function chartElement(chart: NonNullable<SlideContent["chart"]>, area: Box): SlideElement {
   return {
     id: createId(),
+    ...newTimestamps(),
     type: "chart",
     ...area,
     chartType: chart.chartType,
@@ -75,6 +78,7 @@ function chartElement(chart: NonNullable<SlideContent["chart"]>, area: Box): Sli
 function tableElement(table: NonNullable<SlideContent["table"]>, area: Box): SlideElement {
   return {
     id: createId(),
+    ...newTimestamps(),
     type: "table",
     ...area,
     h: Math.min(area.h, table.rows.length * TABLE_ROW_HEIGHT),

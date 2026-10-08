@@ -5,7 +5,7 @@ import { PaletteIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useAgent } from "@/hooks/UseAgent"
-import { THEME_IDS, THEMES, deckThemeFor, fontStack, type ThemeId } from "@/lib/themes/Themes"
+import { THEMES, deckThemeFor, fontStack, type ThemePreset } from "@/lib/themes/Themes"
 import { cn } from "@/lib/utils"
 import { useDeckStore } from "@/store/DeckStore"
 
@@ -15,9 +15,9 @@ export function ThemePicker() {
   // Slides being written keep the theme they started with.
   const isAgentBusy = useAgent((agent) => agent.run !== null)
 
-  function applyTheme(themeId: ThemeId) {
-    if (themeId === currentThemeId) return
-    useDeckStore.getState().applyEdit({ type: "setTheme", theme: deckThemeFor(themeId) })
+  function applyTheme(preset: ThemePreset) {
+    if (preset.id === currentThemeId) return
+    useDeckStore.getState().applyEdit({ type: "setTheme", theme: deckThemeFor(preset.themeType) })
   }
 
   return (
@@ -37,21 +37,24 @@ export function ThemePicker() {
       <PopoverContent align="start" className="w-[min(26rem,calc(100vw-2rem))]">
         <p className="font-medium">Theme</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {THEME_IDS.map((themeId) => (
-            <button
-              key={themeId}
-              type="button"
-              aria-pressed={themeId === currentThemeId}
-              onClick={() => applyTheme(themeId)}
-              className={cn(
-                "flex flex-col gap-1.5 rounded-xl p-1.5 text-start text-xs font-medium outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50",
-                themeId === currentThemeId && "bg-primary/10 text-primary"
-              )}
-            >
-              <ThemePreview themeId={themeId} />
-              {THEMES[themeId].name}
-            </button>
-          ))}
+          {THEMES.map((preset) => {
+            const isCurrentTheme = preset.id === currentThemeId
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                aria-pressed={isCurrentTheme}
+                onClick={() => applyTheme(preset)}
+                className={cn(
+                  "flex flex-col gap-1.5 rounded-xl p-1.5 text-start text-xs font-medium outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50",
+                  isCurrentTheme && "bg-primary/10 text-primary"
+                )}
+              >
+                <ThemePreview preset={preset} />
+                {preset.name}
+              </button>
+            )
+          })}
         </div>
       </PopoverContent>
     </Popover>
@@ -59,8 +62,8 @@ export function ThemePicker() {
 }
 
 // A tiny slide preview: background, "Aa" in the heading font, and the card colors.
-function ThemePreview({ themeId, className }: { themeId: ThemeId; className?: string }) {
-  const { colors, headingFont } = THEMES[themeId]
+function ThemePreview({ preset, className }: { preset: ThemePreset; className?: string }) {
+  const { colors, headingFont } = preset
   return (
     <span
       aria-hidden

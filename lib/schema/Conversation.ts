@@ -4,6 +4,7 @@ import { z } from "zod"
 export const conversationRecordSchema = z.strictObject({
   schemaVersion: z.literal(2),
   deckId: z.uuid(),
+  createdAt: z.string(),
   updatedAt: z.string(),
   messages: z.array(z.unknown()),
 })

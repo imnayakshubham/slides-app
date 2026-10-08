@@ -1,12 +1,23 @@
-import { CLASSIC_CARD_COLORS, type Theme } from "@/lib/schema/Deck"
+import type { Theme } from "@/lib/schema/Deck"
 
-export const THEME_IDS = ["classic", "sunrise", "midnight", "editorial", "forest", "electric", "graphite"] as const
+export const THEME_TYPES = ["classic", "sunrise", "midnight", "editorial", "forest", "electric", "graphite"] as const
 
-export type ThemeId = (typeof THEME_IDS)[number]
+export type ThemeType = (typeof THEME_TYPES)[number]
 
-export const THEMES: Record<ThemeId, Theme & { name: string; mood: string }> = {
-  classic: {
-    id: "classic",
+export type ThemePreset = Theme & { name: string; mood: string }
+
+// The card colors of the original default theme.
+export const CLASSIC_CARD_COLORS = ["#818CF8", "#F472B6", "#FBBF24", "#34D399"]
+
+// The built-in themes are fixed, so their dates are too.
+const PRESET_DATE = "2026-10-08T00:00:00.000Z"
+
+export const THEMES: ThemePreset[] = [
+  {
+    id: "01a11a06-7364-73ae-87c0-1dee9179b339",
+    themeType: "classic",
+    createdAt: PRESET_DATE,
+    updatedAt: PRESET_DATE,
     name: "Classic",
     mood: "plain white, neutral, all-purpose",
     fontFamily: "Inter",
@@ -20,8 +31,11 @@ export const THEMES: Record<ThemeId, Theme & { name: string; mood: string }> = {
       cardText: "#111827",
     },
   },
-  sunrise: {
-    id: "sunrise",
+  {
+    id: "01a11a06-7365-76ba-a71e-37594137443a",
+    themeType: "sunrise",
+    createdAt: PRESET_DATE,
+    updatedAt: PRESET_DATE,
     name: "Sunrise",
     mood: "warm cream and coral, friendly and upbeat: startups, products, teams",
     fontFamily: "Space Grotesk",
@@ -35,8 +49,11 @@ export const THEMES: Record<ThemeId, Theme & { name: string; mood: string }> = {
       cardText: "#1F1A17",
     },
   },
-  midnight: {
-    id: "midnight",
+  {
+    id: "01a11a06-7365-76ba-a71e-39e5c0433294",
+    themeType: "midnight",
+    createdAt: PRESET_DATE,
+    updatedAt: PRESET_DATE,
     name: "Midnight",
     mood: "dark navy, techy and confident: engineering, AI, data, security",
     fontFamily: "Inter",
@@ -50,8 +67,11 @@ export const THEMES: Record<ThemeId, Theme & { name: string; mood: string }> = {
       cardText: "#F8FAFC",
     },
   },
-  editorial: {
-    id: "editorial",
+  {
+    id: "01a11a06-7365-76ba-a71e-3f5c64d3d05a",
+    themeType: "editorial",
+    createdAt: PRESET_DATE,
+    updatedAt: PRESET_DATE,
     name: "Editorial",
     mood: "off-white with a serif headline, serious and polished: strategy, finance, research, reports",
     fontFamily: "Inter",
@@ -66,8 +86,11 @@ export const THEMES: Record<ThemeId, Theme & { name: string; mood: string }> = {
       chart: ["#B91C1C", "#57534E", "#B45309", "#1E40AF"],
     },
   },
-  forest: {
-    id: "forest",
+  {
+    id: "01a11a06-7365-76ba-a71e-429ed2c84a01",
+    themeType: "forest",
+    createdAt: PRESET_DATE,
+    updatedAt: PRESET_DATE,
     name: "Forest",
     mood: "soft sage and deep green, calm and natural: health, sustainability, education, wellbeing",
     fontFamily: "Space Grotesk",
@@ -82,8 +105,11 @@ export const THEMES: Record<ThemeId, Theme & { name: string; mood: string }> = {
       chart: ["#2F855A", "#6B8E23", "#B7791F", "#2B6CB0"],
     },
   },
-  electric: {
-    id: "electric",
+  {
+    id: "01a11a06-7365-76ba-a71e-4569a9d18ccd",
+    themeType: "electric",
+    createdAt: PRESET_DATE,
+    updatedAt: PRESET_DATE,
     name: "Electric",
     mood: "white with indigo and pastels, modern and energetic: marketing, launches, pitches",
     fontFamily: "Space Grotesk",
@@ -98,8 +124,11 @@ export const THEMES: Record<ThemeId, Theme & { name: string; mood: string }> = {
       chart: ["#6366F1", "#EC4899", "#06B6D4", "#F59E0B"],
     },
   },
-  graphite: {
-    id: "graphite",
+  {
+    id: "01a11a06-7365-76ba-a71e-4b7efde3dd21",
+    themeType: "graphite",
+    createdAt: PRESET_DATE,
+    updatedAt: PRESET_DATE,
     name: "Graphite",
     mood: "charcoal with bright lime, bold and high-contrast: sales, sports, events, bold statements",
     fontFamily: "Inter",
@@ -113,12 +142,14 @@ export const THEMES: Record<ThemeId, Theme & { name: string; mood: string }> = {
       cardText: "#18181B",
     },
   },
-}
+]
 
 // Strips the picker-only fields, leaving what is saved in the deck.
-export function deckThemeFor(themeId: ThemeId): Theme {
-  const { id, fontFamily, headingFont, colors } = THEMES[themeId]
-  return { id, fontFamily, headingFont, colors }
+export function deckThemeFor(themeType: ThemeType): Theme {
+  const preset = THEMES.find((theme) => theme.themeType === themeType)
+  if (!preset) throw new Error(`There is no "${themeType}" theme.`)
+  const { id, createdAt, updatedAt, fontFamily, headingFont, colors } = preset
+  return { id, themeType, createdAt, updatedAt, fontFamily, headingFont, colors }
 }
 
 // Font names map to the CSS variables set up by next/font in app/layout.tsx.

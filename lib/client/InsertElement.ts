@@ -1,5 +1,6 @@
 import { clampBox, findFreeSpot } from "@/lib/edits/Geometry"
 import { createId } from "@/lib/Ids"
+import { newTimestamps } from "@/lib/Timestamps"
 import { TEXT_PRESETS, type TextPresetName } from "@/lib/layouts/TextPresets"
 import type { UploadedImage } from "@/lib/repository/DeckRepository"
 import { ARTBOARD_HEIGHT, ARTBOARD_WIDTH, MIN_ELEMENT_SIZE, usesHeadingFont } from "@/lib/schema/Deck"
@@ -29,6 +30,7 @@ export function createTextBlock(presetName: TextPresetName, theme: Theme): Slide
   const preset = TEXT_PRESETS[presetName]
   return {
     id: createId(),
+    ...newTimestamps(),
     type: "text",
     role: preset.role,
     ...centeredBox(preset.width, preset.height),
@@ -52,6 +54,7 @@ export function createChartBlock(chartType: ChartElement["chartType"], theme: Th
   }
   return {
     id: createId(),
+    ...newTimestamps(),
     type: "chart",
     ...centeredBox(CHART_SIZE.width, CHART_SIZE.height),
     chartType,
@@ -65,6 +68,7 @@ export function createChartBlock(chartType: ChartElement["chartType"], theme: Th
 export function createTableBlock(): SlideElement {
   return {
     id: createId(),
+    ...newTimestamps(),
     type: "table",
     ...centeredBox(TABLE_SIZE.width, TABLE_SIZE.height),
     rows: [
@@ -79,6 +83,7 @@ export function createTableBlock(): SlideElement {
 export function createShapeBlock(shape: "rect" | "ellipse", theme: Theme): SlideElement {
   return {
     id: createId(),
+    ...newTimestamps(),
     type: "shape",
     ...centeredBox(SHAPE_SIZE.width, SHAPE_SIZE.height),
     shape,
@@ -93,6 +98,7 @@ export function createImageBlock(image: UploadedImage): SlideElement {
   const height = Math.max(MIN_ELEMENT_SIZE, (width / image.width) * image.height)
   return {
     id: createId(),
+    ...newTimestamps(),
     type: "image",
     ...centeredBox(width, height),
     src: image.src,

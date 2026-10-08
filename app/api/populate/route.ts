@@ -18,7 +18,7 @@ const MAX_FILL_ATTEMPTS = 3
 const populateRequestSchema = z.object({
   deck: deckSchema,
   // The theme is already on the deck, so it isn't needed here.
-  outline: outlineSchema.partial({ themeId: true }),
+  outline: outlineSchema.partial({ themeType: true }),
   slideId: z.string().min(1),
   outlineSlideIndex: z.number().int().min(0),
 })

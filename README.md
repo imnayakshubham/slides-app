@@ -31,7 +31,7 @@ Start the app:
 npm run dev
 ```
 
-Then open http://localhost:8000.
+Then open <http://localhost:8000>.
 
 If `AI_API_KEY` is missing, the AI routes answer with an error (503). You can still create and edit decks by hand.
 
@@ -202,26 +202,155 @@ Database name: `ai-slides`, version 2. It has 3 stores:
 | Store           | Key                         | What is inside                                                     |
 | --------------- | --------------------------- | ------------------------------------------------------------------ |
 | `decks`         | `deck.id`                   | `{ schemaVersion: 1, version, createdAt, updatedAt, deck }`        |
-| `deckIndex`     | `id` (indexed by `updatedAt`) | `{ id, title, updatedAt }`, so the home page can list decks quickly |
-| `conversations` | `deckId`                    | `{ schemaVersion: 2, deckId, updatedAt, messages }`, the deck's chat |
+| `deckIndex`     | `id` (indexed by `updatedAt`) | `{ id, title, createdAt, updatedAt }`, so the home page can list decks quickly |
+| `conversations` | `deckId`                    | `{ schemaVersion: 2, deckId, createdAt, updatedAt, messages }`, the deck's chat |
 
 - `version` goes up by 1 on every save.
 - Deleting a deck also deletes its chat.
 - Uploaded images are shrunk to at most 1600px on the long side and kept inside the deck as data URLs.
 - The app only talks to storage through the `DeckRepository` interface (`lib/repository`), so IndexedDB can be swapped for a server later.
 
-### Deck shape
+### Saved shapes
 
-```
-Deck { id, title, aspectRatio: "16:9", theme, slides[] }
-  Slide { id, title, layout, background?, notes, elements[] }
-    Element { id, type, x, y, w, h, ...fields for its type }
+These are the exact shapes saved in each store. They come from the Zod schemas in `lib/schema/`. A `?` means the field is optional.
+
+Dates are UTC ISO strings, like `"2026-10-08T09:30:00.000Z"`. The deck, its theme, every slide and every element have a `createdAt` and an `updatedAt`:
+
+- Something new gets both set to now. A copy or duplicate counts as new.
+- Every edit gives the deck a new `updatedAt`, plus the slide and the element it changed.
+- The built-in themes have fixed dates, because the themes themselves are fixed (`THEMES` in `lib/themes/Themes.ts`).
+
+**`deckIndex` store: one row per deck, used for the deck list**
+
+```ts
+{
+  id: string          // same as the deck id
+  title: string
+  createdAt: string
+  updatedAt: string
+}
 ```
 
-- Element types: `text`, `image`, `chart`, `table`, `shape`.
-- Positions and sizes use a 1920 × 1080 slide. Width and height are at least 40.
-- The order of `slides` is the slide order. The order of `elements` is the stacking order (last one is on top).
-- Ids are UUID v7.
+**`decks` store: one row per deck**
+
+```ts
+{
+  schemaVersion: 1
+  version: number     // 1 on the first save, then +1 on every save
+  createdAt: string
+  updatedAt: string
+  deck: Deck
+}
+```
+
+**`Deck`**
+
+```ts
+{
+  id: string              // UUID
+  createdAt: string
+  updatedAt: string
+  title: string
+  aspectRatio: "16:9"
+  theme: {
+    id: string            // fixed UUID of the built-in theme; used to tell which theme this is
+    themeType: "classic" | "sunrise" | "midnight" | "editorial" | "forest" | "electric" | "graphite"   // readable name; the AI picks themes by it
+    createdAt: string     // fixed date of the built-in theme
+    updatedAt: string
+    fontFamily: string    // body font
+    headingFont: string
+    colors: {
+      background: string
+      text: string
+      heading: string
+      accent: string
+      card: string[]      // at least 1
+      cardText: string
+      chart?: string[]
+    }
+  }
+  slides: Slide[]         // array order = slide order
+}
+```
+
+**`Slide`**
+
+```ts
+{
+  id: string              // UUID
+  createdAt: string
+  updatedAt: string
+  title: string
+  layout: "title" | "content" | "two-column" | "comparison" | "section" | "chart-forward" | "blank"
+  background?:            // missing = use the theme background
+    | { type: "color", color: string }
+    | { type: "gradient", from: string, to: string, angle: number }   // angle 0 to 360
+    | { type: "image", src: string }
+  notes: string           // speaker notes
+  elements: Element[]     // array order = stacking order, last one on top
+}
+```
+
+**`Element`**: every element has these fields, plus the fields for its type.
+
+```ts
+{
+  id: string              // UUID
+  createdAt: string
+  updatedAt: string
+  x: number
+  y: number
+  w: number               // at least 40
+  h: number               // at least 40
+}
+```
+
+| `type`  | Extra fields |
+| ------- | ------------ |
+| `text`  | `role` ("title", "heading", "subtitle", "body", "eyebrow"), `paragraphs`, `fontSize`, `bold`, `italic`, `underline?`, `color`, `align` ("left", "center", "right"), `listStyle` ("none", "bullet", "number") |
+| `image` | `src`, `alt`, `fit` ("cover", "contain") |
+| `chart` | `chartType` ("bar", "line", "pie", "area", "stackedBar"), `title`, `categories: string[]`, `series: { name, data: number[], color? }[]`, `showLegend`, `xAxisLabel?`, `yAxisLabel?` |
+| `table` | `rows: string[][]` (first row is the header when `headerRow` is true), `headerRow` |
+| `shape` | `shape` ("rect", "ellipse"), `fill`, `stroke`, `strokeWidth` |
+
+Rules the schema checks:
+
+- A text paragraph is either a plain string, or a list of styled pieces: `{ text, bold?, italic?, underline?, color?, fontSize? }`.
+- Every chart series has exactly one number per category.
+- Every table row has the same number of cells.
+
+**`conversations` store: one row per deck**
+
+```ts
+{
+  schemaVersion: 2
+  deckId: string
+  createdAt: string
+  updatedAt: string
+  messages: Message[]
+}
+```
+
+**`Message`**: the AI SDK's `UIMessage` format, saved as it is.
+
+```ts
+{
+  id: string
+  role: "user" | "assistant"
+  parts: Part[]
+}
+```
+
+The parts you will see in a saved chat:
+
+| Part type        | What it holds |
+| ---------------- | ------------- |
+| `text`           | The words of a user message or an AI reply |
+| `tool-<name>`    | One AI tool call, e.g. `tool-add_chart`, with its input and its result. A good result looks like `{ ok: true, label, createdIds, warning? }` and a failed one like `{ ok: false, error }`. |
+| `data-outline`   | The planned outline: `{ outline: { title, themeType, slides[] } }` |
+| `step-start`     | Added by the AI SDK where a new AI step begins |
+
+Chat edits are sent to the browser as `data-edit` parts marked "transient". They are applied to the deck as they arrive, but they are not kept in the saved message. The `tool-<name>` part keeps the label of each change instead.
 
 ## Libraries used
 
@@ -383,6 +512,7 @@ Dev tools: `typescript`, `eslint` with `eslint-config-next`, `prettier` with `pr
 | `RichText.ts`                         | Converts styled text between the deck and the Tiptap editor        |
 | `CreateEmptyDeck.ts`                  | Makes a new empty deck                                             |
 | `Ids.ts`                              | Creates UUID v7 ids                                                |
+| `Timestamps.ts`                       | Gives the current time and new createdAt/updatedAt dates (UTC)     |
 | `ErrorMessage.ts`                     | Gets a readable message from an error                              |
 | `IsTypingTarget.ts`                   | Checks if the user is typing, so shortcuts don't fire              |
 | `utils.ts`                            | The `cn` class name helper                                         |

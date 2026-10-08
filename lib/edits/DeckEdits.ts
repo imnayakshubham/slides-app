@@ -4,6 +4,7 @@ import { clampBox, placeWithoutOverlap } from "@/lib/edits/Geometry"
 import { deckSchema, slideElementSchema, slideSchema } from "@/lib/schema/Deck"
 import type { Deck, ElementChanges, Slide, SlideElement, Theme } from "@/lib/schema/Deck"
 import { recolorDeck } from "@/lib/themes/Recolor"
+import { currentTime, newTimestamps } from "@/lib/Timestamps"
 
 export type DeckEdit =
   | { type: "updateDeck"; changes: { title?: string } }
@@ -46,6 +47,7 @@ export type DeckEdit =
 export type DeckEditResult = { ok: true; deck: Deck } | { ok: false; error: string }
 
 // Never changes `deck` or throws; untouched slides stay the same objects, so they don't re-render.
+// The deck, and any slide or element that changes, get a new updatedAt.
 export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
   switch (edit.type) {
     case "updateDeck":
@@ -128,6 +130,7 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
         ...edit.changes,
         id: element.id,
         type: element.type,
+        updatedAt: currentTime(),
       } as SlideElement)
       if (!validated.ok) return validated
       const elements = slide.elements.map((current) => (current.id === element.id ? validated.element : current))
@@ -157,6 +160,7 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
       const copiedElement = {
         ...element,
         id: edit.newElementId,
+        ...newTimestamps(),
         ...placeWithoutOverlap(targetSlide, {
           x: edit.x ?? element.x,
           y: edit.y ?? element.y,
@@ -193,6 +197,7 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
       // Free space on the target slide, shrunk if needed to fit.
       const movedElement = {
         ...element,
+        updatedAt: currentTime(),
         ...placeWithoutOverlap(targetSlide, requestedBox).box,
       }
       const sourceElements = sourceSlide.elements.filter((candidate) => candidate.id !== element.id)
@@ -235,7 +240,7 @@ export function applyDeckEdit(deck: Deck, edit: DeckEdit): DeckEditResult {
 }
 
 function succeed(deck: Deck): DeckEditResult {
-  return { ok: true, deck }
+  return { ok: true, deck: { ...deck, updatedAt: currentTime() } }
 }
 
 function fail(error: string): DeckEditResult {
@@ -277,7 +282,8 @@ function findDuplicateId(deck: Deck, newIds: string[]) {
 
 // Every other slide keeps its reference, so its UI doesn't re-render.
 function replaceSlide(deck: Deck, updatedSlide: Slide): Deck {
-  const slides = deck.slides.map((slide) => (slide.id === updatedSlide.id ? updatedSlide : slide))
+  const changedSlide = { ...updatedSlide, updatedAt: currentTime() }
+  const slides = deck.slides.map((slide) => (slide.id === changedSlide.id ? changedSlide : slide))
   return { ...deck, slides }
 }
 

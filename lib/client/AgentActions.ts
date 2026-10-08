@@ -83,7 +83,7 @@ export async function generateApprovedOutline() {
 
   await runAgentJobThatCanBeStopped(deckId, "generating", async (abortSignal) => {
     // Outlines planned before themes existed keep the deck's theme.
-    const theme = outline.themeId ? deckThemeFor(outline.themeId) : deck.theme
+    const theme = outline.themeType ? deckThemeFor(outline.themeType) : deck.theme
     const plannedSlides = outline.slides.map((outlineSlide) =>
       createSlide(outlineSlide.layout, outlineSlide.title, theme)
     )

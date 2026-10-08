@@ -1,11 +1,19 @@
 import { z } from "zod"
 
+import { THEME_TYPES } from "@/lib/themes/Themes"
+
 export const ARTBOARD_WIDTH = 1920
 export const ARTBOARD_HEIGHT = 1080
 export const MIN_ELEMENT_SIZE = 40
 
+const timestampFields = {
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+}
+
 const boxFields = {
   id: z.uuid(),
+  ...timestampFields,
   x: z.number(),
   y: z.number(),
   w: z.number().min(MIN_ELEMENT_SIZE),
@@ -139,6 +147,7 @@ function upgradeColorStringBackground(background: unknown) {
 
 export const slideSchema = z.strictObject({
   id: z.uuid(),
+  ...timestampFields,
   title: z.string(),
   layout: slideLayoutSchema,
   background: z.preprocess(upgradeColorStringBackground, slideBackgroundSchema.optional()),
@@ -147,8 +156,11 @@ export const slideSchema = z.strictObject({
 })
 
 const themeSchema = z.strictObject({
-  // Which built-in theme this came from (lib/themes/Themes.ts).
-  id: z.string(),
+  // Which built-in theme this is (lib/themes/Themes.ts); compare themes by this.
+  id: z.uuid(),
+  // The theme's readable name, e.g. "midnight"; the AI picks themes by it.
+  themeType: z.enum(THEME_TYPES),
+  ...timestampFields,
   // The body font.
   fontFamily: z.string(),
   headingFont: z.string(),
@@ -165,35 +177,12 @@ const themeSchema = z.strictObject({
   }),
 })
 
-// The card colors of the original default theme.
-export const CLASSIC_CARD_COLORS = ["#818CF8", "#F472B6", "#FBBF24", "#34D399"]
-
-// Older decks without heading and card colors keep their look: headings use the body font and color.
-function upgradeTheme(theme: unknown) {
-  const savedTheme = theme as {
-    fontFamily?: string
-    headingFont?: string
-    colors?: Record<string, unknown>
-  }
-  if (!savedTheme?.colors || savedTheme.headingFont) return theme
-  return {
-    id: "classic",
-    ...savedTheme,
-    headingFont: savedTheme.fontFamily,
-    colors: {
-      heading: savedTheme.colors.text,
-      card: CLASSIC_CARD_COLORS,
-      cardText: savedTheme.colors.text,
-      ...savedTheme.colors,
-    },
-  }
-}
-
 export const deckSchema = z.strictObject({
   id: z.uuid(),
+  ...timestampFields,
   title: z.string(),
   aspectRatio: z.literal("16:9"),
-  theme: z.preprocess(upgradeTheme, themeSchema),
+  theme: themeSchema,
   slides: z.array(slideSchema),
 })
 
